@@ -916,91 +916,526 @@ NEWS.push({id:17,d:'2026-10-25',c:[C_MAP,C_SYS],h:'วงเวทย์เค�
  'จุดเกิดของอสูรถูกย้ายให้ห่างจากหน้าประตู จุดมาถึง และตาน้ำออกไป ตัวที่อยู่ไกลอยู่แล้วไม่ถูกย้าย',
  'อสูรที่ไล่ตามมาจะหยุดไล่เมื่อคุณเข้าเขตปลอดภัย ถ้าคุณออกจากเขตก็เริ่มไล่ได้อีก',
  'ในเขตปลอดภัยเดียวกันนี้ รวมถึงหมู่บ้าน เมืองหลวง สำนัก และในอาคาร คุณใช้วิชาโจมตีหรือต่อสู้ไม่ได้ ส่วนวิชารักษา เกราะปราณ และขี่กระบี่ยังใช้ได้ ถ้ากดวิชาโจมตี เกมจะแจ้งว่าอยู่ในเขตปลอดภัย']});
-/* ===== PATCH 12 (เพิ่มต่อท้าย ไม่ลบโค้ดเดิม) ระบบเสียงจากไฟล์ MP3 จริง ผ่าน new Audio() แทนเสียงสังเคราะห์ทั้งหมด ===== */
+/* ===== PATCH 13 AUDIO (เพิ่มต่อท้าย ไม่ลบโค้ดเดิม) คลังเสียงกลาง + ระบบเสียงจากไฟล์จริงผ่าน new Audio() ===== */
+/* SYSTEM LOCK: โครงสร้างเสียงชุดนี้ล็อกถาวร (ความยาวตามธรรมชาติของเหตุการณ์, 4 แชนแนล, ducking, จำกัดเสียงซ้อน, เปลี่ยนโทนเล็กน้อย, หน้าที่เสียงแยกชัดเจน) */
 {
- const M='https://www.myinstants.com/media/sounds/',G='https://actions.google.com/sounds/v1/',P='https://cdn.pixabay.com/download/audio/';
- /* แต่ละเสียงมีลิงก์หลายตัว เกมจะทดสอบทีละตัวตามลำดับ แล้วใช้ตัวแรกที่โหลดได้ */
- const CAND={
-  swoosh:[M+'sword-slash.mp3',M+'sword-sound-effect.mp3',M+'whoosh-6316.mp3',G+'weapons/whoosh_large.ogg',P+'2022/03/15/audio_c8c8733246.mp3?filename=sword-swoosh-98315.mp3'],
-  clash:[M+'metal-clang.mp3',G+'weapons/sword_clash.ogg',P+'2021/08/04/audio_12d02c7b50.mp3?filename=sword-clash-2-37836.mp3'],
-  spell:[M+'magic-spell.mp3',M+'laser-gun.mp3',G+'science_fiction/laser_charge.ogg',P+'2022/01/18/audio_d0a113d6a9.mp3?filename=magic-spell-101140.mp3'],
-  explosion:[G+'impacts/crash.ogg',M+'explosion_3.mp3',P+'2022/03/10/audio_c27271d47c.mp3?filename=explosion-6055.mp3'],
-  success:[M+'ding-sound-effect_2.mp3',M+'success-fanfare-trumpets.mp3',G+'ui/beep_short.ogg',P+'2022/10/14/audio_9939f79cb9.mp3?filename=success-1-6297.mp3'],
-  button:[G+'cartoon/wood_plank_flicks.ogg',M+'button-click_1.mp3',M+'beep-07.mp3',P+'2022/03/24/audio_c31a59087c.mp3?filename=interface-button-155.mp3'],
-  glimmer:[M+'coin_cM5m1wH.mp3',G+'magic/magical_glimmer.ogg',P+'2022/03/24/audio_c31a59087c.mp3?filename=interface-button-155.mp3'],
-  roar:[M+'monster-roar.mp3',M+'wolf-howl.mp3',G+'animals/monster_growl.ogg',P+'2021/09/06/audio_2d8157777d.mp3?filename=monster-roar-97305.mp3'],
-  rustle:[M+'rustling-leaves.mp3',G+'ambiences/forest_wind.ogg',P+'2022/03/15/audio_7354b6ba25.mp3?filename=rustle-in-grass-6192.mp3'],
-  forest:[M+'forest-birds.mp3',G+'ambiences/forest_wind.ogg',P+'2022/01/18/audio_d0a113d6a9.mp3?filename=forest-birds-and-insects-6848.mp3'],
-  drops:[M+'water-droplet.mp3',G+'ambiences/cave_water_drops.ogg'],
-  whoosh:[M+'whoosh-6316.mp3',M+'sword-slash.mp3',G+'weapons/whoosh_large.ogg',P+'2022/03/15/audio_c8c8733246.mp3?filename=whoosh-6316.mp3'],
-  steps:[M+'footsteps-in-gravel.mp3',G+'footsteps/gravel.ogg',P+'2022/03/15/audio_7354b6ba25.mp3?filename=footsteps-grass-heavy-21989.mp3'],
-  gong:[M+'gong-sound_1.mp3',M+'tibetan-singing-bowl.mp3',G+'household/gong.ogg',P+'2022/05/16/audio_db327668b8.mp3?filename=gong-101742.mp3'],
-  dead:[M+'game-over-arcade.mp3',M+'gong-sound_1.mp3',G+'household/gong.ogg']
+ /* ---------- 1) คลังเสียงกลาง (AUDIO GLOBAL POOL) เก็บครบทุกลิงก์ที่ได้รับ ฝังติดกับโค้ดนี้ ---------- */
+ const POOL_BASE='https://www.myinstants.com/media/sounds/';
+ const AUDIO_POOL={
+ "A1 อาวุธ ฟันกระบี่ ปะทะ พุ่งตัว": [
+  "sword-sound-effect.mp3",
+  "metal-clang.mp3",
+  "whoosh-6316.mp3",
+  "sword-slash.mp3",
+  "sword-draw.mp3",
+  "sword-hit.mp3",
+  "blade-slice.mp3",
+  "katana-slash.mp3",
+  "knife-slash.mp3",
+  "dagger-stab.mp3",
+  "heavy-sword-hit.mp3",
+  "spear-whoosh.mp3",
+  "arrow-fly.mp3",
+  "shield-block.mp3",
+  "armor-hit.mp3",
+  "punch-sound-effect.mp3",
+  "kick-sound.mp3",
+  "body-fall.mp3",
+  "bone-break.mp3",
+  "flesh-hit.mp3",
+  "wind-whoosh-2.mp3",
+  "fast-whoosh.mp3",
+  "heavy-whoosh.mp3",
+  "air-slash.mp3",
+  "battle-cry.mp3",
+  "war-horn.mp3",
+  "metal-hit.mp3",
+  "iron-clash.mp3",
+  "steel-hit.mp3",
+  "sharp-slash.mp3"
+ ],
+ "A2 วิชา ปราณ เวทมนตร์ ระเบิด": [
+  "magic-spell.mp3",
+  "explosion_3.mp3",
+  "laser-gun.mp3",
+  "ding-sound-effect_2.mp3",
+  "magic-chime.mp3",
+  "spell-cast.mp3",
+  "fireball.mp3",
+  "lightning-bolt.mp3",
+  "thunder-clap.mp3",
+  "energy-blast.mp3",
+  "power-up.mp3",
+  "charging-up.mp3",
+  "magic-sparkle.mp3",
+  "teleport.mp3",
+  "portal-open.mp3",
+  "mystical-bell.mp3",
+  "heavy-explosion.mp3",
+  "bomb-explosion.mp3",
+  "fire-whoosh.mp3",
+  "flame-burn.mp3",
+  "ice-shatter.mp3",
+  "earthquake.mp3",
+  "stone-crush.mp3",
+  "wind-gust.mp3",
+  "aura-glow.mp3"
+ ],
+ "A3 เมนู ปุ่มกด ไอเทม ความสำเร็จ": [
+  "button-click_1.mp3",
+  "coin_cM5m1wH.mp3",
+  "success-fanfare-trumpets.mp3",
+  "beep-07.mp3",
+  "click-menu.mp3",
+  "menu-select.mp3",
+  "ui-beep.mp3",
+  "item-pickup.mp3",
+  "gold-coins.mp3",
+  "inventory-open.mp3",
+  "potion-drink.mp3",
+  "level-up.mp3",
+  "quest-complete.mp3",
+  "achievement.mp3",
+  "beep-tone.mp3",
+  "error-buzz.mp3",
+  "cancel-sound.mp3",
+  "toggle-switch.mp3",
+  "page-turn.mp3",
+  "bell-notification.mp3"
+ ],
+ "A4 สัตว์อสูร สัตว์ป่า ธรรมชาติ ฝีเท้า": [
+  "monster-roar.mp3",
+  "wolf-howl.mp3",
+  "rustling-leaves.mp3",
+  "forest-birds.mp3",
+  "water-droplet.mp3",
+  "footsteps-in-gravel.mp3",
+  "dragon-roar.mp3",
+  "beast-growl.mp3",
+  "tiger-roar.mp3",
+  "snake-hiss.mp3",
+  "bird-chirp.mp3",
+  "owl-hoot.mp3",
+  "crickets.mp3",
+  "wind-blowing.mp3",
+  "rain-ambient.mp3",
+  "cave-echo.mp3",
+  "footsteps-dirt.mp3",
+  "running-grass.mp3",
+  "bush-rustle.mp3",
+  "river-stream.mp3"
+ ],
+ "A5 ระฆัง ฆ้อง พิธีการ ความตาย": [
+  "tibetan-singing-bowl.mp3",
+  "gong-sound_1.mp3",
+  "game-over-arcade.mp3",
+  "temple-bell.mp3",
+  "church-bell.mp3",
+  "big-gong.mp3",
+  "death-sound.mp3",
+  "respawn.mp3",
+  "arena-start.mp3",
+  "victory-bell.mp3"
+ ],
+ "B1 อาวุธ ดาบ กระบี่ แทง ฟันซ้ำ": [
+  "sword-stab.mp3",
+  "katana-draw.mp3",
+  "blade-hit.mp3",
+  "sword-parry.mp3",
+  "dagger-hit.mp3",
+  "spear-thrust.mp3",
+  "polearm-whoosh.mp3",
+  "battle-axe.mp3",
+  "hammer-hit.mp3",
+  "club-swing.mp3",
+  "arrow-shoot.mp3",
+  "bow-release.mp3",
+  "crossbow.mp3",
+  "shield-bash.mp3",
+  "armor-clank.mp3",
+  "metal-scrape.mp3",
+  "iron-strike.mp3",
+  "steel-clash.mp3",
+  "sharp-blade.mp3",
+  "quick-slash.mp3",
+  "heavy-slash.mp3",
+  "dual-blades.mp3",
+  "ninja-slash.mp3",
+  "samurai-sword.mp3",
+  "assassin-stab.mp3"
+ ],
+ "B2 เวทมนตร์ ปราณยุทธ์ พลังธาตุ": [
+  "magic-wand.mp3",
+  "spell-cast-2.mp3",
+  "fireball-cast.mp3",
+  "flame-burst.mp3",
+  "ice-spell.mp3",
+  "frozen-shatter.mp3",
+  "lightning-strike.mp3",
+  "electric-shock.mp3",
+  "wind-blade.mp3",
+  "tornado-wind.mp3",
+  "earth-rumble.mp3",
+  "rock-slide.mp3",
+  "water-splash.mp3",
+  "healing-spell.mp3",
+  "buff-aura.mp3",
+  "qi-gathering.mp3",
+  "mana-charge.mp3",
+  "teleport-whoosh.mp3",
+  "portal-travel.mp3",
+  "dimension-rip.mp3",
+  "holy-chime.mp3",
+  "dark-magic.mp3",
+  "curse-sound.mp3",
+  "barrier-shield.mp3",
+  "super-explosion.mp3"
+ ],
+ "B3 เมนู อินเตอร์เฟซ ไอเทม เสียงปุ่ม": [
+  "menu-click.mp3",
+  "button-press.mp3",
+  "ui-select.mp3",
+  "ui-back.mp3",
+  "inventory-click.mp3",
+  "item-drop.mp3",
+  "equip-item.mp3",
+  "unequip.mp3",
+  "health-potion.mp3",
+  "mana-potion.mp3",
+  "eat-food.mp3",
+  "quest-accept.mp3",
+  "reward-claim.mp3",
+  "level-up-fanfare.mp3",
+  "stat-increase.mp3",
+  "beep-alert.mp3",
+  "error-alert.mp3",
+  "settings-open.mp3",
+  "map-open.mp3",
+  "save-game.mp3"
+ ],
+ "B4 สัตว์อสูร ธรรมชาติ ฝีเท้า สภาพแวดล้อม": [
+  "monster-growl-2.mp3",
+  "beast-roar.mp3",
+  "wild-wolf.mp3",
+  "bear-roar.mp3",
+  "snake-rattle.mp3",
+  "bird-flock.mp3",
+  "night-crickets.mp3",
+  "wind-howl.mp3",
+  "heavy-rain.mp3",
+  "thunderstorm.mp3",
+  "cave-dripping.mp3",
+  "footsteps-stone.mp3",
+  "footsteps-sand.mp3",
+  "running-dirt.mp3",
+  "bush-crack.mp3",
+  "flowing-river.mp3",
+  "fire-crackle.mp3",
+  "ghost-whisper.mp3",
+  "mystic-ambience.mp3",
+  "dungeon-wind.mp3"
+ ],
+ "B5 ระฆังสำนัก ฆ้องประลอง ความตาย เหตุการณ์": [
+  "temple-gong.mp3",
+  "meditation-bowl.mp3",
+  "round-start.mp3",
+  "round-end.mp3",
+  "player-death.mp3",
+  "revive-sound.mp3",
+  "boss-spawn.mp3",
+  "victory-sound.mp3",
+  "defeat-sound.mp3",
+  "secret-discovered.mp3"
+ ],
+ "C1 เพลงธีมเข้าเกม ดนตรีเปิดฉากกำลังภายใน": [
+  "chinese-intro.mp3",
+  "epic-chinese-music.mp3",
+  "martial-arts-theme.mp3",
+  "wuxia-main-menu.mp3",
+  "ancient-china-intro.mp3",
+  "kung-fu-theme.mp3",
+  "dynasty-warriors-style.mp3",
+  "heroic-entrance.mp3",
+  "game-title-music.mp3",
+  "oriental-opening.mp3",
+  "zithers-intro.mp3",
+  "flute-and-drums.mp3",
+  "jianghu-theme.mp3",
+  "sect-gathering.mp3",
+  "immortal-cultivation.mp3",
+  "taoist-music.mp3",
+  "buddhist-temple-music.mp3",
+  "epic-battle-intro.mp3",
+  "opening-gong-roll.mp3",
+  "title-screen-chime.mp3"
+ ],
+ "C2 บรรยากาศเมืองจีน โรงเตี๊ยม ตลาด": [
+  "chinese-market.mp3",
+  "ancient-town-ambience.mp3",
+  "tavern-crowd.mp3",
+  "inn-ambience.mp3",
+  "bazaar-noise.mp3",
+  "street-vendors.mp3",
+  "tea-house-music.mp3",
+  "chinese-restaurant.mp3",
+  "city-gates.mp3",
+  "crowd-murmur.mp3",
+  "busy-street.mp3",
+  "night-market.mp3",
+  "temple-courtyard.mp3",
+  "village-square.mp3",
+  "festival-fireworks.mp3",
+  "dragon-dance-drums.mp3",
+  "lion-dance.mp3",
+  "vendor-shout.mp3",
+  "horse-cart-passing.mp3",
+  "carriage-wheels.mp3"
+ ],
+ "C3 ห้องพักผ่อน โรงเตี๊ยมยามค่ำ นั่งสมาธิ": [
+  "resting-room.mp3",
+  "peaceful-inn.mp3",
+  "night-ambience.mp3",
+  "crickets-at-night.mp3",
+  "calm-zither.mp3",
+  "meditation-flute.mp3",
+  "spa-relaxing.mp3",
+  "healing-chamber.mp3",
+  "qi-recovery.mp3",
+  "sleep-sound.mp3",
+  "bedroom-quiet.mp3",
+  "wind-chimes.mp3",
+  "bamboo-forest-wind.mp3",
+  "gentle-stream.mp3",
+  "night-owl.mp3",
+  "lantern-crackle.mp3",
+  "incense-burning.mp3",
+  "soft-harp.mp3",
+  "zen-garden.mp3",
+  "safe-zone.mp3"
+ ],
+ "C4 เสียงสัตว์ อสูรป่า นก เสือ สัตว์เลี้ยงสำนัก": [
+  "tiger-roar-china.mp3",
+  "eagle-cry.mp3",
+  "monkey-chatter.mp3",
+  "snake-slither.mp3",
+  "boar-grunt.mp3",
+  "spirit-beast.mp3",
+  "phoenix-cry.mp3",
+  "dragon-growl.mp3",
+  "crane-bird.mp3",
+  "wolf-pack.mp3",
+  "bear-growl.mp3",
+  "fox-bark.mp3",
+  "panther-purr.mp3",
+  "horse-whinny.mp3",
+  "ox-moo.mp3",
+  "dog-barking.mp3",
+  "cat-meow.mp3",
+  "insect-buzz.mp3",
+  "frog-croak.mp3",
+  "bat-screech.mp3"
+ ],
+ "C5 ดนตรีจีนโบราณ ขลุ่ย พิณ กระบี่บิน วิชาเซียน": [
+  "chinese-flute.mp3",
+  "guzheng-solo.mp3",
+  "pipa-pluck.mp3",
+  "erhu-sad.mp3",
+  "flying-sword-whoosh.mp3",
+  "immortal-flight.mp3",
+  "qi-explosion.mp3",
+  "taoist-magic.mp3",
+  "bell-ring-china.mp3",
+  "monastery-gong.mp3",
+  "martial-arts-jump.mp3",
+  "lightness-skill.mp3",
+  "sword-aura.mp3",
+  "pressure-release.mp3",
+  "cultivation-breakthrough.mp3",
+  "pill-refining.mp3",
+  "cauldron-boiling.mp3",
+  "scroll-open.mp3",
+  "secret-manual.mp3",
+  "victory-fanfare-china.mp3"
+ ]
+};
+ /* ลิงก์สำรองชุดเก่า (Google / Pixabay) ใช้เมื่อคลังหลักของหน้าที่นั้นไม่มีไฟล์ที่โหลดได้ */
+ const G='https://actions.google.com/sounds/v1/',P='https://cdn.pixabay.com/download/audio/';
+ const OLD={
+  swoosh:[G+'weapons/whoosh_large.ogg',P+'2022/03/15/audio_c8c8733246.mp3?filename=sword-swoosh-98315.mp3'],
+  clash:[G+'weapons/sword_clash.ogg',P+'2021/08/04/audio_12d02c7b50.mp3?filename=sword-clash-2-37836.mp3'],
+  spell:[G+'science_fiction/laser_charge.ogg',P+'2022/01/18/audio_d0a113d6a9.mp3?filename=magic-spell-101140.mp3'],
+  explosion:[G+'impacts/crash.ogg',P+'2022/03/10/audio_c27271d47c.mp3?filename=explosion-6055.mp3'],
+  levelup:[G+'ui/beep_short.ogg',P+'2022/10/14/audio_9939f79cb9.mp3?filename=success-1-6297.mp3'],
+  button:[G+'cartoon/wood_plank_flicks.ogg',P+'2022/03/24/audio_c31a59087c.mp3?filename=interface-button-155.mp3'],
+  pick:[G+'magic/magical_glimmer.ogg'],
+  roar:[G+'animals/monster_growl.ogg',P+'2021/09/06/audio_2d8157777d.mp3?filename=monster-roar-97305.mp3'],
+  rustle:[G+'ambiences/forest_wind.ogg',P+'2022/03/15/audio_7354b6ba25.mp3?filename=rustle-in-grass-6192.mp3'],
+  bird:[G+'ambiences/forest_wind.ogg',P+'2022/01/18/audio_d0a113d6a9.mp3?filename=forest-birds-and-insects-6848.mp3'],
+  water:[G+'ambiences/cave_water_drops.ogg'],
+  whoosh:[G+'weapons/whoosh_large.ogg',P+'2022/03/15/audio_c8c8733246.mp3?filename=whoosh-6316.mp3'],
+  steps:[G+'footsteps/gravel.ogg',P+'2022/03/15/audio_7354b6ba25.mp3?filename=footsteps-grass-heavy-21989.mp3'],
+  gong:[G+'household/gong.ogg',P+'2022/05/16/audio_db327668b8.mp3?filename=gong-101742.mp3']
  };
- const SND={};/* ลิงก์ที่ทดสอบแล้วว่าโหลดได้ ใส่ให้อัตโนมัติ */
- let live=0;
- const play=(k,vol,max)=>{try{if(!SND[k]||live>=12)return;const a=new Audio(SND[k]);a.volume=Math.max(0,Math.min(1,vol==null?1:vol));let done=0;const fin=()=>{if(!done){done=1;live--}};live++;a.addEventListener('ended',fin);a.addEventListener('error',fin);const p=a.play();if(p&&p.catch)p.catch(fin);setTimeout(()=>{try{if(max)a.pause()}catch(e){}fin()},max||8000)}catch(e){}};
- /* โหลดไฟล์ล่วงหน้าให้เบราว์เซอร์แคช */
- 
- /* ปิดเสียงสังเคราะห์ (Oscillator / noise) ทุกชนิด */
+ /* ---------- 2) หน้าที่ของเสียง (ROLE) bus: ui=เมนู sfx=ต่อสู้/แอ็กชัน amb=บรรยากาศ bgm=ดนตรี
+    mode: short=เสียงสั้นฉับพลัน เล่นตามธรรมชาติ ถ้าไฟล์ยาวเกิน cap วินาทีจะค่อยๆ เบาลงจบ / long=เสียงต่อเนื่อง เล่นเต็มความยาวไฟล์ ไม่ตัดกลางคัน
+    vol=ความดังพื้นฐาน duck=ให้เสียงสำคัญหลบ BGM/บรรยากาศ ---------- */
+ const ROLE={
+  /* UI & Menu Bus */
+  button:{bus:'ui',mode:'short',cap:1.5,vol:.8,seed:['button-click_1.mp3','click-menu.mp3','menu-select.mp3','menu-click.mp3','button-press.mp3','ui-select.mp3','ui-beep.mp3','toggle-switch.mp3','beep-07.mp3','beep-tone.mp3'],kw:'click|button|menu|select|ui-|toggle|beep'},
+  open:{bus:'ui',mode:'short',cap:1.8,vol:.7,duck:1,seed:['inventory-open.mp3','map-open.mp3','settings-open.mp3','page-turn.mp3','scroll-open.mp3','inventory-click.mp3','secret-manual.mp3'],kw:'inventory|map-open|settings|page|scroll|manual'},
+  bump:{bus:'ui',mode:'short',cap:1,vol:.5,seed:['ui-back.mp3','cancel-sound.mp3','error-buzz.mp3','error-alert.mp3'],kw:'cancel|error|back'},
+  pick:{bus:'ui',mode:'short',cap:2,vol:.8,seed:['item-pickup.mp3','coin_cM5m1wH.mp3','equip-item.mp3','item-drop.mp3','unequip.mp3','reward-claim.mp3'],kw:'pickup|equip|item-|coin'},
+  buy:{bus:'ui',mode:'short',cap:2,vol:.8,seed:['gold-coins.mp3','coin_cM5m1wH.mp3','reward-claim.mp3'],kw:'gold|coins'},
+  notify:{bus:'ui',mode:'short',cap:2.5,vol:.7,seed:['bell-notification.mp3','beep-alert.mp3','quest-accept.mp3','save-game.mp3','secret-discovered.mp3'],kw:'notification|alert|accept|save|secret'},
+  potion:{bus:'ui',mode:'short',cap:2.5,vol:.8,seed:['potion-drink.mp3','health-potion.mp3','mana-potion.mp3','eat-food.mp3','pill-refining.mp3'],kw:'potion|eat-|pill|cauldron'},
+  /* Combat & Action SFX Bus */
+  swoosh:{bus:'sfx',mode:'short',cap:1.8,vol:.9,seed:['sword-slash.mp3','sword-sound-effect.mp3','blade-slice.mp3','katana-slash.mp3','quick-slash.mp3','sharp-slash.mp3','air-slash.mp3','heavy-slash.mp3','ninja-slash.mp3','samurai-sword.mp3','sword-stab.mp3','knife-slash.mp3','sharp-blade.mp3'],kw:'slash|slice|stab|sword-sound|blade|katana|samurai|spear|polearm|club|axe|arrow|bow-|crossbow|dagger-stab|knife'},
+  punch:{bus:'sfx',mode:'short',cap:1.5,vol:.9,seed:['punch-sound-effect.mp3','kick-sound.mp3','hammer-hit.mp3','flesh-hit.mp3'],kw:'punch|kick|hammer'},
+  clash:{bus:'sfx',mode:'short',cap:2.2,vol:.85,seed:['metal-clang.mp3','sword-hit.mp3','blade-hit.mp3','sword-parry.mp3','heavy-sword-hit.mp3','steel-clash.mp3','iron-clash.mp3','steel-hit.mp3','metal-hit.mp3','iron-strike.mp3','dual-blades.mp3','shield-block.mp3','shield-bash.mp3'],kw:'clang|clash|parry|sword-hit|blade-hit|dagger-hit|steel|iron|metal|shield|armor|dual'},
+  hurt:{bus:'sfx',mode:'short',cap:1.8,vol:.9,seed:['flesh-hit.mp3','bone-break.mp3','body-fall.mp3','armor-hit.mp3','armor-clank.mp3'],kw:'flesh|bone|body|armor'},
+  whoosh:{bus:'sfx',mode:'short',cap:2.5,vol:.8,seed:['whoosh-6316.mp3','fast-whoosh.mp3','heavy-whoosh.mp3','wind-whoosh-2.mp3','flying-sword-whoosh.mp3','lightness-skill.mp3','martial-arts-jump.mp3','immortal-flight.mp3','teleport-whoosh.mp3'],kw:'whoosh|flight|jump|lightness|teleport|portal'},
+  steps:{bus:'sfx',mode:'short',cap:1.4,vol:.6,seed:['footsteps-in-gravel.mp3','footsteps-dirt.mp3','footsteps-stone.mp3','footsteps-sand.mp3','running-grass.mp3','running-dirt.mp3'],kw:'footstep|running'},
+  spell:{bus:'sfx',mode:'long',vol:.8,seed:['magic-spell.mp3','spell-cast.mp3','spell-cast-2.mp3','magic-wand.mp3','charging-up.mp3','power-up.mp3','mana-charge.mp3','qi-gathering.mp3','laser-gun.mp3','energy-blast.mp3','taoist-magic.mp3','pressure-release.mp3','dark-magic.mp3','curse-sound.mp3','sword-aura.mp3'],kw:'spell|magic|charg|power|mana|qi-|energy|laser|taoist|pressure|dark|curse|aura'},
+  heal:{bus:'sfx',mode:'long',vol:.7,seed:['healing-spell.mp3','holy-chime.mp3','magic-sparkle.mp3','magic-chime.mp3','aura-glow.mp3','mystical-bell.mp3'],kw:'heal|holy|sparkle|chime|glow'},
+  buff:{bus:'sfx',mode:'long',vol:.7,seed:['buff-aura.mp3','barrier-shield.mp3','aura-glow.mp3','power-up.mp3'],kw:'buff|barrier'},
+  fire:{bus:'sfx',mode:'long',vol:.9,seed:['fireball.mp3','fireball-cast.mp3','flame-burst.mp3','fire-whoosh.mp3','flame-burn.mp3','fire-crackle.mp3'],kw:'fire|flame'},
+  thunder:{bus:'sfx',mode:'long',vol:.9,duck:1,seed:['lightning-bolt.mp3','lightning-strike.mp3','thunder-clap.mp3','electric-shock.mp3'],kw:'lightning|thunder|electric'},
+  ice:{bus:'sfx',mode:'long',vol:.85,seed:['ice-spell.mp3','ice-shatter.mp3','frozen-shatter.mp3'],kw:'ice|frozen'},
+  earth:{bus:'sfx',mode:'long',vol:.9,seed:['rock-slide.mp3','stone-crush.mp3','earthquake.mp3','earth-rumble.mp3'],kw:'rock|stone-crush|earth'},
+  explosion:{bus:'sfx',mode:'long',vol:.95,duck:1,seed:['explosion_3.mp3','heavy-explosion.mp3','bomb-explosion.mp3','super-explosion.mp3','qi-explosion.mp3'],kw:'explosion|bomb'},
+  levelup:{bus:'sfx',mode:'long',vol:.9,duck:1,seed:['level-up.mp3','level-up-fanfare.mp3','cultivation-breakthrough.mp3','quest-complete.mp3','achievement.mp3','success-fanfare-trumpets.mp3','ding-sound-effect_2.mp3','stat-increase.mp3','victory-sound.mp3','victory-bell.mp3','victory-fanfare-china.mp3'],kw:'level|breakthrough|complete|achievement|fanfare|ding|stat|victory'},
+  roar:{bus:'sfx',mode:'long',vol:.85,seed:['monster-roar.mp3','beast-roar.mp3','beast-growl.mp3','monster-growl-2.mp3','tiger-roar.mp3','tiger-roar-china.mp3','bear-roar.mp3','bear-growl.mp3','dragon-roar.mp3','dragon-growl.mp3','spirit-beast.mp3'],kw:'roar|growl|beast'},
+  howl:{bus:'sfx',mode:'long',vol:.75,seed:['wolf-howl.mp3','wild-wolf.mp3','wolf-pack.mp3'],kw:'wolf'},
+  bossSpawn:{bus:'sfx',mode:'long',vol:.9,duck:1,alt:['roar','gong'],seed:['boss-spawn.mp3','war-horn.mp3','battle-cry.mp3','opening-gong-roll.mp3'],kw:'boss|horn|battle-cry'},
+  gong:{bus:'sfx',mode:'long',vol:.8,duck:1,seed:['gong-sound_1.mp3','big-gong.mp3','temple-gong.mp3','monastery-gong.mp3','tibetan-singing-bowl.mp3','temple-bell.mp3','church-bell.mp3','bell-ring-china.mp3','round-start.mp3','arena-start.mp3','meditation-bowl.mp3'],kw:'gong|bell|bowl|round-start|arena'},
+  die:{bus:'sfx',mode:'long',vol:.9,duck:1,alt:['gong'],seed:['game-over-arcade.mp3','death-sound.mp3','player-death.mp3','defeat-sound.mp3','round-end.mp3'],kw:'death|game-over|defeat|round-end'},
+  revive:{bus:'sfx',mode:'long',vol:.8,duck:1,alt:['heal'],seed:['respawn.mp3','revive-sound.mp3'],kw:'respawn|revive'},
+  qi:{bus:'sfx',mode:'long',vol:.45,alt:['spell'],seed:['qi-recovery.mp3','qi-gathering.mp3','healing-chamber.mp3','incense-burning.mp3'],kw:'qi-recovery|healing-chamber|incense'},
+  /* Ambient & Environment Bus */
+  bird:{bus:'amb',mode:'long',vol:.6,seed:['forest-birds.mp3','bird-chirp.mp3','bird-flock.mp3','crane-bird.mp3','eagle-cry.mp3'],kw:'bird|eagle|crane'},
+  owl:{bus:'amb',mode:'long',vol:.6,alt:['bird'],seed:['owl-hoot.mp3','night-owl.mp3'],kw:'owl'},
+  cricket:{bus:'amb',mode:'long',vol:.55,alt:['bird'],seed:['crickets.mp3','night-crickets.mp3','crickets-at-night.mp3','night-ambience.mp3','insect-buzz.mp3'],kw:'cricket|night-amb|insect'},
+  wind:{bus:'amb',mode:'long',vol:.6,seed:['wind-blowing.mp3','wind-howl.mp3','bamboo-forest-wind.mp3','dungeon-wind.mp3','wind-gust.mp3','tornado-wind.mp3','wind-blade.mp3'],kw:'wind-(blow|howl)|bamboo|dungeon-wind'},
+  water:{bus:'amb',mode:'long',vol:.6,seed:['water-droplet.mp3','cave-dripping.mp3','cave-echo.mp3','gentle-stream.mp3','river-stream.mp3','flowing-river.mp3','water-splash.mp3'],kw:'water|drip|stream|river|cave'},
+  rain:{bus:'amb',mode:'long',vol:.5,seed:['rain-ambient.mp3','heavy-rain.mp3','thunderstorm.mp3'],kw:'rain|storm'},
+  rustle:{bus:'amb',mode:'short',cap:2.5,vol:.6,seed:['rustling-leaves.mp3','bush-rustle.mp3','bush-crack.mp3'],kw:'rustl|bush'},
+  critter:{bus:'amb',mode:'long',vol:.55,seed:['snake-hiss.mp3','snake-rattle.mp3','snake-slither.mp3','boar-grunt.mp3','fox-bark.mp3','monkey-chatter.mp3','frog-croak.mp3','bat-screech.mp3','panther-purr.mp3','horse-whinny.mp3','ox-moo.mp3','dog-barking.mp3','cat-meow.mp3','phoenix-cry.mp3'],kw:'snake|boar|fox|monkey|frog|bat-|panther|horse|ox-|dog|cat-|phoenix'},
+  town:{bus:'amb',mode:'long',vol:.5,loop:1,seed:['chinese-market.mp3','ancient-town-ambience.mp3','tavern-crowd.mp3','inn-ambience.mp3','bazaar-noise.mp3','street-vendors.mp3','night-market.mp3','village-square.mp3','temple-courtyard.mp3','crowd-murmur.mp3','busy-street.mp3','chinese-restaurant.mp3','city-gates.mp3','vendor-shout.mp3','horse-cart-passing.mp3','carriage-wheels.mp3'],kw:'market|town|tavern|inn-|bazaar|vendor|restaurant|gates|crowd|street|courtyard|square|cart|carriage'},
+  festival:{bus:'amb',mode:'long',vol:.5,seed:['festival-fireworks.mp3','dragon-dance-drums.mp3','lion-dance.mp3'],kw:'festival|dance'},
+  /* BGM / Music Bus */
+  bgm:{bus:'bgm',mode:'long',vol:.55,loop:1,seed:['chinese-intro.mp3','epic-chinese-music.mp3','martial-arts-theme.mp3','wuxia-main-menu.mp3','ancient-china-intro.mp3','kung-fu-theme.mp3','jianghu-theme.mp3','sect-gathering.mp3','immortal-cultivation.mp3','taoist-music.mp3','buddhist-temple-music.mp3','oriental-opening.mp3','zithers-intro.mp3','flute-and-drums.mp3','heroic-entrance.mp3','game-title-music.mp3','dynasty-warriors-style.mp3','epic-battle-intro.mp3','tea-house-music.mp3','chinese-flute.mp3','guzheng-solo.mp3','erhu-sad.mp3','pipa-pluck.mp3','title-screen-chime.mp3'],kw:'intro|theme|music|opening|zither|flute|guzheng|erhu|pipa|title'},
+  bgmCalm:{bus:'bgm',mode:'long',vol:.5,loop:1,alt:['bgm'],seed:['resting-room.mp3','peaceful-inn.mp3','calm-zither.mp3','meditation-flute.mp3','spa-relaxing.mp3','soft-harp.mp3','zen-garden.mp3','safe-zone.mp3','sleep-sound.mp3','bedroom-quiet.mp3','wind-chimes.mp3','lantern-crackle.mp3'],kw:'rest|peaceful|calm|meditation-flute|spa|harp|zen|safe|sleep|bedroom|chimes|lantern'}
+ };
+ /* ---------- 3) สร้างรายการลิงก์ของแต่ละหน้าที่ จากคลังกลางทั้งหมด (เสียงในคลังที่ยังไม่ถูกจัดหน้าที่ใดจะถูกจับคู่ตามชื่ออัตโนมัติ) ---------- */
+ const ALLF=[];Object.keys(AUDIO_POOL).forEach(g=>AUDIO_POOL[g].forEach(f=>{if(!ALLF.includes(f))ALLF.push(f)}));
+ const claimed={};ALLF.forEach(f=>{claimed[f]=0});
+ Object.keys(ROLE).forEach(r=>{const R=ROLE[r],c=[];R.seed.forEach(f=>{if(ALLF.includes(f)&&!c.includes(f)){c.push(f);claimed[f]=1}});R.cand=c});
+ Object.keys(ROLE).forEach(r=>{const R=ROLE[r],re=new RegExp(R.kw);ALLF.forEach(f=>{if(!claimed[f]&&re.test(f.replace(/\.mp3$/,''))){R.cand.push(f);claimed[f]=1}})});
+ /* ลิงก์ที่ยังไม่ถูกจัดหน้าที่ ถือเป็นคลังสุ่มสำรอง (ใช้กับเหตุการณ์ที่ยังไม่มีเสียง) */
+ const SPARE=ALLF.filter(f=>!claimed[f]);
+ Object.keys(ROLE).forEach(r=>{const R=ROLE[r];R.urls=R.cand.map(f=>POOL_BASE+f).concat(OLD[r]||[]);if(r==='cricket'||r==='owl')R.urls=R.urls.concat(OLD.bird);R.vars=[]});
+ /* ---------- 4) ตรวจไฟล์ทีละลิงก์ (จำกัดพร้อมกัน) เก็บไฟล์ที่โหลดได้สูงสุด 3 ไฟล์ต่อหน้าที่ไว้สุ่มใช้ ---------- */
+ const PROBE=new Map();let busyN=0;const WAITQ=[];
+ const slot=()=>new Promise(res=>{if(busyN<8){busyN++;res()}else WAITQ.push(res)}),free=()=>{const n=WAITQ.shift();if(n)n();else busyN--};
+ const probe=u=>{if(PROBE.has(u))return PROBE.get(u);const pr=slot().then(()=>new Promise(res=>{let done=0,a=null,t=null;const f=ok=>{if(done)return;done=1;clearTimeout(t);try{if(!ok&&a){a.removeAttribute('src');a.load()}}catch(e){}free();res(ok?(isFinite(a.duration)?a.duration:0):0)};try{a=new Audio();a.preload='metadata';a.addEventListener('loadedmetadata',()=>f(isFinite(a.duration)&&a.duration>.05));a.addEventListener('error',()=>f(0));t=setTimeout(()=>f(0),7000);a.src=u}catch(e){f(0)}}));PROBE.set(u,pr);return pr};
+ const resolved={};
+ const resolveRole=async r=>{const R=ROLE[r];for(const u of R.urls){if(R.vars.length>=3)break;const d=await probe(u);if(d)R.vars.push({u,d})}resolved[r]=1};
+ const ORDER=['steps','button','swoosh','clash','hurt','spell','explosion','levelup','pick','buy','open','bump','whoosh','roar','howl','gong','die','bird','water','wind','cricket','owl','rustle','critter','bgm','town','bgmCalm','fire','thunder','ice','earth','heal','buff','punch','potion','notify','bossSpawn','revive','qi','rain','festival'];
+ ORDER.concat(Object.keys(ROLE).filter(r=>!ORDER.includes(r))).forEach(r=>{if(ROLE[r])resolveRole(r)});
+ /* ---------- 5) เครื่องเล่น: 4 แชนแนล, เพดานความดัง, ducking, จำกัดเสียงซ้อน 3, เปลี่ยนโทน ±5% ---------- */
+ const BUS={ui:{cap:1},sfx:{cap:.9},amb:{cap:.35},bgm:{cap:.3}};
+ const LIVE=new Set(),LAST={};let duckUntil=0,duckCur=1,tick=null,ux=0;
+ const clamp=v=>Math.max(0,Math.min(1,v));
+ const vol=e=>{const now=Date.now();let m=1;if(e.fade){m=clamp(1-(now-e.fade.t)/e.fade.ms)}else if(e.fin){m=clamp((now-e.t0)/e.fin)}return clamp(e.base*BUS[e.bus].cap*((e.bus==='amb'||e.bus==='bgm')?duckCur:1)*m)};
+ const drop=e=>{if(!LIVE.has(e))return;LIVE.delete(e);try{e.a.pause();e.a.removeAttribute('src');e.a.load()}catch(x){}};
+ const fadeOut=(e,ms)=>{if(!e.fade)e.fade={t:Date.now(),ms:ms||300}};
+ const ticker=()=>{const now=Date.now();duckCur+=((now<duckUntil?.6:1)-duckCur)*.3;LIVE.forEach(e=>{try{const R=ROLE[e.role];if(e.fade&&now-e.fade.t>=e.fade.ms){drop(e);return}if(!e.fade&&R.mode==='short'&&e.a.currentTime>R.cap)fadeOut(e,250);e.a.volume=vol(e)}catch(x){drop(e)}});if(!LIVE.size&&now>=duckUntil&&Math.abs(duckCur-1)<.01){clearInterval(tick);tick=null}};
+ const wake=()=>{if(!tick)tick=setInterval(ticker,50)};
+ const live=r=>[...LIVE].filter(e=>e.role===r&&!e.fade);
+ const pickVar=r=>{let rr=r,R=ROLE[r];if(!R.vars.length&&R.alt){for(const x of R.alt){if(ROLE[x].vars.length){rr=x;R=ROLE[x];break}}}if(!R.vars.length)return null;let v=R.vars[Math.floor(Math.random()*R.vars.length)];if(R.vars.length>1&&LAST[rr]===v.u){v=R.vars[(R.vars.indexOf(v)+1)%R.vars.length]}LAST[rr]=v.u;return{r:rr,v}};
+ const play=(role,gain,opt)=>{try{opt=opt||{};if(!ROLE[role])return null;const pk=pickVar(role);if(!pk)return null;const R=ROLE[pk.r],g=gain==null?1:gain;
+  if(R.bus!=='ui'&&R.bus!=='bgm'&&g<=.02)return null;
+  const same=live(pk.r);if(same.length>=3)fadeOut(same.sort((x,y)=>x.t0-y.t0)[0],120);
+  const a=new Audio(pk.v.u);a.loop=!!(opt.loop&&R.loop);
+  if(R.bus!=='bgm'&&!a.loop){try{a.preservesPitch=false;a.mozPreservesPitch=false;a.webkitPreservesPitch=false;a.playbackRate=.95+Math.random()*.1}catch(x){}}
+  const e={a,role:pk.r,bus:R.bus,base:clamp(g*R.vol),t0:Date.now(),fade:null,fin:opt.fadeIn||0};
+  a.volume=vol(e);LIVE.add(e);
+  const end=()=>drop(e);a.addEventListener('ended',end);a.addEventListener('error',end);
+  const p=a.play();if(p&&p.catch)p.catch(end);
+  if(R.duck){const d=Math.min(8000,(pk.v.d||2)*1000/(a.playbackRate||1));duckUntil=Math.max(duckUntil,Date.now()+d)}
+  wake();return e}catch(x){return null}};
+ const stopRole=(r,ms)=>{LIVE.forEach(e=>{if(e.role===r)fadeOut(e,ms||800)})};
+ /* ---------- 6) ปิดเสียงสังเคราะห์เดิมทั้งหมด (Oscillator / noise / beep) ---------- */
  tn=function(){};nz=function(){};bedUpdate=function(){};
- const MON_ROAR=['wolf','bear','king','lion','leo','ape','phx','pboar','bsnake'],MON_SMALL=['rab','fox','snake','boar'],AMB=['bird','cricket','cicada','owl','wind','windh','water'];
- const NPCS={npc_chief:['gong',.35,1500],npc_smith:['clash',.45,700],npc_herb:['button',.6,500],npc_tailor:['swoosh',.4,600],npc_exch:['button',.6,500],npc_fisher:['rustle',.5,900],npc_tank:['button',.5,500],npc_circle:['spell',.5,1500]};
- let curSk=null;
- const BIGSK=['firetal','firestorm','thunderfall','rockfall','swordstorm','flysword'];
- Object.assign(MI,{step:380,hit:200,cast:200,hurt:350,pick:150,bump:300,open:120});
- MON_ROAR.forEach(k=>VD[k]=2.5);MON_SMALL.forEach(k=>VD[k]=1);AMB.forEach(k=>VD[k]=3.5);
+ let bpT=0;beep=function(f,d,v){try{if(v!=null&&v<.01)return;const t=Date.now();if(t-bpT<90)return;bpT=t;if(f===250||f===350)play('whoosh',.25);else play('button',.35)}catch(e){}};
+ /* ---------- 7) ผูกเหตุการณ์ในเกมกับหน้าที่เสียง ---------- */
+ const BIG=['firetal','firestorm','thunderfall','rockfall','swordstorm','flysword','sw_thrust','vajra'];
+ const SKR=[[/flysword|กระบี่บิน/,'whoosh'],[/fire|เพลิง|ไฟ/,'fire'],[/thunder|thpalm|สายฟ้า/,'thunder'],[/ice|น้ำแข็ง/,'ice'],[/rock|ศิลา|earth|ผืนดิน/,'earth'],[/heal|สมาน|ฟื้นฟู|ชุบชีวิต|ธารน้ำโอสถ/,'heal'],[/shield|barrier|เกราะ|โล่|ม่าน|diamond|iron_body|กายาวัชระ/,'buff'],[/fist|vajra|qpalm|หมัด|ฝ่ามือ/,'punch'],[/sword|sw_|กระบี่|ดาบ/,'swoosh'],[/trap|finger|mist|ค่ายกล|ดัชนี|หมอก/,'spell']];
+ const skRole=(id,k)=>{const s=id+' '+((k&&k.n)||'');for(const x of SKR)if(x[0].test(s))return x[1];return k&&k.rng>2?'spell':'swoosh'};
+ let curSk=null,curId=null,skPlayed=0;
+ const playSkill=()=>{const id=curId,k=curSk;if(!k)return false;const r=skRole(id,k);skPlayed=1;if(r==='heal'||r==='buff'||r==='spell'){play(r,.9)}else{play(r,1);if(r==='swoosh'&&typeof target!=='undefined'&&target&&!target.dead&&BOSSES.includes(target.k))setTimeout(()=>play('clash',.6),130)}
+  if(k.m>=5||BIG.includes(id)&&k.m>=4)play('explosion',.7);return true};
+ const NPCR=[[/chief|elder|arena|guide/,'gong'],[/smith|forge|armor|royalarm|tdef|tsword/,'clash'],[/herb|alch|healer/,'potion'],[/exch|trade|auction|gen|talman|tgroup/,'buy'],[/fisher|tank/,'water'],[/tailor/,'open'],[/circle|warp|vwarp/,'spell']];
+ const MONR={wolf:'howl',bear:'roar',king:'roar',lion:'roar',leo:'roar',ape:'roar',phx:'critter',pboar:'roar',bsnake:'critter',fox:'critter',snake:'critter',boar:'critter',rab:'rustle'};
+ const AUTO=[[/fire|boom|bomb|burst|explod/,'explosion'],[/heal|med|recover|qi/,'spell'],[/hit|attack|slash|cut/,'swoosh'],[/clash|block|parry/,'clash'],[/walk|step|run/,'steps'],[/click|select|menu|btn|ui/,'button'],[/coin|gold|buy|sell|shop/,'buy'],[/get|pick|loot|item/,'pick'],[/die|dead|lose/,'die'],[/win|up|success|done|quest/,'levelup'],[/roar|growl|beast|mon/,'roar'],[/wind/,'wind'],[/water|river|rain/,'water'],[/bird/,'bird'],[/night|insect|cricket|cicada/,'cricket']];
+ const MI2={step:380,hit:200,cast:200,hurt:350,pick:150,bump:300,open:120,buy:150};Object.assign(MI,MI2);
+ ['wolf','bear','king','lion','leo','ape','phx','pboar'].forEach(k=>{VD[k]=2.5});['bsnake','fox','snake','boar','rab'].forEach(k=>{VD[k]=1});['bird','cricket','cicada','owl','wind','windh','water'].forEach(k=>{VD[k]=3.5});
+ const OWNER={};
  sfx=function(k,p,v){try{const t=Date.now();if(MI[k]){if(t-(lastT[k]||0)<MI[k])return;lastT[k]=t}if(VD[k]&&!voice(VD[k]))return;const dv=v==null?1:v;
-  if(k==='step')return play('steps',.6,450);
-  if(k==='bump')return play('button',.3,300);
-  if(k==='open')return play('button',.5,400);
-  if(k==='pick')return play('glimmer',.9,1500);
-  if(k==='buy')return play('button',.9,1500);
-  if(k==='levelup')return play('success',1,5000);
-  if(k==='die')return play(SND.dead?'dead':'gong',1,4000);
-  if(k==='med')return play('spell',.5,2500);
-  if(k==='hurt')return play('clash',.8,800);
-  if(k==='hit'||k==='cast'){
-   const sk=curSk;
-   if(sk&&sk.m&&!sk.heal&&!sk.buff){const id=S.slots&&Object.keys(SK).find(x=>SK[x]===sk);
-    if(BIGSK.includes(id)||sk.m>=5)return play('explosion',.9,3500);
-    play('swoosh',.9,900);if(target&&!target.dead&&BOSSES.includes(target.k))setTimeout(()=>play('clash',.6,700),130);return}
-   if(k==='hit')return play('swoosh',.9,900);
-   return play('spell',.8,1800)}
-  if(MON_ROAR.includes(k))return play('roar',Math.max(.15,.8*dv),2500);
-  if(MON_SMALL.includes(k))return play('rustle',Math.max(.15,.7*dv),1200);
-  if(AMB.includes(k))return play(k==='water'?'drops':'forest',.3,3500);
-  if(NPCS[k]){const c=NPCS[k];return play(c[0],Math.max(.1,c[1]*dv),c[2])}
+  switch(k){
+   case'step':return play('steps',.9);
+   case'bump':return play('bump',.8);
+   case'open':return play('open',.9);
+   case'pick':return play('pick',1);
+   case'buy':return play('buy',1);
+   case'levelup':return play('levelup',1);
+   case'die':return play('die',1);
+   case'med':return play('qi',.8);
+   case'hurt':return play('hurt',1),play('clash',.35);
+   case'hit':case'cast':if(curSk){playSkill();return}return play(k==='hit'?'swoosh':'spell',.9);
+   case'bird':return play('bird',Math.max(.2,dv));
+   case'owl':return play('owl',Math.max(.2,dv));
+   case'cricket':case'cicada':return play('cricket',Math.max(.2,dv));
+   case'wind':case'windh':return play('wind',Math.max(.2,dv));
+   case'water':return play('water',Math.max(.2,dv));
+  }
+  if(MONR[k])return play(MONR[k],Math.max(.2,dv));
+  if(/^npc_/.test(k)){const id=k.slice(4);for(const x of NPCR)if(x[0].test(id))return play(x[1],Math.max(.12,dv*.55));return}
+  for(const x of AUTO)if(x[0].test(k))return play(x[1],Math.max(.2,dv))
  }catch(e){}};
- /* beep เดิมที่เป็นเสียงปี๊บ เปลี่ยนเป็นเสียงจากไฟล์ */
- let bpT=0;beep=function(f,d,v){try{if(v!=null&&v<.01)return;const t=Date.now();if(t-bpT<90)return;bpT=t;if(f===250||f===350)play('whoosh',.25,350);else play('button',.35,300)}catch(e){}};
- /* ใช้วิชา: จำวิชาที่กำลังใช้เพื่อเลือกเสียง ดาบฟัน / ระเบิด / รวมปราณ */
- const _usS=useSlot;useSlot=function(i,qt){const id=S.slots[i];curSk=(id&&SK[id])||null;try{return _usS(i,qt)}finally{curSk=null}};
- /* ขึ้นขี่กระบี่เหาะ = เสียงพุ่งตัว */
- const _flS=A.fly;A.fly=function(){const was=S.fl;_flS();if(S.fl!==was)play('whoosh',.9,1500)};
- /* บอสเกิดใหม่ = ระฆัง */
- const _sayS=say;say=function(t,sys){if(typeof t==='string'&&/\(บอส\) เกิดใหม่แล้ว$/.test(t))play('gong',.8,4000);return _sayS(t,sys)};
- /* ลานประลองยุทธ์ = ระฆังเปิดฉาก */
- if(NPC7.arena){const _ar=NPC7.arena;NPC7.arena=function(n){play('gong',.8,3000);return _ar(n)}}
- /* เข้าเกม / ออกจากเกม ระฆังต้อนรับ */
- setTimeout(()=>play('gong',.5,3000),1000);
- /* ตัวเลือกลิงก์อัตโนมัติ + ตรวจสถานะไฟล์เสียง กด F7 ฟังรายการ กด Enter ที่รายการเพื่อลองเล่น */
- const ST={},NM={swoosh:'ฟันกระบี่และเหวี่ยงวิชา',clash:'กระบี่ปะทะ',spell:'รวมลมปราณ',explosion:'วิชารุนแรง',success:'เลื่อนขั้น',button:'กดปุ่มและเมนู',glimmer:'หยิบไอเทม',roar:'อสูรคำราม',rustle:'พุ่มไม้และสัตว์เล็ก',forest:'บรรยากาศป่า',drops:'หยดน้ำ',whoosh:'พุ่งตัวขี่กระบี่',steps:'ฝีเท้า',gong:'ระฆัง',dead:'ตาย'};
- const nameOf=u=>{try{return u.split('?')[0].split('/').pop()}catch(e){return u}};
- const tryUrl=(u,ok,bad)=>{let done=0,t=null,a=null;const f=r=>{if(done)return;done=1;clearTimeout(t);if(r)ok(a);else bad()};try{a=new Audio();a.preload='auto';a.addEventListener('loadedmetadata',()=>f(1));a.addEventListener('canplaythrough',()=>f(1));a.addEventListener('error',()=>f(0));t=setTimeout(()=>f(0),7000);a.src=u}catch(e){f(0)}};
- Object.keys(CAND).forEach(k=>{ST[k]='กำลังโหลด';let i=0;const next=()=>{if(i>=CAND[k].length){ST[k]='โหลดไม่ได้ ลองครบ '+CAND[k].length+' ลิงก์แล้ว';return}const u=CAND[k][i++];tryUrl(u,a=>{SND[k]=u;ST[k]='ใช้ได้ ไฟล์ '+nameOf(u)+' ยาว '+((a&&a.duration)||0).toFixed(1)+' วินาที'},next)};next()});
- const sndBad=()=>Object.keys(CAND).filter(k=>/^โหลดไม่ได้/.test(ST[k]));
- setTimeout(()=>{const bad=sndBad();say(bad.length?'เสียงที่โหลดไม่ได้ '+bad.length+' จาก '+Object.keys(CAND).length+' ไฟล์ ได้แก่ '+bad.map(k=>NM[k]||k).join(', ')+' กด F7 ดูรายละเอียด':'ตรวจเสียงแล้ว โหลดได้ครบทุกไฟล์',1)},20000);
- A.sndtest=function(){const it=Object.keys(CAND).map(k=>({t:(NM[k]||k)+' : '+ST[k]+' กด Enter ลองเล่น',k}));menu('ตรวจสอบเสียง',it,{ent:x=>{play(x.k,1,4000);say((NM[x.k]||x.k)+' : '+ST[x.k],1)}})};
+ /* ใช้วิชา: จำวิชาที่ใช้ เพื่อเลือกเสียงให้ตรงกับธาตุและประเภทของวิชา (รวมวิชารักษา/เกราะที่เกมเดิมไม่มีเสียง) */
+ const _usS=useSlot;useSlot=function(i,qt){const id=S.slots[i];curId=id;curSk=(id&&SK[id])||null;skPlayed=0;const before=curSk?cd[id]:0;try{const r=_usS(i,qt);if(curSk&&!skPlayed&&cd[id]!==before&&!curSk.passive)playSkill();return r}finally{curSk=null;curId=null}};
+ const _flS=A.fly;A.fly=function(){const was=S.fl;_flS();if(S.fl!==was)play('whoosh',.9)};
+ /* อ่านข้อความเหตุการณ์ในเกม เพื่อใส่เสียงให้เหตุการณ์ที่เกมเดิมไม่ได้เรียก sfx */
+ const SAYR=[[/เกิดใหม่แล้ว$/,'bossSpawn'],[/ฟื้นที่ลานเกิด/,'revive'],[/(ใช้|กิน|ดื่ม|กลืน)โอสถ/,'potion'],[/ภารกิจสำเร็จ|เควสสำเร็จ|รับรางวัล/,'notify'],[/เจอสมบัติ|พบทางลับ/,'notify']];
+ let sayT={};const _sayS=say;say=function(t,sys){try{if(typeof t==='string'){for(const x of SAYR){if(x[0].test(t)){const n=Date.now();if(n-(sayT[x[1]]||0)>1500){sayT[x[1]]=n;if(x[1]==='bossSpawn'&&!/\(บอส\)/.test(t)&&typeof BOSSES!=='undefined'&&!BOSSES.some(b=>MD[b]&&t.indexOf(MD[b].n)>=0))break;play(x[1],.9)}break}}}}catch(e){}return _sayS(t,sys)};
+ if(NPC7.arena){const _ar=NPC7.arena;NPC7.arena=function(n){play('gong',.9);return _ar(n)}}
+ /* ---------- 8) ดนตรีและบรรยากาศฉาก: วนลูป นุ่มนวล เริ่มหลังผู้เล่นกดอะไรสักอย่าง ปิดได้ด้วย F3 ---------- */
+ const LAYER={bgm:null,amb:null};
+ const setLayer=(n,role)=>{const c=LAYER[n];if(c&&c.role===role&&LIVE.has(c.e))return;if(c&&c.e){fadeOut(c.e,1500)}LAYER[n]=null;if(!role)return;const e=play(role,1,{loop:1,fadeIn:1800});if(e)LAYER[n]={role:e.role,e}};
+ const onUx=()=>{ux=1};['keydown','pointerdown','touchstart'].forEach(ev=>window.addEventListener(ev,onUx,{passive:true}));
+ setInterval(()=>{try{if(!ux||typeof S==='undefined'||!S)return;const on=(typeof ambOn==='undefined')?true:!!ambOn;if(!on||document.hidden){setLayer('bgm',null);setLayer('amb',null);if(!S.med)stopRole('qi',600);return}
+  setLayer('bgm',S.med?'bgmCalm':'bgm');
+  const z=zoneAt(S.x,S.y),id=z&&z.id;setLayer('amb',id&&(/^(v|c|k\d)$/.test(id)||/^bd_/.test(id))?'town':null);
+  if(S.med&&!live('qi').length&&ROLE.qi.vars.length)play('qi',.6,{loop:0})}catch(e){}},1500);
+ /* ---------- 9) F7 ตรวจสอบเสียง: บอกว่าหน้าที่ไหนมีไฟล์ที่ใช้ได้กี่ไฟล์ กด Enter ที่รายการเพื่อลองเล่น ---------- */
+ const NM={button:'กดปุ่ม',open:'เปิดเมนู',bump:'ชนสิ่งกีดขวาง',pick:'หยิบไอเทม',buy:'ซื้อของ',notify:'แจ้งเตือน',potion:'ใช้โอสถ',swoosh:'ฟันกระบี่',punch:'หมัดฝ่ามือ',clash:'กระบี่ปะทะ',hurt:'ถูกโจมตี',whoosh:'พุ่งตัว ขี่กระบี่',steps:'ฝีเท้า',spell:'รวมลมปราณ',heal:'วิชารักษา',buff:'เกราะปราณ',fire:'วิชาไฟ',thunder:'วิชาสายฟ้า',ice:'วิชาน้ำแข็ง',earth:'วิชาศิลา',explosion:'วิชารุนแรง',levelup:'เลื่อนขั้น',roar:'อสูรคำราม',howl:'หมาป่าหอน',bossSpawn:'บอสปรากฏ',gong:'ระฆัง ฆ้อง',die:'ตาย',revive:'ฟื้นคืนชีพ',qi:'นั่งสมาธิ',bird:'นก',owl:'นกฮูก',cricket:'จิ้งหรีดแมลง',wind:'ลม',water:'น้ำ',rain:'ฝน',rustle:'พุ่มไม้ไหว',critter:'สัตว์เล็ก',town:'บรรยากาศเมือง',festival:'เทศกาล',bgm:'เพลงประกอบ',bgmCalm:'เพลงพักผ่อน'};
+ const nameOf=u=>{try{return decodeURIComponent(u.split('?')[0].split('/').pop())}catch(e){return u}};
+ const stat=r=>{const R=ROLE[r];if(R.vars.length)return 'ใช้ได้ '+R.vars.length+' ไฟล์ เช่น '+nameOf(R.vars[0].u)+' ยาว '+R.vars[0].d.toFixed(1)+' วินาที';return resolved[r]?'ไม่มีไฟล์ที่โหลดได้ ลองครบ '+R.urls.length+' ลิงก์'+(R.alt&&R.alt.some(x=>ROLE[x].vars.length)?' ใช้เสียงสำรองของ '+NM[R.alt.find(x=>ROLE[x].vars.length)]:''):'กำลังตรวจ'};
+ const bad=()=>Object.keys(ROLE).filter(r=>resolved[r]&&!ROLE[r].vars.length&&!(ROLE[r].alt&&ROLE[r].alt.some(x=>ROLE[x].vars.length)));
+ setTimeout(()=>{try{const b=bad(),n=Object.keys(ROLE).length;say(b.length?'ตรวจเสียงแล้ว หน้าที่ที่ยังไม่มีไฟล์เสียง '+b.length+' จาก '+n+' ได้แก่ '+b.map(r=>NM[r]||r).join(', ')+' กด F7 ดูรายละเอียด':'ตรวจเสียงแล้ว ทุกหน้าที่มีไฟล์เสียงใช้ได้',1)}catch(e){}},30000);
+ A.sndtest=function(){const it=Object.keys(ROLE).map(r=>({t:(NM[r]||r)+' ['+ROLE[r].bus+'] : '+stat(r)+' กด Enter ลองเล่น',r}));menu('ตรวจสอบเสียง',it,{ent:x=>{const e=play(x.r,1,{loop:0});say((NM[x.r]||x.r)+' : '+stat(x.r),1)}})};
  KEYS.F7='sndtest';MAIN.push(['ตรวจสอบเสียง (F7)','F7']);
- window.__SND={SND,play};
- TIPS.push('เสียงเอฟเฟกต์ทั้งหมดเป็นไฟล์ MP3 จริง ถ้าไม่ได้ยินเสียงให้กดปุ่มใดก็ได้หนึ่งครั้งเพื่อให้เบราว์เซอร์อนุญาตเล่นเสียง');
- NEWS.push({id:18,d:'2026-10-25',c:[C_SYS],h:'เปลี่ยนเสียงเอฟเฟกต์เป็นไฟล์ MP3 จริง',t:'ปิดเสียงสังเคราะห์ปี๊บทั้งหมด ใช้ไฟล์เสียงจริงสำหรับเดิน ต่อสู้ วิชา อสูร เก็บของ ทะลวงขั้น และบรรยากาศ',x:[
-  'ปิดเสียงปี๊บและเสียงสังเคราะห์ทุกชนิด เปลี่ยนเป็นเสียงจากไฟล์จริง',
-  'ฝีเท้าตอนเดิน ฟันกระบี่ตอนโจมตี กระบี่ปะทะตอนสู้บอสและตอนถูกโจมตี เสียงระเบิดตอนใช้วิชารุนแรง เสียงรวมปราณตอนนั่งสมาธิและรักษา',
-  'เสียงทะลวงขั้นตอนเลื่อนขั้นพลัง เสียงเก็บของตอนเก็บไอเทมและซื้อของ อสูรระดับสูงและบอสคำราม สัตว์เล็กมีเสียงพุ่มไม้ไหว',
-  'เสียงบรรยากาศป่า เสียงพุ่งตัวตอนขี่กระบี่ ระฆังตอนบอสเกิดใหม่ ตอนตาย และที่ลานประลองยุทธ์']});
+ window.__AUDIO={AUDIO_POOL,ROLE,LIVE,SPARE,play,stopRole,setLayer,skRole,dbg:()=>({duckCur,duckUntil,now:Date.now(),tick:!!tick})};
+ TIPS.push('เสียงทั้งหมดเป็นไฟล์จริง กด F7 ดูว่าไฟล์ไหนใช้ได้ F3 เปิดปิดดนตรีและเสียงบรรยากาศ ถ้าไม่ได้ยินให้กดปุ่มใดก็ได้หนึ่งครั้งก่อน');
+ NEWS.push({id:18,d:'2026-10-26',c:[C_SYS],h:'ระบบเสียงใหม่ จากไฟล์เสียงจริงทั้งหมด',t:'เปลี่ยนเสียงปี๊บเป็นไฟล์เสียงจริง มีคลังเสียงกลาง ดนตรีประกอบ เสียงบรรยากาศ และเสียงวิชาแยกตามธาตุ',x:[
+  'ปิดเสียงปี๊บและเสียงสังเคราะห์ทุกชนิด เปลี่ยนเป็นไฟล์เสียงจริง ลิงก์ไหนเสียจะลองลิงก์สำรองเองอัตโนมัติ',
+  'เสียงแบ่งเป็น 4 ช่อง คือ เมนู ต่อสู้ บรรยากาศ และดนตรี เสียงสำคัญเช่นระเบิดวิชา เลื่อนขั้น และตาย จะทำให้ดนตรีและบรรยากาศเบาลงชั่วครู่',
+  'วิชาแต่ละธาตุมีเสียงของตัวเอง เช่น ไฟ สายฟ้า น้ำแข็ง ศิลา รักษา และเกราะปราณ',
+  'เสียงสั้นเล่นสั้นตามธรรมชาติ เสียงต่อเนื่องเล่นเต็มไฟล์ เสียงเดินและฟันกระบี่เปลี่ยนโทนเล็กน้อยไม่ให้ซ้ำเหมือนเดิม',
+  'กด F7 ตรวจว่าเสียงไหนมีไฟล์ใช้ได้ F3 เปิดปิดดนตรีและเสียงบรรยากาศ']});
  renderMob()}
+
 /* ===== boot ===== */
 if(S.med){const el=Math.min(86400,(Date.now()-S.t)/1000),z=zoneAt(S.x,S.y)||Z[0];if(el>5){const g=el/60*(1+z.b);S.exp+=g;say('ระหว่างออฟไลน์ นั่งสมาธิได้แต้ม '+Math.floor(g))}}
 if(!zoneAt(S.x,S.y)){S.x=27;S.y=46}
