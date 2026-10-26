@@ -1427,7 +1427,7 @@ const playSkill=()=>{const id=curId,k=curSk;if(!k)return false;const r=skRole(id
   if(!forced){if(mode!=='play')return;const nw=Date.now(),q=!!S.quiet;
    if(/^npc_/.test(k)){if(q||dv<.84||nw-WG.npc<8000)return;WG.npc=nw}
    else if(MONR[k]){if(q||dv<.43||nw-WG.mon<6000)return;WG.mon=nw}
-   if(VD[k]&&!voice(VD[k]))return}
+   if(nw-(WG.any||0)<5000)return;if(VD[k]&&!voice(VD[k]))return;WG.any=nw}
   switch(k){
    case'bird':return play('bird',Math.max(.2,dv));
    case'owl':return play('owl',Math.max(.2,dv));
@@ -1447,7 +1447,7 @@ const playSkill=()=>{const id=curId,k=curSk;if(!k)return false;const r=skRole(id
  if(NPC7.arena){const _ar=NPC7.arena;NPC7.arena=function(n){play('gong',.9);return _ar(n)}}
  /* ---------- 8) ดนตรีและบรรยากาศฉาก: วนลูป นุ่มนวล เริ่มหลังผู้เล่นกดอะไรสักอย่าง ปิดได้ด้วย F3 ---------- */
  const LAYER={bgm:null,amb:null};
- const setLayer=(n,role)=>{const c=LAYER[n];if(c&&c.role===role&&LIVE.has(c.e))return;if(c&&c.e){fadeOut(c.e,1500)}LAYER[n]=null;if(!role)return;const e=play(role,1,{loop:1,fadeIn:1800});if(e)LAYER[n]={role:e.role,e}};
+ const setLayer=(n,role)=>{const c=LAYER[n],nw=Date.now();if(c&&c.role===role){if(LIVE.has(c.e))return;if(nw-c.t<30000)return}if(c&&c.e){fadeOut(c.e,1500)}LAYER[n]=null;if(!role)return;const e=play(role,1,{loop:1,fadeIn:1800});if(e)LAYER[n]={role:role,e,t:nw}};
  const onUx=()=>{ux=1};['keydown','pointerdown','touchstart'].forEach(ev=>window.addEventListener(ev,onUx,{passive:true}));
  setInterval(()=>{try{if(!ux||typeof S==='undefined'||!S)return;const on=(typeof ambOn==='undefined')?true:!!ambOn;if(!on||document.hidden){setLayer('bgm',null);setLayer('amb',null);if(!S.med)stopRole('qi',600);return}
   setLayer('bgm',S.med?'bgmCalm':'bgm');
@@ -1498,7 +1498,7 @@ function gmRevoke(){gmOn=false;gmT=0;gmV=false;spd=1;
  {const b=gmBtn();if(b)b.remove()}
  mobSig='';renderMob();say('ล็อกสิทธิ์ผู้พัฒนากลับแล้ว',1)}
 let gmFail=0,gmLock=0;
-function gmPrompt(){if(!GMV.acct())return;/*ไม่ใช่บัญชีแอดมิน: เงียบ ไม่บอกใบ้*/if(gmValid(true))return say('สิทธิ์ผู้พัฒนาปลดล็อกอยู่แล้ว กด F8 เปิดเมนู');
+function gmPrompt(){if(!GMV.acct()){const w=GMV.why&&GMV.why();if(w)say(w,1);return}/*ไม่ใช่บัญชีแอดมิน: เงียบ ไม่บอกใบ้*/if(gmValid(true))return say('สิทธิ์ผู้พัฒนาปลดล็อกอยู่แล้ว กด F8 เปิดเมนู');
  if(Date.now()<gmLock)return say('ใส่รหัสผิดหลายครั้ง รอสักครู่แล้วลองใหม่');
  ask('ใส่รหัสผ่านผู้พัฒนา',async v=>{if(!v)return say('ยกเลิก');let ok=false;try{if(!(await GMV.refresh()))return say('บัญชีนี้ยังไม่ได้รับสิทธิ์ผู้พัฒนาบน Firebase');ok=!!GMV.hs&&!!GMV.ok()&&(await gmHash(v))===GM_HASH&&!!GMV.ok()}catch(e){}
   if(ok){gmFail=0;gmGrant();say('ปลดล็อกสิทธิ์ผู้พัฒนาแล้ว กด F8 เปิดเมนู พิมพ์ /gmoff ในแชทเพื่อล็อกกลับ',1)}
@@ -1521,7 +1521,7 @@ renderMob();
 /* ===== boot ===== */
 if(S.med){const el=Math.min(28800,(Date.now()-S.t)/1000),z=zoneAt(S.x,S.y)||Z[0];if(el>5){const g=el*medBase()*.5*(1+z.b);S.exp+=g;say('ระหว่างออฟไลน์ นั่งสมาธิได้แต้ม '+Math.floor(g))}}
 if(!zoneAt(S.x,S.y)){S.x=27;S.y=46}
-say('ยินดีต้อนรับสู่มรรคาเซียนออนไลน์ เจ้าอยู่ที่ '+zoneAt(S.x,S.y).n+' กด F1 ฟังปุ่มทั้งหมด กด Z นั่งสมาธิ F9 เร่งเวลาทดสอบ F2 เปิดเสียงพูดของเกม');render();$('app').focus();window.__GAME_OK=1;
+say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Firebase อัตโนมัติ ':'สถานะ ออฟไลน์ เซฟในเครื่องนี้เท่านั้น ')+'ยินดีต้อนรับสู่มรรคาเซียนออนไลน์ เจ้าอยู่ที่ '+zoneAt(S.x,S.y).n+' กด F1 ฟังปุ่มทั้งหมด กด Z นั่งสมาธิ F9 เร่งเวลาทดสอบ F2 เปิดเสียงพูดของเกม');render();$('app').focus();window.__GAME_OK=1;
 </script>
 <script>
 (async()=>{const E=id=>document.getElementById(id),AK='ipo_acc';
@@ -1547,7 +1547,8 @@ const LOCALOK=()=>{try{const m=String(curEmail()).trim().toLowerCase();return pw
 const GMX={srv:false,
  acct:()=>CLOUD&&!!FB&&DBGM&&LOCALOK(),
  ok:()=>CLOUD&&!!FB&&DBGM&&LOCALOK(),
- hs:(a,b)=>hs(a,b),
+ hs:(a,b)=>hs(a,b),online:CLOUD,
+ why:()=>{try{const m=String(curEmail()).trim().toLowerCase();if(!m||sha256js(EM_SALT+':'+m)!==EM_HASH)return '';if(!CLOUD||!FB)return 'ยังไม่ได้เชื่อม Firebase จึงใช้สิทธิ์ผู้พัฒนาไม่ได้';if(!pwAuthed)return 'ต้องล็อกอินด้วยรหัสผ่านในรอบนี้ กด F10 ออกจากระบบ แล้วเข้าสู่ระบบใหม่ด้วยรหัสผ่าน (การจำเซสชันอัตโนมัติไม่นับ)';if(!DBGM)return 'บัญชีนี้ยังไม่มีฟิลด์ isGM เป็น boolean true ใน Firestore users/'+((FB.auth.currentUser||{}).uid||'uid')}catch(e){}return ''},
  refresh:async()=>{try{const u=FB&&FB.auth.currentUser;if(!u)return DBGM=false;const sn=await FB.fs.getDoc(FB.fs.doc(FB.db,'users',u.uid));DBGM=!!(sn.exists()&&sn.data().isGM===true)}catch(e){}return DBGM},
  kick:()=>{const n=Date.now();if(!CLOUD||!FB||n-gmKick<5000)return;gmKick=n;GMX.refresh()}};
 if(CLOUD)setInterval(()=>GMX.kick(),60000);
@@ -1564,6 +1565,7 @@ async function hs(pw,salt){try{return hex(await DIG('SHA-256',new TextEncoder().
 async function pwOk(ac,mail,pw){if(ac.hash&&ac.hash[0]==='x'){if(ac.hash!==hsOld(pw,ac.salt))return false;try{const a=accs();a[mail].hash=await hs(pw,ac.salt);put(a)}catch(e){}return true}return ac.hash===await hs(pw,ac.salt)}
 const msg=t=>{E('lmsg').textContent=t};
 const remM=()=>{try{const r=JSON.parse(localStorage.getItem('ipo_rem')||'null');return r&&r.m||null}catch(e){return null}};
+try{if(CLOUD){const ps=document.querySelectorAll('#login p.sm');ps[ps.length-1].textContent='ออนไลน์: บัญชีและเซฟเก็บบน Firebase เล่นข้ามเครื่องได้ ใช้รหัสผ่านที่ไม่ซ้ำกับที่อื่น'}}catch(e){}
 if(!CLOUD)msg('โหมดเก็บในเครื่อง (ยังไม่ได้ตั้งค่า Firebase) เซฟไม่ข้ามเครื่อง และปิดสิทธิ์ GM');
 try{const p=JSON.parse(localStorage.getItem('ipo_pre')||'null');if(p){E('l_name').value=p.n||'';E('l_mail').value=p.m||''}}catch(e){}
 /* ===== ซิงก์เซฟกับเซิร์ฟเวอร์ (ไม่แตะโค้ดเกม: ดักเฉพาะการเขียน localStorage ของเซฟตัวเอง) ===== */
