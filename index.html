@@ -1102,17 +1102,23 @@ NEWS.push({id:17,d:'2026-10-25',c:[C_MAP,C_SYS],h:'วงเวทย์เค�
  bgm_arena:{bus:'bgm',mode:'long',vol:0.55,loop:1,urls:["https://upload.wikimedia.org/wikipedia/commons/3/3c/Silk_and_bamboo_ensemble.ogg"]},
  bgmCalm:{bus:'bgm',mode:'long',vol:0.5,loop:1,alt:["bgm"],urls:["https://upload.wikimedia.org/wikipedia/commons/1/1d/Guqin_melody_classical.ogg"]}
  };
- Object.keys(ROLE).forEach(r=>{ROLE[r].vars=[]});
+ const GB='https://actions.google.com/sounds/v1/';
+ const OGG=!!(document.createElement('audio').canPlayType('audio/ogg; codecs="vorbis"'));
+ const VER={button:['cartoon/wood_plank_flicks.ogg','cartoon/pop.ogg'],open:['doors/wood_door_open.ogg'],bump:['cartoon/clang_and_wobble.ogg'],notify:['alarms/beep_short.ogg'],clash:['impacts/metal_crash.ogg','cartoon/metal_twang.ogg'],hurt:['impacts/small_glass_pane_shatter.ogg'],spell:['science_fiction/sci_fi_vortex.ogg','science_fiction/alien_beam.ogg','cartoon/magic_chime.ogg'],heal:['water/water_lapping_wind.ogg'],thunder:['weather/thunder_crack.ogg','weather/distant_thunder.ogg'],ice:['weather/strong_wind.ogg'],earth:['impacts/crash.ogg'],explosion:['weapons/big_explosion_cut_off.ogg'],gong:['alarms/dinner_bell_triangle.ogg'],cricket:['animals/cicada_chirp.ogg'],water:['water/small_stream_flowing.ogg'],rain:['weather/rain_heavy_loud.ogg','weather/light_rain.ogg'],town:['ambiences/coffee_shop.ogg']};
+ const VFM=[[/^(button|slotset|toggle|chat|page|scroll|close|drop|sell|buy|coinpour|pick|equip|unequip|wear|rare|learn|absorb|potion|craft|gavel|login|register|logout|online|offline|purge|situp|land|sigh)$/,'button'],[/^(notify)$/,'notify'],[/^(open|door)$/,'open'],[/^bump$/,'bump'],[/^(clash|swoosh|punch|whoosh|fly|sk_fist|sk_sword|sk_qpalm|sk_vajra|sk_sw_thrust|sk_trap|sk_swordrain1|equip)$/,'clash'],[/^hurt/,'hurt'],[/^(spell|sk_finger|sk_flysword|sk_qbarrier|sk_windslash|sk_sw_wave|teleport|n_warp|qi|buff|sk_shield|sk_diamond|sk_iron_body|sk_wshield|n_tdef|n_tgroup)$/,'spell'],[/^(heal|sk_heal|sk_groupheal|revive|n_healer)/,'heal'],[/^(thunder|sk_thunderfall|sk_thpalm|levelup|bossnear)$/,'thunder'],[/^(ice)$/,'ice'],[/^(earth|sk_rockfall)$/,'earth'],[/^(explosion|bosskill|sk_swordstorm|sk_firestorm|sk_firetal|fire|sk_mist|mdie)$/,'explosion'],[/^(gong|arena|n_arena|n_elder|sectenter|bossSpawn|horn)$/,'gong'],[/^(cricket|cicada|bat)$/,'cricket'],[/^(water|n_fisher|n_tank|sk_heal_s|fishget|rod|tankput|frog)$/,'water'],[/^rain$/,'rain'],[/^amb_(c|in)$/,'town'],[/^amb_(v|k2)$/,'water']];
+ const vfFor=r=>{const m=VFM.find(x=>x[0].test(r));return m?(VER[m[1]]||[]).map(f=>GB+f):[]};
+ const DEAD=new Map();
+ Object.keys(ROLE).forEach(r=>{const R=ROLE[r];let U=R.urls.slice();vfFor(r).forEach(u=>{if(!U.includes(u))U.push(u)});if(!OGG)U=U.filter(u=>!/\.ogg(\?|$)/i.test(u));R.urls=U;R.vars=U.map(u=>({u,d:2}))});
 
  /* ---------- 4) ตรวจไฟล์ทีละลิงก์ (จำกัดพร้อมกัน) เก็บไฟล์ที่โหลดได้สูงสุด 3 ไฟล์ต่อหน้าที่ไว้สุ่มใช้ ---------- */
  const PROBE=new Map();let busyN=0;const WAITQ=[];
  const slot=()=>new Promise(res=>{if(busyN<8){busyN++;res()}else WAITQ.push(res)}),free=()=>{const n=WAITQ.shift();if(n)n();else busyN--};
- const BADK='ipo_snd_bad';let BAD={};try{BAD=JSON.parse(localStorage.getItem(BADK)||'{}')}catch(e){}
+ const BADK='ipo_snd_bad';let BAD={};try{localStorage.removeItem(BADK)}catch(e){}
  {const n0=Date.now();Object.keys(BAD).forEach(u=>{if(n0-BAD[u]>86400000)delete BAD[u]})}
  let badT=null;const markBad=u=>{BAD[u]=Date.now();if(!badT)badT=setTimeout(()=>{badT=null;try{localStorage.setItem(BADK,JSON.stringify(BAD))}catch(e){}},3000)};
  const probe=u=>{if(PROBE.has(u))return PROBE.get(u);if(BAD[u])return Promise.resolve(0);const pr=slot().then(()=>new Promise(res=>{let done=0,a=null,t=null;const f=ok=>{if(done)return;done=1;clearTimeout(t);try{if(!ok&&a){a.removeAttribute('src');a.load()}}catch(e){}if(!ok)markBad(u);free();res(ok?(isFinite(a.duration)?a.duration:0):0)};try{a=new Audio();a.preload='metadata';a.addEventListener('loadedmetadata',()=>f(isFinite(a.duration)&&a.duration>.05));a.addEventListener('error',()=>f(0));t=setTimeout(()=>f(0),7000);a.src=u}catch(e){f(0)}}));PROBE.set(u,pr);return pr};
  const resolved={};
- const resolveRole=async r=>{const R=ROLE[r];for(const u of R.urls){if(R.vars.length>=3)break;const d=await probe(u);if(d)R.vars.push({u,d})}resolved[r]=1};
+ const resolveRole=async r=>{resolved[r]=1};
  const ORDER=['steps','button','swoosh','clash','hurt','spell','explosion','levelup','pick','buy','open','bump','whoosh','roar','howl','gong','die','bird','water','wind','cricket','owl','rustle','critter','bgm','town','bgmCalm','fire','thunder','ice','earth','heal','buff','punch','potion','notify','bossSpawn','revive','qi','rain','festival'];
  const EARLY=['steps','steps_v','steps_f','steps_b','steps_w','steps_m','steps_c','steps_k','steps_in','button','open','close','bump','pick','buy','swoosh','clash','hurt','hurt2','die','levelup','whoosh','sk_fist','sk_finger','sk_sword','bgm_town','amb_v'];EARLY.forEach(r=>{if(ROLE[r]){ROLE[r].busy=1;resolveRole(r)}});const lazyRole=r=>{if(ROLE[r]&&!resolved[r]&&!ROLE[r].busy){ROLE[r].busy=1;resolveRole(r)}};
  /* ---------- 5) เครื่องเล่น: 4 แชนแนล, เพดานความดัง, ducking, จำกัดเสียงซ้อน 3, เปลี่ยนโทน ±5% ---------- */
@@ -1126,20 +1132,35 @@ NEWS.push({id:17,d:'2026-10-25',c:[C_MAP,C_SYS],h:'วงเวทย์เค�
  const wake=()=>{if(!tick)tick=setInterval(ticker,50)};
  const live=r=>[...LIVE].filter(e=>e.role===r&&!e.fade);
  const pickVar=r=>{let rr=r,R=ROLE[r];if(!R.vars.length&&R.alt){for(const x of R.alt){if(ROLE[x].vars.length){rr=x;R=ROLE[x];break}}}if(!R.vars.length)return null;let v=R.bus==='ui'?R.vars[0]:R.vars[Math.floor(Math.random()*R.vars.length)];if(R.bus!=='ui'&&R.vars.length>1&&LAST[rr]===v.u){/*PATCH14*/v=R.vars[(R.vars.indexOf(v)+1)%R.vars.length]}LAST[rr]=v.u;return{r:rr,v}};
- const play=(role,gain,opt)=>{try{opt=opt||{};if(!ROLE[role])return null;const pk=pickVar(role);if(!pk){lazyRole(role);if(ROLE[role].alt)ROLE[role].alt.forEach(lazyRole);return null}const R=ROLE[pk.r],g=gain==null?1:gain;
+ const dead=u=>(DEAD.get(u)||0)>Date.now();
+ const cands=r=>{const R=ROLE[r];let L=R.vars.filter(v=>!dead(v.u));if(!L.length&&R.alt)R.alt.forEach(x=>{if(ROLE[x])L=L.concat(ROLE[x].vars.filter(v=>!dead(v.u)))});return L};
+ const SYNM=[[/^steps/,'step'],[/^bump$/,'bump'],[/^(open|close|door|page|button|slotset|toggle|chat|scroll|notify)$/,'open'],[/^(pick|equip|unequip|wear|rare|fishget|absorb|drop|rod)$/,'pick'],[/^(buy|sell|coinpour|craft|gavel|tankput|potion)$/,'buy'],[/^hurt/,'hurt'],[/^die$/,'die'],[/^(levelup|bosskill|horn|learn|sectenter|login|register)$/,'levelup'],[/^(qi|bgmCalm)$/,'med'],[/^(swoosh|punch|clash|whoosh|fly|sk_fist|sk_sword|sk_qpalm|sk_vajra|sk_thpalm|sk_sw_thrust|sk_sw_wave|sk_windslash|sk_swordrain1|sk_diamond|sk_iron_body|sk_trap|sk_mist|sk_rockfall|mdie)$/,'hit'],[/^(spell|heal|buff|fire|thunder|ice|earth|explosion|sk_|teleport|bossSpawn|bossnear|arena|gong|revive|heartbeat)/,'cast'],[/^m_(rab|fox)$/,'rab'],[/^m_(boar|pboar)$/,'boar'],[/^m_(snake|bsnake)$/,'snake'],[/^m_wolf$/,'wolf'],[/^m_bear$/,'bear'],[/^m_(king|lion|leo|ape)$/,'king'],[/^(m_phx|bird)$/,'bird'],[/^cricket$/,'cricket'],[/^cicada$/,'cicada'],[/^owl$/,'owl']];
+ const synT={};
+ const synthFB=(role,g)=>{try{const x=SYNM.find(m=>m[0].test(role));if(!x||!SFX[x[1]])return;if(/^(bird|cricket|cicada|owl)$/.test(role)&&!ambOn)return;const t=Date.now();if(t-(synT[x[1]]||0)<250)return;synT[x[1]]=t;SFX[x[1]](0,Math.max(.3,g==null?1:g))}catch(e){}};
+ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return null;const g=gain==null?1:gain;
   if(R.bus!=='ui'&&R.bus!=='bgm'&&g<=.02)return null;
-  if(R.bus==='ui')LIVE.forEach(x=>{if(x.bus==='ui'&&!x.fade)fadeOut(x,30)});if(/^steps/.test(pk.r))LIVE.forEach(x=>{if(/^steps/.test(x.role)&&!x.fade)fadeOut(x,40)});/*PATCH14*/const same=live(pk.r);if(same.length>=3)fadeOut(same.sort((x,y)=>x.t0-y.t0)[0],120);
-  const a=new Audio(pk.v.u);a.loop=!!(opt.loop&&R.loop);
+  const L=cands(role);if(!L.length){synthFB(role,g);return null}
+  let v=R.bus==='ui'?L[0]:L[Math.floor(Math.random()*L.length)];
+  if(R.bus!=='ui'&&L.length>1&&LAST[role]===v.u)v=L[(L.indexOf(v)+1)%L.length];LAST[role]=v.u;
+  if(R.bus==='ui')LIVE.forEach(x=>{if(x.bus==='ui'&&!x.fade)fadeOut(x,30)});
+  if(/^steps/.test(role))LIVE.forEach(x=>{if(/^steps/.test(x.role)&&!x.fade)fadeOut(x,40)});
+  const same=live(role);if(same.length>=3)fadeOut(same.sort((x,y)=>x.t0-y.t0)[0],120);
+  const a=new Audio();a.preload='auto';a.loop=!!(opt.loop&&R.loop);
   if(R.bus!=='bgm'&&R.bus!=='ui'&&!a.loop){try{a.preservesPitch=false;a.mozPreservesPitch=false;a.webkitPreservesPitch=false;a.playbackRate=.95+Math.random()*.1}catch(x){}}
-  const e={a,role:pk.r,bus:R.bus,base:clamp(g*R.vol),t0:Date.now(),fade:null,fin:opt.fadeIn||0};
+  const e={a,role,bus:R.bus,base:clamp(g*R.vol),t0:Date.now(),fade:null,fin:opt.fadeIn||0};
   a.volume=vol(e);LIVE.add(e);
-  const end=()=>drop(e);a.addEventListener('ended',end);a.addEventListener('error',end);
-  const p=a.play();if(p&&p.catch)p.catch(end);
-  if(R.duck){const d=Math.min(8000,(pk.v.d||2)*1000/(a.playbackRate||1));duckUntil=Math.max(duckUntil,Date.now()+d)}
+  const tried=new Set([v.u]),failed=new Set();let cur=v.u;
+  const fail=()=>{if(!LIVE.has(e)||failed.has(cur))return;failed.add(cur);DEAD.set(cur,Date.now()+300000);
+   const nx=cands(role).find(x=>!tried.has(x.u));if(!nx||tried.size>=6){drop(e);if(!opt.loop)synthFB(role,g);return}
+   tried.add(nx.u);cur=nx.u;try{a.src=cur;a.load();const p2=a.play();if(p2&&p2.catch)p2.catch(pe=>{if(pe&&pe.name==='NotAllowedError')drop(e);else if(!pe||pe.name!=='AbortError')fail()})}catch(x){drop(e)}};
+  a.addEventListener('ended',()=>drop(e));a.addEventListener('error',fail);
+  a.src=v.u;const p=a.play();if(p&&p.catch)p.catch(pe=>{if(pe&&pe.name==='NotAllowedError')drop(e);else if(!pe||pe.name!=='AbortError')fail()});
+  if(R.duck){const d=Math.min(8000,(v.d||2)*1000/(a.playbackRate||1));duckUntil=Math.max(duckUntil,Date.now()+d)}
   wake();return e}catch(x){return null}};
+ window.addEventListener('online',()=>DEAD.clear());
  const stopRole=(r,ms)=>{LIVE.forEach(e=>{if(e.role===r)fadeOut(e,ms||800)})};
  /* ---------- 6) ปิดเสียงสังเคราะห์เดิมทั้งหมด (Oscillator / noise / beep) ---------- */
- tn=function(){};nz=function(){};bedUpdate=function(){};
+ bedUpdate=function(){};
  let bpT=0;beep=function(f,d,v){try{if(v!=null&&v<.01)return;const t=Date.now();if(t-bpT<90)return;bpT=t;if(f===250||f===350)play('whoosh',.25);else play('button',.35)}catch(e){}};
  /* ---------- 7) ผูกเหตุการณ์ในเกมกับหน้าที่เสียง ---------- */
  const skRole=(id,k)=>{if(ROLE['sk_'+id])return 'sk_'+id;return k&&k.heal?'heal':k&&k.buff?'buff':k&&k.rng>2?'spell':'swoosh'};
@@ -1221,10 +1242,17 @@ const playSkill=()=>{const id=curId,k=curSk;if(!k)return false;const r=skRole(id
  /* ---------- 9) F7 ตรวจสอบเสียง: บอกว่าหน้าที่ไหนมีไฟล์ที่ใช้ได้กี่ไฟล์ กด Enter ที่รายการเพื่อลองเล่น ---------- */
  const NM={button:'กดปุ่ม',open:'เปิดเมนู',bump:'ชนสิ่งกีดขวาง',pick:'หยิบไอเทม',buy:'ซื้อของ',notify:'แจ้งเตือน',potion:'ใช้โอสถ',swoosh:'ฟันกระบี่',punch:'หมัดฝ่ามือ',clash:'กระบี่ปะทะ',hurt:'ถูกโจมตี',whoosh:'พุ่งตัว ขี่กระบี่',steps:'ฝีเท้า',spell:'รวมลมปราณ',heal:'วิชารักษา',buff:'เกราะปราณ',fire:'วิชาไฟ',thunder:'วิชาสายฟ้า',ice:'วิชาน้ำแข็ง',earth:'วิชาศิลา',explosion:'วิชารุนแรง',levelup:'เลื่อนขั้น',roar:'อสูรคำราม',howl:'หมาป่าหอน',bossSpawn:'บอสปรากฏ',gong:'ระฆัง ฆ้อง',die:'ตาย',revive:'ฟื้นคืนชีพ',qi:'นั่งสมาธิ',bird:'นก',owl:'นกฮูก',cricket:'จิ้งหรีดแมลง',wind:'ลม',water:'น้ำ',rain:'ฝน',rustle:'พุ่มไม้ไหว',critter:'สัตว์เล็ก',town:'บรรยากาศเมือง',festival:'เทศกาล',bgm:'เพลงประกอบ',bgmCalm:'เพลงพักผ่อน'};
  const nameOf=u=>{try{return decodeURIComponent(u.split('?')[0].split('/').pop())}catch(e){return u}};
- const stat=r=>{const R=ROLE[r];if(R.vars.length)return 'ใช้ได้ '+R.vars.length+' ไฟล์ เช่น '+nameOf(R.vars[0].u)+' ยาว '+R.vars[0].d.toFixed(1)+' วินาที';return resolved[r]?'ไม่มีไฟล์ที่โหลดได้ ลองครบ '+R.urls.length+' ลิงก์'+(R.alt&&R.alt.some(x=>ROLE[x].vars.length)?' ใช้เสียงสำรองของ '+NM[R.alt.find(x=>ROLE[x].vars.length)]:''):'กำลังตรวจ'};
- const bad=()=>Object.keys(ROLE).filter(r=>resolved[r]&&!ROLE[r].vars.length&&!(ROLE[r].alt&&ROLE[r].alt.some(x=>ROLE[x].vars.length)));
- setTimeout(()=>{try{const b=bad(),n=Object.keys(ROLE).length;say(b.length?'ตรวจเสียงแล้ว หน้าที่ที่ยังไม่มีไฟล์เสียง '+b.length+' จาก '+n+' ได้แก่ '+b.map(r=>NM[r]||r).join(', ')+' กด F7 ดูรายละเอียด':'ตรวจเสียงแล้ว ทุกหน้าที่มีไฟล์เสียงใช้ได้',1)}catch(e){}},30000);
- A.sndtest=function(){Object.keys(ROLE).forEach(lazyRole);const it=Object.keys(ROLE).map(r=>({t:(NM[r]||r)+' ['+ROLE[r].bus+'] : '+stat(r)+' กด Enter ลองเล่น',r}));menu('ตรวจสอบเสียง',it,{ent:x=>{const e=play(x.r,1,{loop:0});say((NM[x.r]||x.r)+' : '+stat(x.r),1)}})};
+ const allUrls=()=>[...new Set(Object.keys(ROLE).flatMap(r=>ROLE[r].urls))];
+ let LT=null;
+ const probeOne=u=>new Promise(res=>{let a=new Audio(),fin=0,t;const f=c=>{if(fin)return;fin=1;clearTimeout(t);try{a.pause();a.removeAttribute('src');a.load()}catch(x){}res(c)};t=setTimeout(()=>f(2),10000);a.muted=true;a.preload='auto';a.addEventListener('canplay',()=>f(1));a.addEventListener('loadeddata',()=>f(1));a.addEventListener('error',()=>f(0));a.src=u;try{const p=a.play();if(p&&p.catch)p.catch(()=>{})}catch(x){}});
+ const linkTest=()=>{if(LT&&!LT.done)return say('กำลังทดสอบอยู่ '+LT.i+' จาก '+LT.n,1);const U=allUrls();LT={n:U.length,i:0,ok:[],bad:[],slow:[],done:0};let k=0;
+  say('เริ่มทดสอบลิงก์เสียง '+U.length+' ลิงก์ รอประมาณครึ่งนาที เครื่องรองรับ ogg: '+(OGG?'ใช่':'ไม่ (ลิงก์ ogg ถูกข้าม ใช้เฉพาะ mp3 และเสียงสังเคราะห์)'),1);
+  const w=async()=>{while(k<U.length){const u=U[k++],c=await probeOne(u);LT.i++;if(c===1){LT.ok.push(u);DEAD.delete(u)}else if(c===0){LT.bad.push(u);DEAD.set(u,Date.now()+1800000)}else LT.slow.push(u)}};
+  Promise.all([w(),w(),w(),w()]).then(()=>{LT.done=1;say('ทดสอบเสร็จ ใช้ได้ '+LT.ok.length+' เสีย '+LT.bad.length+' ช้าเกินไป '+LT.slow.length+' จากทั้งหมด '+LT.n+' ลิงก์ ลิงก์เสียระบบข้ามเองและใช้เสียงสำรอง กด F7 เปิดดูรายการลิงก์เสีย',1)})};
+ const stat=r=>{const R=ROLE[r],n=R.vars.length,d=R.vars.filter(v=>dead(v.u)).length;return n?('ลิงก์ '+n+' เสียชั่วคราว '+d+' เล่นไม่ได้จะใช้เสียงสังเคราะห์สำรอง'):'ไม่มีลิงก์ที่เครื่องนี้รองรับ ใช้เสียงสังเคราะห์สำรอง'};
+ A.sndtest=function(){const it=[{t:'ทดสอบลิงก์เสียงทั้งหมดตอนนี้ (ใช้เวลาประมาณครึ่งนาที)',a:'t'},{t:'ดูรายชื่อลิงก์ที่เสีย'+(LT?' '+LT.bad.length+' ลิงก์':' (ต้องทดสอบก่อน)'),a:'b'}].concat(Object.keys(ROLE).map(r=>({t:(NM[r]||r)+' ['+ROLE[r].bus+'] : '+stat(r)+' กด Enter ลองเล่น',r})));
+  menu('ตรวจสอบเสียง',it,{ent:x=>{if(x.a==='t')return linkTest();if(x.a==='b'){if(!LT||!LT.done)return say('ยังไม่ได้ทดสอบ หรือทดสอบยังไม่เสร็จ',1);const L=LT.bad.map(u=>({t:nameOf(u)+' ('+u.split('/')[2]+')'}));if(!L.length)return say('ไม่มีลิงก์เสีย',1);return menu('ลิงก์เสีย '+L.length,L)}
+   const e=play(x.r,1,{loop:0});say((NM[x.r]||x.r)+' : '+stat(x.r)+(e?'':' (ตอนนี้เล่นด้วยเสียงสังเคราะห์สำรอง)'),1)}})};
  KEYS.F7='sndtest';MAIN.push(['ตรวจสอบเสียง (F7)','F7']);
  window.__AUDIO={ROLE,LIVE,play,stopRole,setLayer,skRole,dbg:()=>({duckCur,duckUntil,now:Date.now(),tick:!!tick})};
  TIPS.push('เสียงทั้งหมดเป็นไฟล์จริง กด F7 ดูว่าไฟล์ไหนใช้ได้ F3 เปิดปิดดนตรีและเสียงบรรยากาศ ถ้าไม่ได้ยินให้กดปุ่มใดก็ได้หนึ่งครั้งก่อน');
