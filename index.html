@@ -90,7 +90,7 @@ function move(f){moveBlocked=false;if(!PASS)PEND=null;const nx=S.x+DX[f],ny=S.y+
  if(z!==oz){say('เข้าสู่ '+z.n+(z.safe?' เขตปลอดภัย':''));if(z.min>S.step&&!godOn())die('แรงกดดันปราณในหุบเขาทำให้เจ้าล้มลงทันที')}}
 function ask(p,cb){prevMode=mode;mode='input';cbk=cb;const i=$('in');i.hidden=false;i.value='';i.setAttribute('aria-label',p);i.focus();say(p)}
 function endAsk(){$('in').hidden=true;mode=prevMode;$('app').focus()}
-function menu(t,items,o){sfx('open');if(!items.length){say(t+' ว่างเปล่า');return}mode='menu';mn=Object.assign({t,items,i:0},o||{});say(t+' '+items.length+' รายการ '+items[0].t)}
+function menu(t,items,o){if(!(mode==='menu'&&mn&&mn.t===t))sfx('open');/*PATCH14*/if(!items.length){say(t+' ว่างเปล่า');return}mode='menu';mn=Object.assign({t,items,i:0},o||{});say(t+' '+items.length+' รายการ '+items[0].t)}
 function conf(t,cb){prevMode=mode;mode='confirm';cbk=cb;say(t+' กด Enter ยืนยัน หรือปุ่มอื่นยกเลิก')}
 /* ===== inventory ===== */
 function add(id,q){const s=S.inv.find(a=>a.id===id);if(s)s.q+=q;else S.inv.push({id,q})}
@@ -252,8 +252,8 @@ menu('เมนูผู้ทดสอบ',[{t:'อมตะ '+(S.god?'เป�
  else if(x.a==='fill'){S.hp=mhp();S.qi=mqi();S.gold+=1000000;S.coin+=100000;mode='play';say('เติมเต็มและเพิ่มเงินทดสอบแล้ว')}
  else if(x.a==='lv'){mode='play';ask('พิมพ์ระดับขั้น 1 ถึง '+R.length,v=>{const n=parseInt(v);if(!(n>=1&&n<=R.length))return say('ยกเลิก ระดับต้องอยู่ระหว่าง 1 ถึง '+R.length);S.step=n-1;S.exp=0;S.hp=mhp();S.qi=mqi();lastStep=S.step;say('ตั้งระดับเป็น '+realmName(S.step));render()})}
  else menu('วาร์ป',W.map(w=>({t:Z.find(z=>z.id===w.z).n+' : '+w.n,w})),{ent:y=>{const w=y.w;S.x=w.x;S.y=w.y;S.med=false;target=null;walk=false;PEND=null;mode='play';say('วาร์ปไป '+w.n);render()}})}})};
-MAIN.push(['เมนูผู้ทดสอบ (GM)','F8']);
-{const b=document.createElement('button');b.tabIndex=-1;b.onmousedown=e=>e.preventDefault();b.textContent='GM';b.setAttribute('aria-label','ปุ่ม เมนูผู้ทดสอบ');b.onclick=()=>{if(mode==='input')return;handle({code:'F8',shiftKey:false});render()};$('pad').appendChild(b)}
+if(isGM())MAIN.push(['เมนูผู้ทดสอบ (GM)','F8']);/*PATCH14b ซ่อนจากผู้เล่นทั่วไป*/
+if(isGM()){const b=document.createElement('button');b.tabIndex=-1;b.onmousedown=e=>e.preventDefault();b.textContent='GM';b.setAttribute('aria-label','ปุ่ม เมนูผู้ทดสอบ');b.onclick=()=>{if(mode==='input')return;handle({code:'F8',shiftKey:false});render()};$('pad').appendChild(b)}
 renderMob();
 /* ===== PATCH 3 (เพิ่มต่อท้าย) บอส ของตก เงิน ช่างฝีมือ เหาะ ===== */
 const BOSSES=['king','bsnake','pboar'],BOSS_MS=1800000,respMs=m=>BOSSES.includes(m.k)?BOSS_MS:60000;
@@ -309,7 +309,7 @@ Z.forEach(z=>{if(!z.boss)return;const bx=z.boss[1],by=z.boss[2];MS.forEach(m=>{i
 MS.forEach(m=>{if(BOSSES.includes(m.k)&&S.bd[m.k]&&Date.now()-S.bd[m.k]<BOSS_MS)m.dead=S.bd[m.k]});
 MAIN.push(['สร้างของ (ช่างหนัง ตีเหล็ก เภสัชกร)','KeyK'],['ขี่กระบี่เหาะ / ลง','KeyX']);renderMob();
 /* ===== PATCH 4 (เพิ่มต่อท้าย) เมนูผู้พัฒนาแบบเต็ม ===== */
-A.gm=function(){if(!isGM())return say('บัญชีนี้ไม่มีสิทธิ์ใช้เมนูผู้พัฒนา');
+A.gm=function(){if(!isGM())return;/*PATCH14b ผู้เล่นทั่วไปกดแล้วไม่เกิดอะไรขึ้น*/
  const full=()=>{S.hp=mhp();S.qi=mqi();S.fp=100};
  menu('เมนูผู้พัฒนา',[{t:'อมตะ '+(S.god?'เปิดอยู่':'ปิดอยู่')+' กด Enter เพื่อสลับ',a:'god'},
  {t:'รับทุกอย่างในเกม (ไอเทมทุกชนิด ทักษะทุกอย่าง เงินทุกระดับ ระดับสูงสุด เหาะเต็ม)',a:'all'},
@@ -1260,6 +1260,11 @@ NEWS.push({id:17,d:'2026-10-25',c:[C_MAP,C_SYS],h:'วงเวทย์เค�
 };
  /* ลิงก์สำรองชุดเก่า (Google / Pixabay) ใช้เมื่อคลังหลักของหน้าที่นั้นไม่มีไฟล์ที่โหลดได้ */
  const G='https://actions.google.com/sounds/v1/',P='https://cdn.pixabay.com/download/audio/';
+ /* ลิงก์ Google ที่ทดสอบแล้วว่าเล่นได้จริง (เพิ่มเข้ามา ไม่ลบลิงก์เดิม) */
+ const VERIFIED={"button":["cartoon/wood_plank_flicks.ogg","cartoon/pop.ogg"],"open":["doors/wood_door_open.ogg"],"bump":["cartoon/clang_and_wobble.ogg"],"notify":["alarms/beep_short.ogg"],"clash":["impacts/metal_crash.ogg","cartoon/metal_twang.ogg"],"hurt":["impacts/small_glass_pane_shatter.ogg"],"spell":["science_fiction/sci_fi_vortex.ogg","science_fiction/alien_beam.ogg","cartoon/magic_chime.ogg"],"heal":["water/water_lapping_wind.ogg"],"thunder":["weather/thunder_crack.ogg","weather/distant_thunder.ogg"],"ice":["weather/strong_wind.ogg"],"earth":["impacts/crash.ogg"],"explosion":["weapons/big_explosion_cut_off.ogg"],"gong":["alarms/dinner_bell_triangle.ogg"],"cricket":["animals/cicada_chirp.ogg"],"water":["water/small_stream_flowing.ogg"],"rain":["weather/rain_heavy_loud.ogg","weather/light_rain.ogg","weather/rain_on_roof.ogg"],"town":["ambiences/coffee_shop.ogg"],"festival":["ambiences/carnival_atmosphere.ogg"]};
+ /* ไฟล์เสียงในโฟลเดอร์ sounds/ ของคุณเอง (จัดตามชื่อไฟล์ ลองก่อนลิงก์อื่น ถ้าโหลดไม่ได้ระบบจะข้ามไปลิงก์ถัดไปเอง) */
+ const LOCAL={"steps":["dragon-studio-footsteps-on-the-nature-trail-419017.mp3","eaglaxle-stone-footsteps-1-455132.mp3","freesound_community-070255_footsteps-on-grass-39950.mp3","soundreality-footsteps-walking-boots-parquet-1-420135.mp3","dragon-studio-footsteps-on-wood-397989.mp3","dragon-studio-footsteps-in-the-snow-499652.mp3","freesound_community-walking-down-the-mountain-river-steps-stones-85221.mp3"],"swoosh":["\u0e40\u0e2a\u0e35\u0e22\u0e07\u0e2a\u0e27\u0e21\u0e43\u0e2a\u0e48\u0e2d\u0e32\u0e27\u0e38\u0e18 daviddumaisaudio-sword-slash-and-swing-185432.mp3","\u0e2b\u0e31\u0e19\u0e17\u0e34\u0e28\u0e17\u0e32\u0e07xpmonster-quick-swing-sound-419581.mp3","dragon-studio-whoosh-effect-382717.mp3","freesound_community-sword-sound-2-36274.mp3"],"whoosh":["\u0e40\u0e2a\u0e35\u0e22\u0e07\u0e40\u0e17\u0e40\u0e25\u0e1e\u0e2d\u0e23\u0e4c\u0e15universfield-magic-teleport-whoosh-352764.mp3","\u0e25\u0e2d\u0e22\u0e02\u0e36\u0e49\u0e19\u0e08\u0e32\u0e01\u0e1e\u0e37\u0e49\u0e19dragon-studio-elemental-spell-impact-wind-478376.mp3","dragon-studio-whoosh-effect-382717.mp3"],"clash":["\u0e40\u0e2a\u0e35\u0e22\u0e07\u0e01\u0e23\u0e30\u0e41\u0e17\u0e01\u0e17\u0e31\u0e01\u0e29\u0e30 \u0e42\u0e25\u0e48\u0e2b\u0e23\u0e37\u0e2d\u0e21\u0e48\u0e32\u0e19\u0e1b\u0e49\u0e2d\u0e07\u0e01\u0e31\u0e19 daviddumaisaudio-sword-slash-with-metal-shield-impact-185433.mp3","freesound_community-sword-sound-2-36274.mp3"],"hurt":["\u0e1f\u0e31\u0e19\u0e42\u0e14\u0e19\u0e40\u0e19\u0e37\u0e49\u0e2duniversfield-sword-blade-slicing-flesh-352708.mp3"],"spell":["\u0e25\u0e2d\u0e22\u0e02\u0e36\u0e49\u0e19\u0e08\u0e32\u0e01\u0e1e\u0e37\u0e49\u0e19dragon-studio-elemental-spell-impact-wind-478376.mp3"],"heal":["\u0e2a\u0e01\u0e34\u0e25\u0e23\u0e31\u0e01\u0e29\u0e32\u0e17\u0e35\u0e48\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e01\u0e31\u0e1a\u0e23\u0e31\u0e01\u0e29\u0e32vadim_makes_sound-fantasy-healing-spell-soft-magic-chime-2-546564.mp3"],"buff":["\u0e40\u0e2a\u0e35\u0e22\u0e07\u0e17\u0e31\u0e01\u0e29\u0e30\u0e17\u0e35\u0e48\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e01\u0e31\u0e1a\u0e42\u0e25\u0e48soumages-magic-spell-333896.mp3","dragon-studio-sci-fi-portal-jump-03-416164.mp3"],"roar":["\u0e23\u0e32\u0e0a\u0e31\u0e19\u0e2d\u0e2a\u0e39\u0e23\u0e17\u0e2d\u0e07\u0e04\u0e33freesound_community-monster-growl-6311.mp3"],"bossSpawn":["\u0e23\u0e32\u0e0a\u0e31\u0e19\u0e2d\u0e2a\u0e39\u0e23\u0e17\u0e2d\u0e07\u0e04\u0e33freesound_community-monster-growl-6311.mp3"],"gong":["freesound_community-gong-79191.mp3","freesound_community-chinese-dragon-tempel-bell-vi-cross-fade-19802.mp3"],"wind":["\u0e1e\u0e32\u0e22\u0e38\u0e2b\u0e34\u0e21\u0e30 creatorshome-mountain-wind-371074.mp3","\u0e40\u0e2a\u0e35\u0e22\u0e07\u0e1a\u0e19\u0e20\u0e39\u0e40\u0e02\u0e32 capaholiczsfx-heavy-wind-noise-in-the-mountains-and-pine-trees-402291.mp3"],"water":["\u0e25\u0e33\u0e18\u0e32\u0e23\u0e01\u0e25\u0e32\u0e07\u0e1b\u0e48\u0e32nickype-the-sound-of-a-mountain-stream-_nature-sound-201930.mp3"],"town":["freesound_community-ambience-at-a-chinese-restaurant-street-29830.mp3"],"festival":["prettyjohn1-chinese-new-year_33sec-483355.mp3"],"bgm":["freesound_community-dizi-flute-02-72563.mp3","freesound_community-chinese-zither-h4-131-bpm-82446.mp3"],"bgmCalm":["atlasaudio-meditation-621581.mp3"],"levelup":["djartmusic-chinese-ident-transition-1-283708.mp3"]};
+ const LOCURL=f=>'sounds/'+encodeURIComponent(f);
  const OLD={
   swoosh:[G+'weapons/whoosh_large.ogg',P+'2022/03/15/audio_c8c8733246.mp3?filename=sword-swoosh-98315.mp3'],
   clash:[G+'weapons/sword_clash.ogg',P+'2021/08/04/audio_12d02c7b50.mp3?filename=sword-clash-2-37836.mp3'],
@@ -1333,7 +1338,7 @@ NEWS.push({id:17,d:'2026-10-25',c:[C_MAP,C_SYS],h:'วงเวทย์เค�
  Object.keys(ROLE).forEach(r=>{const R=ROLE[r],re=new RegExp(R.kw);ALLF.forEach(f=>{if(!claimed[f]&&re.test(f.replace(/\.mp3$/,''))){R.cand.push(f);claimed[f]=1}})});
  /* ลิงก์ที่ยังไม่ถูกจัดหน้าที่ ถือเป็นคลังสุ่มสำรอง (ใช้กับเหตุการณ์ที่ยังไม่มีเสียง) */
  const SPARE=ALLF.filter(f=>!claimed[f]);
- Object.keys(ROLE).forEach(r=>{const R=ROLE[r];R.urls=R.cand.map(f=>POOL_BASE+f).concat(OLD[r]||[]);if(r==='cricket'||r==='owl')R.urls=R.urls.concat(OLD.bird);R.vars=[]});
+ Object.keys(ROLE).forEach(r=>{const R=ROLE[r];R.urls=Array.from(new Set((LOCAL[r]||[]).map(LOCURL).concat((VERIFIED[r]||[]).map(f=>G+f)).concat(R.cand.map(f=>POOL_BASE+f),OLD[r]||[])));if(r==='cricket'||r==='owl')R.urls=R.urls.concat(OLD.bird);R.vars=[]});
  /* ---------- 4) ตรวจไฟล์ทีละลิงก์ (จำกัดพร้อมกัน) เก็บไฟล์ที่โหลดได้สูงสุด 3 ไฟล์ต่อหน้าที่ไว้สุ่มใช้ ---------- */
  const PROBE=new Map();let busyN=0;const WAITQ=[];
  const slot=()=>new Promise(res=>{if(busyN<8){busyN++;res()}else WAITQ.push(res)}),free=()=>{const n=WAITQ.shift();if(n)n();else busyN--};
@@ -1349,15 +1354,15 @@ NEWS.push({id:17,d:'2026-10-25',c:[C_MAP,C_SYS],h:'วงเวทย์เค�
  const vol=e=>{const now=Date.now();let m=1;if(e.fade){m=clamp(1-(now-e.fade.t)/e.fade.ms)}else if(e.fin){m=clamp((now-e.t0)/e.fin)}return clamp(e.base*BUS[e.bus].cap*((e.bus==='amb'||e.bus==='bgm')?duckCur:1)*m)};
  const drop=e=>{if(!LIVE.has(e))return;LIVE.delete(e);try{e.a.pause();e.a.removeAttribute('src');e.a.load()}catch(x){}};
  const fadeOut=(e,ms)=>{if(!e.fade)e.fade={t:Date.now(),ms:ms||300}};
- const ticker=()=>{const now=Date.now();duckCur+=((now<duckUntil?.6:1)-duckCur)*.3;LIVE.forEach(e=>{try{const R=ROLE[e.role];if(e.fade&&now-e.fade.t>=e.fade.ms){drop(e);return}if(!e.fade&&R.mode==='short'&&e.a.currentTime>R.cap)fadeOut(e,250);e.a.volume=vol(e)}catch(x){drop(e)}});if(!LIVE.size&&now>=duckUntil&&Math.abs(duckCur-1)<.01){clearInterval(tick);tick=null}};
+ const ticker=()=>{const now=Date.now();const dTgt=(typeof mode!=='undefined'&&mode!=='play')?.12:(now<duckUntil?.6:1);duckCur+=(dTgt-duckCur)*.3;/*PATCH14*/LIVE.forEach(e=>{try{const R=ROLE[e.role];if(e.fade&&now-e.fade.t>=e.fade.ms){drop(e);return}if(!e.fade&&R.mode==='short'&&e.a.currentTime>R.cap)fadeOut(e,250);e.a.volume=vol(e)}catch(x){drop(e)}});if(!LIVE.size&&now>=duckUntil&&Math.abs(duckCur-1)<.01){clearInterval(tick);tick=null}};
  const wake=()=>{if(!tick)tick=setInterval(ticker,50)};
  const live=r=>[...LIVE].filter(e=>e.role===r&&!e.fade);
- const pickVar=r=>{let rr=r,R=ROLE[r];if(!R.vars.length&&R.alt){for(const x of R.alt){if(ROLE[x].vars.length){rr=x;R=ROLE[x];break}}}if(!R.vars.length)return null;let v=R.vars[Math.floor(Math.random()*R.vars.length)];if(R.vars.length>1&&LAST[rr]===v.u){v=R.vars[(R.vars.indexOf(v)+1)%R.vars.length]}LAST[rr]=v.u;return{r:rr,v}};
+ const pickVar=r=>{let rr=r,R=ROLE[r];if(!R.vars.length&&R.alt){for(const x of R.alt){if(ROLE[x].vars.length){rr=x;R=ROLE[x];break}}}if(!R.vars.length)return null;let v=R.bus==='ui'?R.vars[0]:R.vars[Math.floor(Math.random()*R.vars.length)];if(R.bus!=='ui'&&R.vars.length>1&&LAST[rr]===v.u){/*PATCH14*/v=R.vars[(R.vars.indexOf(v)+1)%R.vars.length]}LAST[rr]=v.u;return{r:rr,v}};
  const play=(role,gain,opt)=>{try{opt=opt||{};if(!ROLE[role])return null;const pk=pickVar(role);if(!pk)return null;const R=ROLE[pk.r],g=gain==null?1:gain;
   if(R.bus!=='ui'&&R.bus!=='bgm'&&g<=.02)return null;
-  const same=live(pk.r);if(same.length>=3)fadeOut(same.sort((x,y)=>x.t0-y.t0)[0],120);
+  if(R.bus==='ui')LIVE.forEach(x=>{if(x.bus==='ui'&&!x.fade)fadeOut(x,30)});/*PATCH14*/const same=live(pk.r);if(same.length>=3)fadeOut(same.sort((x,y)=>x.t0-y.t0)[0],120);
   const a=new Audio(pk.v.u);a.loop=!!(opt.loop&&R.loop);
-  if(R.bus!=='bgm'&&!a.loop){try{a.preservesPitch=false;a.mozPreservesPitch=false;a.webkitPreservesPitch=false;a.playbackRate=.95+Math.random()*.1}catch(x){}}
+  if(R.bus!=='bgm'&&R.bus!=='ui'&&!a.loop){try{a.preservesPitch=false;a.mozPreservesPitch=false;a.webkitPreservesPitch=false;a.playbackRate=.95+Math.random()*.1}catch(x){}}
   const e={a,role:pk.r,bus:R.bus,base:clamp(g*R.vol),t0:Date.now(),fade:null,fin:opt.fadeIn||0};
   a.volume=vol(e);LIVE.add(e);
   const end=()=>drop(e);a.addEventListener('ended',end);a.addEventListener('error',end);
@@ -1373,8 +1378,11 @@ NEWS.push({id:17,d:'2026-10-25',c:[C_MAP,C_SYS],h:'วงเวทย์เค�
  const SKR=[[/flysword|กระบี่บิน/,'whoosh'],[/fire|เพลิง|ไฟ/,'fire'],[/thunder|thpalm|สายฟ้า/,'thunder'],[/ice|น้ำแข็ง/,'ice'],[/rock|ศิลา|earth|ผืนดิน/,'earth'],[/heal|สมาน|ฟื้นฟู|ชุบชีวิต|ธารน้ำโอสถ/,'heal'],[/shield|barrier|เกราะ|โล่|ม่าน|diamond|iron_body|กายาวัชระ/,'buff'],[/fist|vajra|qpalm|หมัด|ฝ่ามือ/,'punch'],[/sword|sw_|กระบี่|ดาบ/,'swoosh'],[/trap|finger|mist|ค่ายกล|ดัชนี|หมอก/,'spell']];
  const skRole=(id,k)=>{const s=id+' '+((k&&k.n)||'');for(const x of SKR)if(x[0].test(s))return x[1];return k&&k.rng>2?'spell':'swoosh'};
  let curSk=null,curId=null,skPlayed=0;
- const playSkill=()=>{const id=curId,k=curSk;if(!k)return false;const r=skRole(id,k);skPlayed=1;if(r==='heal'||r==='buff'||r==='spell'){play(r,.9)}else{play(r,1);if(r==='swoosh'&&typeof target!=='undefined'&&target&&!target.dead&&BOSSES.includes(target.k))setTimeout(()=>play('clash',.6),130)}
-  if(k.m>=5||BIG.includes(id)&&k.m>=4)play('explosion',.7);return true};
+ let skE=null,skT=0;/*PATCH14*/
+const playSkill=()=>{const id=curId,k=curSk;if(!k)return false;const r=skRole(id,k);skPlayed=1;
+ const au=(typeof auto!=='undefined')&&!!auto,nw=Date.now();if(au&&nw-skT<1200)return true;skT=nw;
+ if(skE&&LIVE.has(skE))fadeOut(skE,80);LIVE.forEach(x=>{if(x.role==='button'&&!x.fade)fadeOut(x,30)});
+ skE=play(r,((r==='heal'||r==='buff'||r==='spell')?.9:1)*(au?.4:1));return true};
  const NPCR=[[/chief|elder|arena|guide/,'gong'],[/smith|forge|armor|royalarm|tdef|tsword/,'clash'],[/herb|alch|healer/,'potion'],[/exch|trade|auction|gen|talman|tgroup/,'buy'],[/fisher|tank/,'water'],[/tailor/,'open'],[/circle|warp|vwarp/,'spell']];
  const MONR={wolf:'howl',bear:'roar',king:'roar',lion:'roar',leo:'roar',ape:'roar',phx:'critter',pboar:'roar',bsnake:'critter',fox:'critter',snake:'critter',boar:'critter',rab:'rustle'};
  const AUTO=[[/fire|boom|bomb|burst|explod/,'explosion'],[/heal|med|recover|qi/,'spell'],[/hit|attack|slash|cut/,'swoosh'],[/clash|block|parry/,'clash'],[/walk|step|run/,'steps'],[/click|select|menu|btn|ui/,'button'],[/coin|gold|buy|sell|shop/,'buy'],[/get|pick|loot|item/,'pick'],[/die|dead|lose/,'die'],[/win|up|success|done|quest/,'levelup'],[/roar|growl|beast|mon/,'roar'],[/wind/,'wind'],[/water|river|rain/,'water'],[/bird/,'bird'],[/night|insect|cricket|cicada/,'cricket']];
@@ -1434,7 +1442,31 @@ NEWS.push({id:17,d:'2026-10-25',c:[C_MAP,C_SYS],h:'วงเวทย์เค�
   'วิชาแต่ละธาตุมีเสียงของตัวเอง เช่น ไฟ สายฟ้า น้ำแข็ง ศิลา รักษา และเกราะปราณ',
   'เสียงสั้นเล่นสั้นตามธรรมชาติ เสียงต่อเนื่องเล่นเต็มไฟล์ เสียงเดินและฟันกระบี่เปลี่ยนโทนเล็กน้อยไม่ให้ซ้ำเหมือนเดิม',
   'กด F7 ตรวจว่าเสียงไหนมีไฟล์ใช้ได้ F3 เปิดปิดดนตรีและเสียงบรรยากาศ']});
- renderMob()}
+  /* ===== PATCH 14 AUDIO FIX (เพิ่มต่อท้าย) ถ้าต้องการย้อนกลับ ใช้ไฟล์สำรอง index.backup-before-patch14.html ===== */
+  try{
+   ROLE.button.cap=.12;ROLE.button.vol=.45;ROLE.open.cap=.35;
+   ['swoosh','punch','spell','fire','thunder','ice','earth','heal','buff','whoosh','explosion','clash'].forEach(r=>{const R=ROLE[r];if(R){R.mode='short';R.cap=Math.min(R.cap||.65,.65)}});
+   const AMBK={bird:1,owl:1,cricket:1,cicada:1,wind:1,windh:1,water:1};
+   const _sfx14=sfx;let npcT14=0,monT14=0;
+   sfx=function(k,p,v){
+    try{
+     const isNpc=/^npc_/.test(k),isMon=!!MONR[k],isAmb=!!AMBK[k];
+     if(isNpc||isMon||isAmb){
+      if(typeof mode!=='undefined'&&mode!=='play')return;
+      const nw=Date.now(),q=(typeof S!=='undefined'&&S&&S.quiet);
+      if(isNpc){if(q||(v!=null&&v<.84)||nw-npcT14<8000)return;npcT14=nw}
+      else if(isMon){if(q||(v!=null&&v<.43)||nw-monT14<6000)return;monT14=nw}
+     }
+    }catch(e){}
+    return _sfx14(k,p,v)};
+   if(typeof NEWS!=='undefined')NEWS.push({id:19,d:'2026-10-26',c:[C_SYS],h:'แก้เสียงซ้อนในเมนูและกระเป๋า',t:'เสียงเลื่อนเมนูและกระเป๋านิ่งและสั้นลง ไม่ซ้อนกัน เสียงมอนสเตอร์ NPC และบรรยากาศไม่ดังทะลุเข้าเมนู วิชาแต่ละครั้งมีเสียงเดียว',x:[
+    'เสียงเมนูเล่นทีละเสียง ใช้ไฟล์เดียวและโทนเดียวทุกครั้ง',
+    'เปิดกระเป๋าแล้วใช้ไอเทม ไม่ยิงเสียงเปิดกระเป๋าซ้ำ',
+    'ขณะอยู่ในเมนู กระเป๋า หรือหน้าตั้งค่า ดนตรีและบรรยากาศเบาลง และไม่มีเสียงมอนสเตอร์หรือ NPC',
+    'NPC ส่งเสียงเฉพาะตัวที่อยู่ใกล้ในระยะ 6 ก้าว ห่างกันอย่างน้อย 8 วินาที มอนสเตอร์ระยะ 8 ก้าว ห่างกัน 6 วินาที ปิดได้ด้วยโหมดข้อความเงียบ',
+    'วิชาแต่ละครั้งเล่นเสียงเดียว ตอนออโต้เสียงเบาลงและห่างกันอย่างน้อย 1.2 วินาที']});
+  }catch(e){}
+  renderMob()}
 
 /* ===== boot ===== */
 if(S.med){const el=Math.min(86400,(Date.now()-S.t)/1000),z=zoneAt(S.x,S.y)||Z[0];if(el>5){const g=el/60*(1+z.b);S.exp+=g;say('ระหว่างออฟไลน์ นั่งสมาธิได้แต้ม '+Math.floor(g))}}
