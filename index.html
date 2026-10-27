@@ -1332,6 +1332,189 @@ NEWS.push({id:20,d:'2026-10-26',c:[C_MAP,C_ITEM,C_SKILL],h:'ปรับบา�
  'ดูดซับหินวิญญาณต่ำ 1 ก้อน ได้แต้มฝึกฝน 4 เดิม 20 เพราะเดิมคุ้มกว่าโอสถเพิ่มปราณถึง 5 เท่า',
  'แลกเหรียญทอง 100 เป็นหินต่ำ 1 ก้อน เดิม 300 และขายหินต่ำคืนได้ 80 เหรียญ เดิม 250']});
 renderMob();
+/* ===== PATCH 17 (เพิ่มต่อท้าย) เช็กอินรายวัน วงล้อโชคชะตา ใจยุทธ์ ===== */
+{
+ if(S.kills==null)S.kills=0;
+ const INS=[
+  {k:20, n:'ผิวเหล็ก',        d:'ป้องกัน +5%',            b:{def:.05}},
+  {k:50, n:'ตาเฉียบคม',       d:'พลังโจมตี +3%',          b:{atk:.03}},
+  {k:100,n:'โทสะโลหิต',       d:'พลังโจมตี +5%',          b:{atk:.05}},
+  {k:150,n:'ลมปราณมั่นคง',    d:'ปราณสูงสุด +5%',         b:{qi:.05}},
+  {k:250,n:'เกราะวิญญาณ',     d:'เลือดสูงสุด +8%',        b:{hp:.08}},
+  {k:400,n:'ใจมรรคามั่นคง',   d:'โจมตี +3% ป้องกัน +5%',  b:{atk:.03,def:.05}}];
+ const insCnt=()=>INS.filter(x=>(S.kills||0)>=x.k).length;
+ if(S.insN==null)S.insN=insCnt();
+ const insB=k=>INS.reduce((a,x)=>((S.kills||0)>=x.k&&x.b[k])?a+x.b[k]:a,1);
+ const _sB=sectB;sectB=function(k){return _sB(k)*insB(k)};
+ const _k17=kill;kill=function(m){S.kills=(S.kills||0)+1;_k17(m);
+  const n=insCnt();if(n>(S.insN||0)){S.insN=n;const x=INS[n-1];say('ฝึกฝนจากการต่อสู้ ได้ใจยุทธ์ '+x.n+' '+x.d+' (สังหารครบ '+x.k+' ตัว)');sfx('levelup')}};
+ A.insight=function(){const kl=S.kills||0;
+  menu('ใจยุทธ์ สังหารสะสม '+kl+' ตัว',INS.map(x=>({t:x.n+' '+x.d+' '+(kl>=x.k?'ปลดล็อกแล้ว':'สังหาร '+Math.min(kl,x.k)+' จาก '+x.k+' ตัว')})))};
+ const ydKey=()=>{const d=new Date();d.setDate(d.getDate()-1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+ A.checkin=function(){const t=dayKey(),c=S.ck||(S.ck={d:'',s:0});
+  if(c.d===t)return say('วันนี้เช็กอินแล้ว ต่อเนื่อง '+c.s+' วัน พรุ่งนี้มาใหม่');
+  c.s=(c.d===ydKey())?c.s+1:1;c.d=t;
+  const st=3+S.step,xp=30+15*S.step;S.gold+=st*100;S.exp+=xp;
+  let b='';
+  if(c.s>=7){add('pill_hp',1);b+=' โบนัสต่อเนื่อง 7 วัน ได้โอสถสมานแผล 1 เม็ด'}
+  if(c.s>=30){add('pill_xp',1);b+=' โบนัสครบ 30 วัน ได้โอสถเพิ่มปราณ 1 เม็ด'}
+  sfx('buy');say('เช็กอินวันที่ '+c.s+' ติดต่อกัน ได้หินวิญญาณต่ำ '+st+' ก้อน แต้มฝึกฝน '+xp+b)};
+ const WH=[
+  {n:'เหรียญทอง 50',w:25,f:()=>{S.coin+=50}},
+  {n:'เหรียญทอง 200',w:12,f:()=>{S.coin+=200}},
+  {n:'โอสถสมานแผล 3 เม็ด',w:15,f:()=>add('pill_hp',3)},
+  {n:'โอสถรวมปราณ 2 เม็ด',w:10,f:()=>add('pill_qi',2)},
+  {n:'แต้มฝึกฝน',w:10,f:()=>{S.exp+=300+50*S.step}},
+  {n:'ฟื้นเลือดและปราณเต็ม',w:8,f:()=>{S.hp=mhp();S.qi=mqi()}},
+  {n:'ยันต์หลบหนีฉุกเฉิน',w:6,f:()=>add('talis',1)},
+  {n:'โอสถเพิ่มปราณ',w:4,f:()=>add('pill_xp',1)},
+  {n:'โอสถสมานแผลระดับกลาง',w:3,f:()=>add('pill_hp2',1)},
+  {n:'ไม่ได้อะไร',w:4,f:()=>{}}];
+ A.wheel=function(){const t=dayKey(),cost=30+5*S.step;
+  if(S.whd===t)return say('วันนี้หมุนวงล้อแล้ว พรุ่งนี้มาใหม่');
+  if(S.coin<cost)return say('เหรียญทองไม่พอ ต้องใช้ '+cost+' เหรียญ มี '+S.coin);
+  conf('หมุนวงล้อโชคชะตา ค่าหมุน '+cost+' เหรียญทอง วันละครั้ง',()=>{
+   if(S.coin<cost||S.whd===t)return;S.coin-=cost;S.whd=t;
+   let r=Math.random()*WH.reduce((a,x)=>a+x.w,0),p=WH[0];
+   for(const x of WH){r-=x.w;if(r<=0){p=x;break}}
+   p.f();sfx(p.w<=6?'levelup':'pick');say('วงล้อหยุดที่ '+p.n)})};
+ Object.assign(KEYS,{d:'insight',j:'checkin',y:'wheel'});
+ MAIN.push(['ใจยุทธ์ (D)','KeyD'],['เช็กอินรายวัน (J)','KeyJ'],['วงล้อโชคชะตา (Y)','KeyY']);
+ [['D','KeyD','ใจยุทธ์'],['J','KeyJ','เช็กอินรายวัน'],['Y','KeyY','วงล้อโชคชะตา']].forEach(([l,c,a])=>{
+  const b=document.createElement('button');b.tabIndex=-1;b.onmousedown=e=>e.preventDefault();b.textContent=l;
+  b.setAttribute('aria-label','ปุ่ม '+a);b.onclick=()=>{if(mode==='input')return;handle({code:c,shiftKey:false});render()};$('pad').appendChild(b)});
+ TIPS.push('กด J เช็กอินรายวันรับรางวัล เช็กอินต่อเนื่อง 7 และ 30 วันมีโบนัส','กด Y หมุนวงล้อโชคชะตาวันละครั้ง','กด D ดูใจยุทธ์ ยิ่งสังหารอสูรมากยิ่งได้โบนัสถาวร');
+ NEWS.push({id:22,d:'2026-10-27',c:[C_SYS,C_SKILL],h:'เช็กอินรายวัน วงล้อโชคชะตา และใจยุทธ์',t:'เพิ่มเช็กอินรายวัน (J) วงล้อโชคชะตา (Y) และใจยุทธ์ (D) โบนัสถาวรจากการสังหารอสูร',x:[
+  'กด J เช็กอินรายวัน ได้หินวิญญาณและแต้มฝึกฝนตามขั้น เช็กอินต่อเนื่อง 7 วันและ 30 วันได้โอสถเพิ่ม',
+  'กด Y หมุนวงล้อโชคชะตาวันละครั้ง เสียเหรียญทองตามขั้น รางวัลมีทั้งเหรียญ โอสถ แต้มฝึกฝน',
+  'กด D ดูใจยุทธ์ สังหารอสูรครบ 20 50 100 150 250 และ 400 ตัว ปลดล็อกโบนัสถาวรด้านโจมตี ป้องกัน เลือด และปราณ']});
+ mobSig='';renderMob()}
+
+/* ===== PATCH 18 (เพิ่มต่อท้าย) ตำราลับ และข่าวลือยุทธภพ ===== */
+{
+ const SEC=[
+  {id:'dbl',n:'ฟันซ้ำ',d:'ใช้วิชาโจมตีแล้วมีโอกาส 15% โจมตีซ้ำอีกครั้ง',need:5},
+  {id:'sense',n:'จมูกหาสมบัติ',d:'สังหารอสูรแล้วมีโอกาส 15% ได้วัตถุดิบเพิ่มอีกชิ้น',need:6},
+  {id:'rec',n:'วิถีฟื้นไว',d:'สังหารอสูรแล้วฟื้นเลือด 15% ของเลือดสูงสุด',need:10},
+  {id:'deathres',n:'กายาอมตะ',d:'ถูกอสูรโจมตีจนตาย มีโอกาส 20% รอดชีวิตด้วยเลือด 1',need:12}];
+ if(!S.frag)S.frag={};if(!Array.isArray(S.sec))S.sec=[];
+ const hasSec=id=>S.sec.includes(id);
+ const _kl=kill;kill=function(m){_kl(m);
+  try{
+   const d=MD[m.k];
+   if(hasSec('rec')){const h=Math.round(mhp()*.15);S.hp=Math.min(mhp(),S.hp+h);say('วิถีฟื้นไว ฟื้นเลือด '+h)}
+   if(hasSec('sense')&&d&&d.it&&d.it.length&&Math.random()<.15){const id=d.it[0];add(id,1);say('จมูกหาสมบัติ ได้ '+I[id].n+' เพิ่ม 1 ชิ้น')}
+   if(Math.random()<.12){const pool=SEC.filter(x=>!hasSec(x.id));
+    if(pool.length){const x=pool[Math.floor(Math.random()*pool.length)];S.frag[x.id]=(S.frag[x.id]||0)+1;
+     say('ได้เศษตำราลับ '+x.n+' '+S.frag[x.id]+' จาก '+x.need);
+     if(S.frag[x.id]>=x.need){S.sec.push(x.id);say('ปลดล็อกตำราลับ '+x.n+' '+x.d);sfx('levelup')}}}
+   rumAdv('kill',1);
+  }catch(e){}};
+ const _us18=useSlot;useSlot=function(i,qt){const id=S.slots[i],k=id&&SK[id];const r=_us18(i,qt);
+  try{if(r&&k&&k.m&&!k.buff&&!k.heal&&hasSec('dbl')&&Math.random()<.15&&target&&!target.dead&&target.hp>0){
+   const d=Math.max(1,Math.round(atk()*.7));target.hp-=d;say('ฟันซ้ำ โจมตีเพิ่ม '+d);sfx('hit');if(target.hp<=0)kill(target)}}catch(e){}
+  return r};
+ const _die18=die;die=function(m){
+  if(typeof m==='string'&&m.indexOf('เจ้าถูก')===0&&hasSec('deathres')&&Math.random()<.2){S.hp=1;S.med=false;say('กายาอมตะ ช่วยให้รอดตายด้วยเลือด 1');return}
+  return _die18(m)};
+ A.secrets=function(){
+  menu('ตำราลับ ปลดล็อกแล้ว '+S.sec.length+' จาก '+SEC.length,SEC.map(x=>({t:x.n+' '+x.d+' '+(hasSec(x.id)?'ปลดล็อกแล้ว':'เศษคัมภีร์ '+Math.min(S.frag[x.id]||0,x.need)+' จาก '+x.need)})))};
+ const HERBS=['herb_sp','mush_sp','shoot','jujube','dew','ginseng','lotus','lingzhi','bloodroot','ginseng2','lotus2','qiherb2'];
+ const RT=[
+  {t:'kill',n:'ล่าอสูร',g:()=>4+Math.floor(Math.random()*5),u:'ตัว'},
+  {t:'herb',n:'เก็บสมุนไพร',g:()=>3+Math.floor(Math.random()*4),u:'ต้น'},
+  {t:'med',n:'นั่งสมาธิ',g:()=>90+Math.floor(Math.random()*91),u:'วินาที'}];
+ if(!Array.isArray(S.rum))S.rum=[];
+ function rumGen(){const k=dayKey();if(S.rumD===k&&S.rum.length)return;S.rumD=k;
+  S.rum=RT.map(x=>({t:x.t,n:x.n,u:x.u,g:x.g(),p:0,done:0,c:50+30*S.step,x:100+50*S.step}))}
+ function rumAdv(t,n){rumGen();
+  S.rum.forEach(r=>{if(r.t!==t||r.done)return;r.p=Math.min(r.g,r.p+n);
+   if(r.p>=r.g){r.done=1;S.coin+=r.c;S.exp+=r.x;say('ข่าวลือ '+r.n+' สำเร็จ ได้เหรียญทอง '+r.c+' แต้มฝึกฝน '+r.x);sfx('buy')}})}
+ const _add18=add;add=function(id,q){_add18(id,q);if(q>0&&mode==='play'&&HERBS.includes(id))try{rumAdv('herb',q)}catch(e){}};
+ setInterval(()=>{if(S.med&&mode==='play')try{rumAdv('med',1)}catch(e){}},1000);
+ A.rumors=function(){rumGen();
+  menu('ข่าวลือยุทธภพ ประจำวัน รีเฟรชวันใหม่',S.rum.map(r=>({t:r.n+' '+r.p+' จาก '+r.g+' '+r.u+' รางวัล เหรียญทอง '+r.c+' แต้มฝึกฝน '+r.x+(r.done?' สำเร็จแล้ว':'')})))};
+ Object.assign(KEYS,{'S+r':'secrets','S+g':'rumors'});
+ MAIN.push(['ตำราลับ (Shift+R)','S+KeyR'],['ข่าวลือยุทธภพ (Shift+G)','S+KeyG']);
+ [['ตำราลับ','KeyR','ปุ่ม ตำราลับ'],['ข่าวลือ','KeyG','ปุ่ม ข่าวลือยุทธภพ']].forEach(([l,c,a])=>{
+  const b=document.createElement('button');b.tabIndex=-1;b.onmousedown=e=>e.preventDefault();b.textContent=l;
+  b.setAttribute('aria-label',a);b.onclick=()=>{if(mode==='input')return;handle({code:c,shiftKey:true});render()};$('pad').appendChild(b)});
+ TIPS.push('กด Shift+R ดูตำราลับ สังหารอสูรมีโอกาสได้เศษคัมภีร์','กด Shift+G ดูข่าวลือยุทธภพ ภารกิจสั้นรายวัน');
+ NEWS.push({id:23,d:'2026-10-27',c:[C_SYS,C_SKILL],h:'ตำราลับ และข่าวลือยุทธภพ',t:'เพิ่มตำราลับ 4 ชนิด (Shift+R) และภารกิจข่าวลือรายวัน (Shift+G)',x:[
+  'สังหารอสูรมีโอกาส 12% ได้เศษตำราลับ ครบแล้วปลดล็อกความสามารถถาวร ได้แก่ ฟันซ้ำ จมูกหาสมบัติ วิถีฟื้นไว และกายาอมตะ',
+  'ข่าวลือยุทธภพมี 3 ภารกิจต่อวัน คือ ล่าอสูร เก็บสมุนไพร และนั่งสมาธิ สำเร็จแล้วรับเหรียญทองและแต้มฝึกฝนอัตโนมัติ']});
+ mobSig='';renderMob()}
+
+/* ===== PATCH 19 (เพิ่มต่อท้าย) ศาสตร์ต้องห้าม และพยากรณ์ฟ้าลิขิต ===== */
+{
+ const nowT=()=>Date.now();
+ if(!S.fbCd)S.fbCd={};if(S.permAtk==null)S.permAtk=0;if(!S.fbDone)S.fbDone={};if(S.luck==null)S.luck=0;
+ const _sB19=sectB;sectB=function(k){let v=_sB19(k);
+  if(k==='atk'){v*=1+(S.permAtk||0);if((S.fbA||0)>nowT())v*=S.fbAm||1}
+  if(k==='def'&&(S.fbD||0)>nowT())v*=S.fbDm||1;
+  return v};
+ const FB=[
+  {id:'burn',n:'เผาโลหิต',d:'เสียเลือด 20% ของเลือดที่มี พลังโจมตี +50% นาน 60 วินาที ต้องมีเลือดเกิน 30%',lv:4,cd:300,
+   f:()=>{if(S.hp<=mhp()*.3){say('เลือดน้อยเกินไป ใช้ไม่ได้');return false}
+    S.hp-=Math.floor(S.hp*.2);S.fbA=nowT()+60000;S.fbAm=1.5;say('เผาโลหิต พลังโจมตี +50% นาน 60 วินาที เลือดเหลือ '+Math.floor(S.hp))}},
+  {id:'soul',n:'ฟาดวิญญาณ',d:'เสียปราณ 50% ของปราณสูงสุด โจมตีอสูรที่ใกล้ที่สุดในระยะ 10 ก้าว ดาเมจ 4 เท่าของพลังโจมตี',lv:8,cd:120,
+   f:()=>{if(noFight9()){say('เขตปลอดภัย ใช้ไม่ได้');return false}
+    const c=Math.round(mqi()*.5);if(S.qi<c){say('ปราณไม่พอ ต้องใช้ '+c);return false}
+    const t=nearest(10);if(!t){say('ไม่มีอสูรในระยะ 10 ก้าว');return false}
+    S.qi-=c;const d=Math.max(1,Math.round(atk()*4*(.9+Math.random()*.2)));t.hp-=d;t.ag=1;S.med=false;
+    say('ฟาดวิญญาณ ใส่ '+MD[t.k].n+' '+d+' เหลือ '+Math.max(0,Math.floor(t.hp)));sfx('cast');if(t.hp<=0)kill(t)}},
+  {id:'chaos',n:'กายาจ้าวโกลาหล',d:'เสียปราณ 40% ของปราณสูงสุด พลังโจมตีและป้องกัน +30% นาน 45 วินาที',lv:12,cd:200,
+   f:()=>{const c=Math.round(mqi()*.4);if(S.qi<c){say('ปราณไม่พอ ต้องใช้ '+c);return false}
+    S.qi-=c;S.fbA=S.fbD=nowT()+45000;S.fbAm=S.fbDm=1.3;say('กายาจ้าวโกลาหล โจมตีและป้องกัน +30% นาน 45 วินาที');sfx('cast')}},
+  {id:'defy',n:'ฝืนลิขิตฟ้า',d:'ใช้ได้ครั้งเดียวตลอดชีพ เสียเลือด 50% และปราณทั้งหมด พลังโจมตี +10% ถาวร ต้องมีเลือดเกิน 60%',lv:16,cd:0,once:1,
+   f:()=>{if(S.hp<=mhp()*.6){say('เลือดต้องเกิน 60% จึงใช้ได้');return false}
+    S.hp-=Math.floor(S.hp*.5);S.qi=0;S.permAtk=(S.permAtk||0)+.1;say('ฝืนลิขิตฟ้า พลังโจมตีถาวร +10% รวมตอนนี้ +'+Math.round(S.permAtk*100)+'%');sfx('levelup')}}];
+ function fbUse(x){
+  if(S.step<x.lv)return say('ต้องถึง'+realmName(x.lv)+'ก่อน ตอนนี้ '+realmName(S.step));
+  if(x.once&&S.fbDone[x.id])return say('ศาสตร์นี้ใช้ได้ครั้งเดียวตลอดชีพ และใช้ไปแล้ว');
+  const w=(S.fbCd[x.id]||0)-nowT();if(w>0)return say('ยังไม่พร้อม รออีก '+Math.ceil(w/1000)+' วินาที');
+  conf('ใช้ศาสตร์ต้องห้าม '+x.n+' '+x.d,()=>{
+   const w2=(S.fbCd[x.id]||0)-nowT();if(w2>0||(x.once&&S.fbDone[x.id])||S.step<x.lv)return;
+   if(x.f()===false)return;
+   if(x.cd)S.fbCd[x.id]=nowT()+x.cd*1000;if(x.once)S.fbDone[x.id]=1})}
+ A.forbid=function(){
+  menu('ศาสตร์ต้องห้าม ใช้แล้วมีราคาที่ต้องจ่าย',FB.map(x=>{
+   const w=Math.ceil(((S.fbCd[x.id]||0)-nowT())/1000);
+   const st=S.step<x.lv?' ต้องถึง'+realmName(x.lv):(x.once&&S.fbDone[x.id])?' ใช้ไปแล้ว':w>0?' คูลดาวน์อีก '+w+' วินาที':' พร้อมใช้';
+   return{t:x.n+' '+x.d+st,x}}),{ent:y=>fbUse(y.x)})};
+ const DV=[
+  {n:'พยากรณ์โชค',d:'สังหารอสูร 10 ตัวถัดไปได้เหรียญทองเพิ่ม',c:()=>2+S.step,
+   f:()=>{S.luck=10;say('ฟ้าเปิดทาง อสูร 10 ตัวถัดไปที่สังหารจะให้เหรียญทองเพิ่ม')}},
+  {n:'ดูดวงทะลวงขั้น',d:'ตรวจความพร้อมทะลวงขั้นถัดไป',c:()=>1,
+   f:()=>{const r=R[S.step];
+    if(S.step>=R.length-1)say('เจ้าอยู่ขั้นสูงสุดแล้ว');
+    else if(S.exp<r[3])say('ยังไม่พร้อม แต้มฝึกฝนขาดอีก '+Math.ceil(r[3]-S.exp));
+    else if(S.step===9)say(S.inv.find(a=>a.id==='pill_f')?'พร้อมทะลวง มีโอสถสร้างรากฐานแล้ว กด B ได้เลย':'แต้มพร้อมแล้ว แต่ไม่มีโอสถสร้างรากฐาน ทะลวงมีโอกาสสำเร็จเพียง 30% และถ้าล้มเหลวเสียแต้ม 20%');
+    else say('พร้อมทะลวง กด B ได้เลย')}},
+  {n:'ตรวจบอส',d:'ดูสถานะบอสทุกตัว',c:()=>1,
+   f:()=>MS.filter(m=>BOSSES.includes(m.k)).forEach(m=>say(MD[m.k].n+(m.dead?' เกิดอีกประมาณ '+Math.max(1,Math.ceil((respMs(m)-(nowT()-m.dead))/60000))+' นาที':' พร้อมท้า')))},
+  {n:'ชะตาลิขิต',d:'สุ่มพรจากฟ้า',c:()=>3+S.step,
+   f:()=>{const o=[()=>{add('pill_hp',2);say('ชะตาให้โอสถสมานแผล 2 เม็ด')},
+     ()=>{const v=100*(1+S.step);S.coin+=v;say('ชะตาให้เหรียญทอง '+v)},
+     ()=>{const v=200*(1+S.step);S.exp+=v;say('ชะตาให้แต้มฝึกฝน '+v)},
+     ()=>say('ฟ้าเงียบ ไม่ได้อะไร')];o[Math.floor(Math.random()*o.length)]()}}];
+ A.divine=function(){
+  menu('พยากรณ์ฟ้าลิขิต มีหินวิญญาณต่ำ '+Math.floor(S.gold/100)+' ก้อน',DV.map(x=>({t:x.n+' ราคา '+x.c()+' หินต่ำ '+x.d,x})),
+   {ent:y=>{const c=y.x.c();if(S.gold<c*100)return say('หินวิญญาณไม่พอ ต้องใช้ '+c+' ก้อน');
+    S.gold-=c*100;mode='play';sfx('cast');y.x.f()}})};
+ const _k19=kill;kill=function(m){_k19(m);
+  try{if((S.luck||0)>0){S.luck--;const v=20*(1+S.step);S.coin+=v;say('พรโชค ได้เหรียญทองเพิ่ม '+v+' เหลืออีก '+S.luck+' ตัว')}}catch(e){}};
+ Object.assign(KEYS,{'S+f':'forbid','S+d':'divine'});
+ MAIN.push(['ศาสตร์ต้องห้าม (Shift+F)','S+KeyF'],['พยากรณ์ฟ้าลิขิต (Shift+D)','S+KeyD']);
+ [['ต้องห้าม','KeyF','ปุ่ม ศาสตร์ต้องห้าม'],['พยากรณ์','KeyD','ปุ่ม พยากรณ์ฟ้าลิขิต']].forEach(([l,c,a])=>{
+  const b=document.createElement('button');b.tabIndex=-1;b.onmousedown=e=>e.preventDefault();b.textContent=l;
+  b.setAttribute('aria-label',a);b.onclick=()=>{if(mode==='input')return;handle({code:c,shiftKey:true});render()};$('pad').appendChild(b)});
+ TIPS.push('กด Shift+F ใช้ศาสตร์ต้องห้าม แรงมากแต่มีราคาที่ต้องจ่าย','กด Shift+D พยากรณ์ฟ้าลิขิต ตรวจบอสและความพร้อมทะลวงขั้น');
+ NEWS.push({id:24,d:'2026-10-27',c:[C_SKILL,C_SYS],h:'ศาสตร์ต้องห้าม และพยากรณ์ฟ้าลิขิต',t:'เพิ่มศาสตร์ต้องห้าม 4 ชนิด (Shift+F) และพยากรณ์ฟ้าลิขิต (Shift+D)',x:[
+  'ศาสตร์ต้องห้าม ได้แก่ เผาโลหิต (ขั้น 5) ฟาดวิญญาณ (ขั้น 9) กายาจ้าวโกลาหล (ขั้น 13) และฝืนลิขิตฟ้า (ขั้น 17 ใช้ได้ครั้งเดียว เพิ่มพลังโจมตีถาวร 10%) ทุกอย่างมีคูลดาวน์และต้องกดยืนยันก่อนใช้',
+  'พยากรณ์ฟ้าลิขิต จ่ายหินวิญญาณต่ำเพื่อรับพรโชค ดูความพร้อมทะลวงขั้น ตรวจเวลาเกิดของบอส หรือสุ่มพรจากฟ้า']});
+ mobSig='';renderMob()}
+
 /* ===== boot ===== */
 if(S.med){const el=Math.min(28800,(Date.now()-S.t)/1000),z=zoneAt(S.x,S.y)||Z[0];if(el>5){const g=el*medBase()*.5*(1+z.b);S.exp+=g;say('ระหว่างออฟไลน์ นั่งสมาธิได้แต้ม '+Math.floor(g))}}
 if(!zoneAt(S.x,S.y)){S.x=27;S.y=46}
