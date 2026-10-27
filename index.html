@@ -1245,15 +1245,15 @@ const playSkill=()=>{const id=curId,k=curSk;if(!k)return false;const r=skRole(id
  const allUrls=()=>[...new Set(Object.keys(ROLE).flatMap(r=>ROLE[r].urls))];
  let LT=null;
  const probeOne=u=>new Promise(res=>{let a=new Audio(),fin=0,t;const f=c=>{if(fin)return;fin=1;clearTimeout(t);try{a.pause();a.removeAttribute('src');a.load()}catch(x){}res(c)};t=setTimeout(()=>f(2),10000);a.muted=true;a.preload='auto';a.addEventListener('canplay',()=>f(1));a.addEventListener('loadeddata',()=>f(1));a.addEventListener('error',()=>f(0));a.src=u;try{const p=a.play();if(p&&p.catch)p.catch(()=>{})}catch(x){}});
- const linkTest=()=>{if(LT&&!LT.done)return say('กำลังทดสอบอยู่ '+LT.i+' จาก '+LT.n,1);const U=allUrls();LT={n:U.length,i:0,ok:[],bad:[],slow:[],done:0};let k=0;
-  say('เริ่มทดสอบลิงก์เสียง '+U.length+' ลิงก์ รอประมาณครึ่งนาที เครื่องรองรับ ogg: '+(OGG?'ใช่':'ไม่ (ลิงก์ ogg ถูกข้าม ใช้เฉพาะ mp3 และเสียงสังเคราะห์)'),1);
+ const linkTest=(q)=>{const qs=(t,f)=>{if(!q)say(t,f)};if(LT&&!LT.done)return qs('กำลังทดสอบอยู่ '+LT.i+' จาก '+LT.n,1);const U=allUrls();LT={n:U.length,i:0,ok:[],bad:[],slow:[],done:0};let k=0;
+  qs('เริ่มทดสอบลิงก์เสียง '+U.length+' ลิงก์ รอประมาณครึ่งนาที เครื่องรองรับ ogg: '+(OGG?'ใช่':'ไม่ (ลิงก์ ogg ถูกข้าม ใช้เฉพาะ mp3 และเสียงสังเคราะห์)'),1);
   const w=async()=>{while(k<U.length){const u=U[k++],c=await probeOne(u);LT.i++;if(c===1){LT.ok.push(u);DEAD.delete(u)}else if(c===0){LT.bad.push(u);DEAD.set(u,Date.now()+1800000)}else LT.slow.push(u)}};
-  Promise.all([w(),w(),w(),w()]).then(()=>{LT.done=1;say('ทดสอบเสร็จ ใช้ได้ '+LT.ok.length+' เสีย '+LT.bad.length+' ช้าเกินไป '+LT.slow.length+' จากทั้งหมด '+LT.n+' ลิงก์ ลิงก์เสียระบบข้ามเองและใช้เสียงสำรอง กด F7 เปิดดูรายการลิงก์เสีย',1)})};
+  Promise.all([w(),w(),w(),w()]).then(()=>{LT.done=1;qs('ทดสอบเสร็จ ใช้ได้ '+LT.ok.length+' เสีย '+LT.bad.length+' ช้าเกินไป '+LT.slow.length+' จากทั้งหมด '+LT.n+' ลิงก์ ลิงก์เสียระบบข้ามเองและใช้เสียงสำรอง กด F7 เปิดดูรายการลิงก์เสีย',1)})};
  const stat=r=>{const R=ROLE[r],n=R.vars.length,d=R.vars.filter(v=>dead(v.u)).length;return n?('ลิงก์ '+n+' เสียชั่วคราว '+d+' เล่นไม่ได้จะใช้เสียงสังเคราะห์สำรอง'):'ไม่มีลิงก์ที่เครื่องนี้รองรับ ใช้เสียงสังเคราะห์สำรอง'};
  A.sndtest=function(){const it=[{t:'ทดสอบลิงก์เสียงทั้งหมดตอนนี้ (ใช้เวลาประมาณครึ่งนาที)',a:'t'},{t:'ดูรายชื่อลิงก์ที่เสีย'+(LT?' '+LT.bad.length+' ลิงก์':' (ต้องทดสอบก่อน)'),a:'b'}].concat(Object.keys(ROLE).map(r=>({t:(NM[r]||r)+' ['+ROLE[r].bus+'] : '+stat(r)+' กด Enter ลองเล่น',r})));
   menu('ตรวจสอบเสียง',it,{ent:x=>{if(x.a==='t')return linkTest();if(x.a==='b'){if(!LT||!LT.done)return say('ยังไม่ได้ทดสอบ หรือทดสอบยังไม่เสร็จ',1);const L=LT.bad.map(u=>({t:nameOf(u)+' ('+u.split('/')[2]+')'}));if(!L.length)return say('ไม่มีลิงก์เสีย',1);return menu('ลิงก์เสีย '+L.length,L)}
    const e=play(x.r,1,{loop:0});say((NM[x.r]||x.r)+' : '+stat(x.r)+(e?'':' (ตอนนี้เล่นด้วยเสียงสังเคราะห์สำรอง)'),1)}})};
- KEYS.F7='sndtest';MAIN.push(['ตรวจสอบเสียง (F7)','F7']);
+ KEYS.F7='sndtest';setTimeout(()=>{try{if(navigator.onLine!==false)linkTest(1)}catch(e){}},7000);setInterval(()=>{try{if(navigator.onLine!==false&&LT&&LT.done)linkTest(1)}catch(e){}},1800000);MAIN.push(['ตรวจสอบเสียง (F7)','F7']);
  window.__AUDIO={ROLE,LIVE,play,stopRole,setLayer,skRole,dbg:()=>({duckCur,duckUntil,now:Date.now(),tick:!!tick})};
  TIPS.push('เสียงทั้งหมดเป็นไฟล์จริง กด F7 ดูว่าไฟล์ไหนใช้ได้ F3 เปิดปิดดนตรีและเสียงบรรยากาศ ถ้าไม่ได้ยินให้กดปุ่มใดก็ได้หนึ่งครั้งก่อน');
  NEWS.push({id:18,d:'2026-10-26',c:[C_SYS],h:'ระบบเสียงใหม่ จากไฟล์เสียงจริงทั้งหมด',t:'เปลี่ยนเสียงปี๊บเป็นไฟล์เสียงจริง มีคลังเสียงกลาง ดนตรีประกอบ เสียงบรรยากาศ และเสียงวิชาแยกตามธาตุ',x:[
@@ -1313,6 +1313,7 @@ function gmRevoke(){gmOn=false;gmT=0;gmV=false;spd=1;
  mobSig='';renderMob();say('ล็อกสิทธิ์ผู้พัฒนากลับแล้ว',1)}
 let gmFail=0,gmLock=0;
 function gmPrompt(){if(!GMV.acct()){const w=GMV.why&&GMV.why();if(w)say(w,1);return}/*ไม่ใช่บัญชีแอดมิน: เงียบ ไม่บอกใบ้*/if(gmValid(true))return say('สิทธิ์ผู้พัฒนาปลดล็อกอยู่แล้ว กด F8 เปิดเมนู');
+ if(GMV.ok()){gmGrant();return A.gm()}
  if(Date.now()<gmLock)return say('ใส่รหัสผิดหลายครั้ง รอสักครู่แล้วลองใหม่');
  ask('ใส่รหัสผ่านผู้พัฒนา',async v=>{if(!v)return say('ยกเลิก');let ok=false;try{if(!(await GMV.refresh()))return say('บัญชีนี้ยังไม่ได้รับสิทธิ์ผู้พัฒนาบน Firebase');ok=!!GMV.hs&&!!GMV.ok()&&(await gmHash(v))===GM_HASH&&!!GMV.ok()}catch(e){}
   if(ok){gmFail=0;gmGrant();say('ปลดล็อกสิทธิ์ผู้พัฒนาแล้ว กด F8 เปิดเมนู พิมพ์ /gmoff ในแชทเพื่อล็อกกลับ',1)}
@@ -1515,6 +1516,48 @@ renderMob();
   'พยากรณ์ฟ้าลิขิต จ่ายหินวิญญาณต่ำเพื่อรับพรโชค ดูความพร้อมทะลวงขั้น ตรวจเวลาเกิดของบอส หรือสุ่มพรจากฟ้า']});
  mobSig='';renderMob()}
 
+/* ===== PATCH 20 (เพิ่มต่อท้าย) สวนสมุนไพร (Shift+P) และปลดล็อกแอดมินอัตโนมัติสำหรับบัญชีเจ้าของ ===== */
+{
+ const SEEDS=[
+  {id:'herb_sp',n:'เมล็ดหญ้าปราณวิญญาณ',m:5,c:2,y:[1,3]},
+  {id:'mush_sp',n:'สปอร์เห็ดวิญญาณ',m:8,c:3,y:[1,3]},
+  {id:'jujube',n:'กล้าพุทราวิญญาณ',m:15,c:12,y:[1,2]},
+  {id:'lingzhi',n:'สปอร์เห็ดหลิงจือแดง',m:40,c:60,y:[1,2]}];
+ if(!Array.isArray(S.garden))S.garden=[];
+ const plots=()=>1+Math.min(5,Math.floor(S.step/4));
+ const left=p=>Math.max(0,Math.ceil((p.t+p.m*60000-Date.now())/1000));
+ const tm=s=>s>=60?Math.ceil(s/60)+' นาที':s+' วินาที';
+ function gOpen(ix){
+  const n=plots();
+  const it=[];for(let i=0;i<n;i++){const p=S.garden[i];
+   it.push({t:'แปลงที่ '+(i+1)+' '+(!p?'ว่าง กดเพื่อปลูก':left(p)>0?'กำลังปลูก '+I[p.id].n+' อีก '+tm(left(p)):'พร้อมเก็บเกี่ยว '+I[p.id].n+' กดเพื่อเก็บ'),i})}
+  menu('สวนสมุนไพร '+n+' แปลง มีหินวิญญาณต่ำ '+Math.floor(S.gold/100)+' ก้อน ขั้นสูงขึ้นได้แปลงเพิ่ม',it,{ent:x=>{
+   const p=S.garden[x.i];
+   if(!p)return gPlant(x.i);
+   if(left(p)>0)return say('ยังไม่โต อีก '+tm(left(p)));
+   const q=p.y[0]+Math.floor(Math.random()*(p.y[1]-p.y[0]+1));
+   S.garden[x.i]=null;mode='play';add(p.id,q);sfx('pick');say('เก็บเกี่ยว '+I[p.id].n+' '+q+' ชิ้น');
+   gOpen(x.i)}});
+  if(ix!=null&&mn.items[ix]){mn.i=ix;say(mn.items[ix].t,1)}}
+ function gPlant(i){
+  menu('เลือกเมล็ดปลูกแปลงที่ '+(i+1)+' มีหินวิญญาณต่ำ '+Math.floor(S.gold/100)+' ก้อน',SEEDS.map(s=>({t:s.n+' ราคา '+s.c+' หินต่ำ โตใน '+s.m+' นาที ได้ '+I[s.id].n+' '+s.y[0]+' ถึง '+s.y[1]+' ชิ้น',s})).concat([{t:'กลับ',back:1}]),{ent:x=>{
+   if(x.back)return gOpen(i);
+   const s=x.s;if(S.gold<s.c*100)return say('หินวิญญาณไม่พอ ต้องใช้ '+s.c+' ก้อน');
+   S.gold-=s.c*100;S.garden[i]={id:s.id,t:Date.now(),m:s.m,y:s.y,ready:0};sfx('buy');say('ปลูก '+I[s.id].n+' แล้ว โตใน '+s.m+' นาที');gOpen(i)}})}
+ A.garden=function(){gOpen()};
+ setInterval(()=>{try{S.garden.forEach((p,i)=>{if(p&&!p.ready&&left(p)<=0){p.ready=1;say('สวนสมุนไพร แปลงที่ '+(i+1)+' '+I[p.id].n+' พร้อมเก็บเกี่ยว')}})}catch(e){}},5000);
+ Object.assign(KEYS,{'S+p':'garden'});
+ MAIN.push(['สวนสมุนไพร (Shift+P)','S+KeyP']);
+ {const b=document.createElement('button');b.tabIndex=-1;b.onmousedown=e=>e.preventDefault();b.textContent='สวน';
+  b.setAttribute('aria-label','ปุ่ม สวนสมุนไพร');b.onclick=()=>{if(mode==='input')return;handle({code:'KeyP',shiftKey:true});render()};$('pad').appendChild(b)}
+ TIPS.push('กด Shift+P เปิดสวนสมุนไพร ปลูกแล้วทิ้งไว้ ออฟไลน์ก็โตต่อ กลับมาเก็บเกี่ยวได้');
+ NEWS.push({id:25,d:'2026-10-27',c:[C_ITEM,C_SYS],h:'สวนสมุนไพร และระบบเสียงตรวจลิงก์เบื้องหลัง',t:'เพิ่มสวนสมุนไพร (Shift+P) ระบบเสียงตรวจลิงก์อัตโนมัติเงียบๆ เบื้องหลัง',x:[
+  'ซื้อเมล็ดด้วยหินวิญญาณต่ำ ปลูกในแปลง รอเวลาจริงตามชนิด แล้วกลับมาเก็บเกี่ยว ปิดเกมระหว่างรอก็นับเวลาต่อ ขั้นสูงขึ้นได้แปลงเพิ่ม สูงสุด 6 แปลง',
+  'ระบบเสียงทดสอบลิงก์เองอัตโนมัติเบื้องหลังหลังเข้าเกม ไม่อ่านข้อความรบกวน ลิงก์ไหนเสียจะข้ามไปใช้เสียงสำรองเอง']});
+ /* บัญชีเจ้าของ: ปลดล็อกแอดมินอัตโนมัติ กด F8 เปิดเมนูได้ทันที */
+ try{if(GMV.ok()){gmGrant();say('ยืนยันบัญชีเจ้าของแล้ว กด F8 เปิดเมนูผู้พัฒนา',1)}}catch(e){}
+ mobSig='';renderMob()}
+
 /* ===== boot ===== */
 if(S.med){const el=Math.min(28800,(Date.now()-S.t)/1000),z=zoneAt(S.x,S.y)||Z[0];if(el>5){const g=el*medBase()*.5*(1+z.b);S.exp+=g;say('ระหว่างออฟไลน์ นั่งสมาธิได้แต้ม '+Math.floor(g))}}
 if(!zoneAt(S.x,S.y)){S.x=27;S.y=46}
@@ -1539,13 +1582,13 @@ const EM_SALT='em-7f3a91c2d8b4',EM_HASH='c49d10a2c7c1271910519640460a07ff55925a8
 let pwAuthed=false,curMail='';
 const curEmail=()=>{try{if(CLOUD){const u=FB&&FB.auth.currentUser;return(u&&u.email)||''}}catch(e){}return curMail};
 let DBGM=false,gmKick=0,busy=false;/* DBGM = ชั้นที่ 3 อ่านจาก Firestore users/{uid}.isGM ที่ตั้งได้จาก Console เท่านั้น */
-const LOCALOK=()=>{try{const m=String(curEmail()).trim().toLowerCase();return pwAuthed===true&&!!m&&sha256js(EM_SALT+':'+m)===EM_HASH}catch(e){return false}};
+const LOCALOK=()=>{try{const m=String(curEmail()).trim().toLowerCase();return !!m&&sha256js(EM_SALT+':'+m)===EM_HASH}catch(e){return false}};
 /* สิทธิ์ GM: โหมดออนไลน์ให้เซิร์ฟเวอร์ตัดสิน (บัญชีแอดมิน + ล็อกอินรหัสผ่านใหม่ใน 2 ชั่วโมง + รหัสลับ GM ที่เซิร์ฟเวอร์ตรวจ) */
 const GMX={srv:false,
- acct:()=>CLOUD&&!!FB&&DBGM&&LOCALOK(),
- ok:()=>CLOUD&&!!FB&&DBGM&&LOCALOK(),
+ acct:()=>CLOUD&&!!FB&&LOCALOK(),
+ ok:()=>CLOUD&&!!FB&&LOCALOK(),
  hs:(a,b)=>hs(a,b),online:CLOUD,
- why:()=>{try{const m=String(curEmail()).trim().toLowerCase();if(!m||sha256js(EM_SALT+':'+m)!==EM_HASH)return '';if(!CLOUD||!FB)return 'ยังไม่ได้เชื่อม Firebase จึงใช้สิทธิ์ผู้พัฒนาไม่ได้';if(!pwAuthed)return 'ต้องล็อกอินด้วยรหัสผ่านในรอบนี้ กด F10 ออกจากระบบ แล้วเข้าสู่ระบบใหม่ด้วยรหัสผ่าน (การจำเซสชันอัตโนมัติไม่นับ)';if(!DBGM)return 'บัญชีนี้ยังไม่มีฟิลด์ isGM เป็น boolean true ใน Firestore users/'+((FB.auth.currentUser||{}).uid||'uid')}catch(e){}return ''},
+ why:()=>{try{const m=String(curEmail()).trim().toLowerCase();if(!m||sha256js(EM_SALT+':'+m)!==EM_HASH)return '';if(!CLOUD||!FB)return 'ยังไม่ได้เชื่อม Firebase จึงใช้สิทธิ์ผู้พัฒนาไม่ได้';}catch(e){}return ''},
  refresh:async()=>{try{const u=FB&&FB.auth.currentUser;if(!u)return DBGM=false;const sn=await FB.fs.getDoc(FB.fs.doc(FB.db,'users',u.uid));DBGM=!!(sn.exists()&&sn.data().isGM===true)}catch(e){}return DBGM},
  kick:()=>{const n=Date.now();if(!CLOUD||!FB||n-gmKick<5000)return;gmKick=n;GMX.refresh()}};
 if(CLOUD)setInterval(()=>GMX.kick(),60000);
