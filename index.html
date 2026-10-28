@@ -1922,83 +1922,121 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
  say('โหลดเมนูผู้พัฒนาแบบเต็มแล้ว กด F8',1);
 }
 
-/* ===== PATCH MP1 เรดาร์ผู้เล่นอื่น (กด P) =====
-   ส่งตำแหน่งตัวเองขึ้น Firebase (คอลเลกชัน presence) เมื่อเดินแล้วทุก 30 วินาที หรือทุก 90 วินาทีถ้ายืนเฉยๆ
-   อ่านตำแหน่งคนอื่นเฉพาะตอนกด P เท่านั้น เพื่อประหยัดโควตาฟรี ปิดทั้งระบบได้ด้วย window.__MP_OFF=true */
+/* ===== PATCH MP1 เรดาร์ผู้เล่นอื่น (กด P) + รายชื่อคนออนไลน์ (Shift+F1) =====
+   ย้ายมาใช้ Realtime Database ทั้งหมด (presence/{ช่อง}/{uid}) ไม่ใช้ Firestore แล้ว
+   ส่งตำแหน่งตัวเองเมื่อเดินแล้วทุก 10 วินาที หรือทุก 60 วินาทีถ้ายืนเฉยๆ ลบเองอัตโนมัติเมื่อหลุดการเชื่อมต่อ (onDisconnect)
+   ปิดทั้งระบบได้ด้วย window.__MP_OFF=true */
 {
- const MP={ready:false,failed:false,err:null,db:null,auth:null,fs:null,lastW:0,lx:null,ly:null,busy:false};
+ const MP={ready:false,failed:false,err:null,auth:null,rt:null,rdb:null,lastW:0,lx:null,ly:null,lz:null,busy:false,rcell:null,off:0,offT:0,fastUntil:0};
+ const RTU='https://wongtragoon-6123-default-rtdb.firebaseio.com';
+ const isPerm=e=>/permission/i.test(String((e&&(e.code||''))||'')+' '+String((e&&e.message)||''));
+ const cellOf=(x,y)=>Math.floor(x/40)+'_'+Math.floor(y/40);
+ const safeK=s=>String(s||'').replace(/[.#$\[\]\/]/g,'_').slice(0,40);
  const FBU='https://www.gstatic.com/firebasejs/10.14.1/';
  const online=()=>{try{return typeof GMV!=='undefined'&&!!GMV.online}catch(e){return false}};
  const DEVM=t=>{try{return isGM()?t:'ระบบนี้ยังใช้งานไม่ได้ชั่วคราว ลองใหม่ภายหลัง'}catch(e){return 'ระบบนี้ยังใช้งานไม่ได้ชั่วคราว ลองใหม่ภายหลัง'}};
- const errMsg=e=>String((e&&e.code)||'').indexOf('permission')>=0
-  ?DEVM('เซิร์ฟเวอร์ยังไม่อนุญาตให้ใช้ระบบเห็นผู้เล่นอื่น ต้องเพิ่มกฎ presence ในหน้า Firestore Rules ของ Firebase ก่อน')
+ const errMsg=e=>isPerm(e)
+  ?DEVM('Realtime Database ยังไม่อนุญาตให้ใช้ระบบเห็นผู้เล่นอื่น ต้องเพิ่มกฎ presence ในหน้า Realtime Database > Rules ของ Firebase ก่อน')
   :'ระบบเห็นผู้เล่นอื่นเชื่อมต่อไม่ได้ในตอนนี้ ลองใหม่ภายหลัง';
  const zn=(x,y)=>{const z=zoneAt(x,y);return z?z.n:'นอกแผนที่'};
+ /* เวลาของเซิร์ฟเวอร์ (แก้ปัญหานาฬิกาเครื่องผู้เล่นเดินไม่ตรงกัน) */
+ const srvNow=()=>Date.now()+(MP.off||0);
  const init=async()=>{
   if(MP.ready)return true;
   if(MP.failed||!online())return false;
   try{
-   const a=await import(FBU+'firebase-app.js'),au=await import(FBU+'firebase-auth.js'),fs=await import(FBU+'firebase-firestore.js');
-   const app=a.getApp();MP.auth=au.getAuth(app);MP.db=fs.getFirestore(app);MP.fs=fs;
+   const a=await import(FBU+'firebase-app.js'),au=await import(FBU+'firebase-auth.js'),rd=await import(FBU+'firebase-database.js');
+   const app=a.getApp();MP.auth=au.getAuth(app);
    try{await MP.auth.authStateReady()}catch(e){}
    if(!MP.auth.currentUser)return false;
+   MP.rt=rd;MP.rdb=rd.getDatabase(app,RTU);
+   try{rd.onValue(rd.ref(MP.rdb,'.info/serverTimeOffset'),s=>{const v=s.val();if(typeof v==='number'){MP.off=v;MP.offT=Date.now()}})}catch(e){}
    MP.ready=true;return true;
-  }catch(e){return false}
+  }catch(e){try{console.warn('MP init',e)}catch(x){}return false}
  };
  const push=async()=>{
   if(MP.busy||window.__MP_OFF||MP.failed||document.hidden||!online())return;
-  const now=Date.now(),moved=S.x!==MP.lx||S.y!==MP.ly;
-  if(!moved&&now-MP.lastW<90000)return;
+  const now=Date.now(),moved=S.x!==MP.lx||S.y!==MP.ly,zz=zoneAt(S.x,S.y),zc=(zz?zz.id:'')!==MP.lz;
+  if(!((moved&&now-MP.lastW>=10000)||(zc&&now-MP.lastW>=5000)||now-MP.lastW>=60000))return;
   MP.busy=true;
   try{
    if(!(await init()))return;
    const u=MP.auth.currentUser;if(!u)return;
-   const z=zoneAt(S.x,S.y);
-   await MP.fs.setDoc(MP.fs.doc(MP.db,'presence',u.uid),{n:String(S.pname||'ผู้ฝึกตน').slice(0,20),lv:S.step|0,ch:String(S.title||'').slice(0,20),x:S.x,y:S.y,z:z?z.id:'',t:now});
-   MP.lastW=now;MP.lx=S.x;MP.ly=S.y;
+   const z=zoneAt(S.x,S.y),rd=MP.rt;
+   const nm=String(S.pname||'ผู้ฝึกตน').slice(0,20),ch0=String(S.title||'').slice(0,20);
+   const pl={n:nm,lv:S.step|0,ch:ch0,x:S.x,y:S.y,z:z?String(z.id).slice(0,20):'',t:now},cell=cellOf(S.x,S.y),rf=rd.ref(MP.rdb,'presence/'+cell+'/'+u.uid);
+   if(MP.rcell&&MP.rcell!==cell)rd.remove(rd.ref(MP.rdb,'presence/'+MP.rcell+'/'+u.uid)).catch(()=>{});
+   await rd.set(rf,pl);
+   rd.onDisconnect(rf).remove().catch(()=>{});
+   MP.rcell=cell;MP.lastW=now;MP.lx=S.x;MP.ly=S.y;MP.lz=z?z.id:'';
   }catch(e){
-   if(String((e&&e.code)||'').indexOf('permission')>=0){MP.failed=true;MP.err=e}
+   if(isPerm(e)){MP.failed=true;MP.err=e}
    try{console.warn('MP1 push',e)}catch(x){}
   }finally{MP.busy=false}
  };
- setTimeout(push,5000);setInterval(push,30000);
+ setTimeout(push,5000);setInterval(push,10000);
+ addEventListener('pageshow',e=>{if(e&&e.persisted)MP.lastW=0});
+ addEventListener('pagehide',()=>{try{if(MP.ready&&!MP.failed&&!window.__MP_OFF&&MP.auth.currentUser&&MP.rcell)MP.rt.remove(MP.rt.ref(MP.rdb,'presence/'+MP.rcell+'/'+MP.auth.currentUser.uid)).catch(()=>{})}catch(e){}});
+ /* รายชื่อและจำนวนคนออนไลน์ทั้งหมด: อ่านทั้งโหนด presence ครั้งเดียว เก็บไว้ 10 วินาที ถ้าเวลาล่าสุดเกิน 3 นาทีถือว่าหลุดแล้ว */
  const ON={t:0,L:[],busy:null};
  const fetchOnline=()=>{
-  if(Date.now()-ON.t<30000)return Promise.resolve(ON.L);
+  if(Date.now()-ON.t<10000)return Promise.resolve(ON.L);
   if(ON.busy)return ON.busy;
   ON.busy=(async()=>{try{
-   const fs=MP.fs;
-   const sn=await fs.getDocs(fs.query(fs.collection(MP.db,'presence'),fs.where('t','>',Date.now()-180000)));
-   const L=[];sn.forEach(d=>{const v=d.data();if(v&&typeof v.x==='number'&&typeof v.y==='number')L.push({id:d.id,n:String(v.n||'ผู้ฝึกตน').slice(0,20),x:v.x,y:v.y,lv:(typeof v.lv==='number'?v.lv:null),ch:String(v.ch||'').slice(0,20)})});
+   const snap=await MP.rt.get(MP.rt.ref(MP.rdb,'presence')),L=[],n0=Date.now();
+   snap.forEach(cs=>{cs.forEach(us=>{const v=us.val();if(v&&typeof v.x==='number'&&typeof v.y==='number'&&typeof v.t==='number'&&v.t>n0-180000)L.push({id:us.key,n:String(v.n||'ผู้ฝึกตน').slice(0,20),x:v.x,y:v.y,lv:(typeof v.lv==='number'?v.lv:null),ch:String(v.ch||'').slice(0,20)})})});
    ON.L=L;ON.t=Date.now();return L
   }finally{ON.busy=null}})();
   return ON.busy};
+ /* ค้นหาเฉพาะช่อง 40x40 รอบตัว 9 ช่อง เก็บผลไว้ 3 วินาที */
+ const NR={t:0,k:'',L:[],busy:null};
+ const cellsNow=()=>{const cx=Math.floor(S.x/40),cy=Math.floor(S.y/40),c=[];for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++)c.push((cx+i)+'_'+(cy+j));return c};
+ const fetchNear=maxAge=>{
+  const cells=cellsNow(),k=cells.join(',');
+  if(Date.now()-NR.t<(maxAge==null?3000:maxAge)&&NR.k===k)return Promise.resolve(NR.L);
+  if(NR.busy)return NR.busy;
+  NR.busy=(async()=>{try{
+   const rd=MP.rt,n0=Date.now(),L=[];
+   const snaps=await Promise.all(cells.map(c=>rd.get(rd.ref(MP.rdb,'presence/'+c))));
+   snaps.forEach(sn=>{sn.forEach(us=>{const v=us.val();if(v&&typeof v.x==='number'&&typeof v.y==='number'&&typeof v.t==='number'&&v.t>n0-180000)L.push({id:us.key,n:String(v.n||'ผู้ฝึกตน').slice(0,20),x:v.x,y:v.y})})});
+   NR.L=L;NR.t=Date.now();NR.k=k;return L
+  }finally{NR.busy=null}})();
+  return NR.busy};
+ /* โหมดถี่: เมื่อกด P แล้วเจอคนใกล้เคียง จะส่งตำแหน่งทุก 15 วินาทีและอ่านเพื่อนบ้านทุก 12 วินาที นาน 2 นาที ต่ออายุเองถ้ายังมีคนใกล้ */
+ setInterval(()=>{try{
+  if(window.__MP_OFF||MP.failed||!MP.ready||document.hidden||!online()||Date.now()>=(MP.fastUntil||0))return;
+  fetchNear(8000).then(R=>{const u=MP.auth.currentUser;if(u&&R.some(v=>v.id!==u.uid&&Math.abs(v.x-S.x)<=39&&Math.abs(v.y-S.y)<=39))MP.fastUntil=Date.now()+120000}).catch(()=>{})
+ }catch(e){}},12000);
  A.pradar=async function(){
   if(window.__MP_OFF)return say('ระบบเห็นผู้เล่นอื่นถูกปิดอยู่');
   if(!online())return say('ไม่พบผู้เล่นอื่น เกมอยู่ในโหมดออฟไลน์ ระบบนี้ใช้ได้เฉพาะตอนออนไลน์');
   try{
    if(MP.failed)return say(errMsg(MP.err));
    if(!(await init()))return say(MP.failed?errMsg(MP.err):'ยังเชื่อมต่อเซิร์ฟเวอร์ไม่เสร็จ รอสักครู่แล้วกด P ใหม่');
-   const u=MP.auth.currentUser,fs=MP.fs;
-   const L=(await fetchOnline()).filter(v=>v.id!==u.uid);
-   if(!L.length)return say('ไม่พบผู้เล่นอื่นออนไลน์ในตอนนี้');
+   const u=MP.auth.currentUser;
+   const fast0=Date.now()<(MP.fastUntil||0),age=Date.now()-NR.t;
+   let raw;
+   if(NR.k&&NR.k===cellsNow().join(',')&&age<60000){raw=NR.L;if(age>3000)fetchNear(0).catch(()=>{})}else raw=await fetchNear();
+   const L=raw.filter(v=>v.id!==u.uid&&Math.abs(v.x-S.x)<=39&&Math.abs(v.y-S.y)<=39);
+   if(L.length)MP.fastUntil=Date.now()+120000;
+   if(!L.length)return say('ไม่มีผู้เล่นใกล้เคียง ในระยะ 39 ก้าว');
    const zid=(x,y)=>{const z=zoneAt(x,y);return z?z.id:''},me=zid(S.x,S.y),same=L.filter(v=>zid(v.x,v.y)===me).sort((a,b)=>dist(S,a)-dist(S,b)),other=L.filter(v=>zid(v.x,v.y)!==me);
    same.slice(0,5).forEach(v=>say(v.n+' '+rel(v.x-S.x,v.y-S.y)));
    other.slice(0,3).forEach(v=>say(v.n+' อยู่ที่ '+zn(v.x,v.y)));
    if(other.length>3)say('ยังมีคนในแมพอื่นอีก '+(other.length-3)+' คน');
   }catch(e){
-   if(String((e&&e.code)||'').indexOf('permission')>=0){MP.failed=true;MP.err=e}
+   if(isPerm(e)){MP.failed=true;MP.err=e}
    try{console.warn('MP1 radar',e)}catch(x){}
    say(errMsg(e));
   }
  };
 
  /* ===== PATCH 28: รายชื่อคนออนไลน์ (Shift+F1) และข้อความส่วนตัว =====
-    แสดงเฉพาะชื่อ ระดับขั้น ฉายา (ถ้ามี) และที่อยู่ อ่านจาก presence ครั้งเดียวแล้วเก็บไว้ 30 วินาที (ใช้ร่วมกับปุ่ม P)
-    ข้อความส่วนตัวเขียนลง pm/{ผู้ส่ง}_{ผู้รับ} หนึ่งเอกสารต่อคู่ ผู้รับฟังเฉพาะเอกสารที่ส่งถึงตัวเอง */
- const isPermX=e=>String((e&&e.code)||'').indexOf('permission')>=0;
- const PERM_PM='เซิร์ฟเวอร์ยังไม่อนุญาตข้อความส่วนตัว ต้องเพิ่มกฎ pm ในหน้า Firestore Rules ของ Firebase ก่อน';
- const PM={unsub:null,failed:false,busy:false,lastSend:0,seen:{}};
+    แสดงเฉพาะชื่อ ระดับขั้น ฉายา (ถ้ามี) และที่อยู่ อ่านจาก presence (Realtime Database) ครั้งเดียวแล้วเก็บไว้ 10 วินาที
+    ข้อความส่วนตัวเขียนลง Realtime Database ที่ pm/{ผู้รับ}/{ผู้ส่ง} ผู้รับฟังเฉพาะกล่องของตัวเอง และลบข้อความทิ้งหลังอ่านแล้ว */
+ const isPermX=isPerm;
+ const PERM_PM='Realtime Database ยังไม่อนุญาตข้อความส่วนตัว ต้องเพิ่มกฎ pm ในหน้า Realtime Database > Rules ของ Firebase ก่อน';
+ const PM={unsubs:[],failed:false,busy:false,lastSend:0,seen:{},on:false};
  const pushPriv=line=>{S.chat[4].push(line);S.chat[0].push(line);if(S.chat[4].length>100)S.chat[4].shift();if(S.chat[0].length>100)S.chat[0].shift()};
  const lvTxt=v=>v.lv==null?'ไม่ทราบระดับ':realmName(Math.max(0,Math.min(R.length-1,v.lv)));
  const sendPM=async(to,text)=>{
@@ -2007,38 +2045,39 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
   if(PM.failed)return say(DEVM(PERM_PM),1);
   try{
    if(!(await init()))return say('ส่งไม่สำเร็จ ยังเชื่อมต่อเซิร์ฟเวอร์ไม่เสร็จ',1);
-   const u=MP.auth.currentUser;if(!u)return;const fs=MP.fs;
-   await fs.setDoc(fs.doc(MP.db,'pm',u.uid+'_'+to.id),{from:u.uid,to:to.id,n:String(S.pname||'ผู้ฝึกตน').slice(0,20),m:text,t:fs.serverTimestamp()});
+   const u=MP.auth.currentUser;if(!u)return;const rd=MP.rt;
+   await rd.set(rd.ref(MP.rdb,'pm/'+to.id+'/'+u.uid),{n:String(S.pname||'ผู้ฝึกตน').slice(0,20),m:text,t:rd.serverTimestamp()});
    PM.lastSend=Date.now();pushPriv('[ส่วนตัว] ถึง '+to.n+': '+text);say('ส่งข้อความส่วนตัวถึง '+to.n+' แล้ว',1);
   }catch(e){
-   if(isPermX(e)){PM.failed=true;say(DEVM(PERM_PM),1)}else say('ส่งข้อความส่วนตัวไม่สำเร็จ ลองใหม่ภายหลัง',1);
+   if(isPerm(e)){PM.failed=true;say(DEVM(PERM_PM),1)}else say('ส่งข้อความส่วนตัวไม่สำเร็จ ลองใหม่ภายหลัง',1);
    try{console.warn('MP pm send',e)}catch(x){}
   }};
- const detachPM=()=>{try{if(PM.unsub)PM.unsub()}catch(e){}PM.unsub=null};
+ const detachPM=()=>{try{PM.unsubs.forEach(f=>f())}catch(e){}PM.unsubs=[];PM.on=false};
  const attachPM=async()=>{
-  if(PM.unsub||PM.busy||PM.failed||window.__MP_OFF)return;
+  if(PM.on||PM.busy||PM.failed||window.__MP_OFF)return;
   PM.busy=true;
   try{
    if(!(await init()))return;
-   if(PM.unsub||document.hidden)return;
-   const fs=MP.fs,u=MP.auth.currentUser;if(!u)return;
-   PM.unsub=fs.onSnapshot(fs.query(fs.collection(MP.db,'pm'),fs.where('to','==',u.uid)),snap=>{
-    snap.docChanges().forEach(ch=>{
-     if(ch.type==='removed')return;
-     const v=ch.doc.data();if(!v||typeof v.m!=='string'||!v.m)return;
-     const tm=v.t&&v.t.toMillis?v.t.toMillis():0;
-     if(!tm||tm<Date.now()-600000)return;
-     if((PM.seen[ch.doc.id]||0)>=tm)return;PM.seen[ch.doc.id]=tm;
-     const line='[ส่วนตัว] '+String(v.n||'ผู้ฝึกตน').slice(0,20)+': '+v.m.slice(0,120);
-     pushPriv(line);say(line,1)})},
-    e=>{PM.unsub=null;if(isPermX(e)){PM.failed=true;say(DEVM(PERM_PM),1)}try{console.warn('MP pm listen',e)}catch(x){}});
-  }catch(e){PM.unsub=null;try{console.warn('MP pm attach',e)}catch(x){}}
+   if(PM.on||document.hidden)return;
+   const rd=MP.rt,u=MP.auth.currentUser;if(!u)return;
+   const r=rd.ref(MP.rdb,'pm/'+u.uid);
+   const h=snap=>{
+    const v=snap.val();if(!v||typeof v.m!=='string'||!v.m||typeof v.t!=='number')return;
+    const id=snap.key;
+    rd.remove(rd.ref(MP.rdb,'pm/'+u.uid+'/'+id)).catch(()=>{});
+    if(v.t<srvNow()-600000)return;
+    if((PM.seen[id]||0)>=v.t)return;PM.seen[id]=v.t;
+    const line='[ส่วนตัว] '+String(v.n||'ผู้ฝึกตน').slice(0,20)+': '+v.m.slice(0,120);
+    pushPriv(line);say(line,1)};
+   const er=e=>{detachPM();if(isPerm(e)){PM.failed=true;say(DEVM(PERM_PM),1)}try{console.warn('MP pm listen',e)}catch(x){}};
+   PM.unsubs=[rd.onChildAdded(r,h,er),rd.onChildChanged(r,h,er)];PM.on=true;
+  }catch(e){detachPM();try{console.warn('MP pm attach',e)}catch(x){}}
   finally{PM.busy=false}
  };
  setInterval(()=>{try{
   if(window.__MP_OFF||!online())return;
   if(document.hidden){detachPM();return}
-  if(!PM.failed&&!PM.unsub&&!PM.busy)attachPM()
+  if(!PM.failed&&!PM.on&&!PM.busy)attachPM()
  }catch(e){}},3000);
  const playerMenu=(v,back)=>{
   const zid=(x,y)=>{const z=zoneAt(x,y);return z?z.id:''};
@@ -2070,45 +2109,45 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
  try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-10-28',c:[C_SYS],h:'รายชื่อคนออนไลน์ (Shift F1) ข้อความส่วนตัว และเอาปุ่ม K ออก',t:'กด Shift F1 ดูว่าใครออนไลน์ ระดับอะไร อยู่ตรงไหน และส่งข้อความส่วนตัวหาได้ เอาปุ่ม K ออก เพราะคุยกับร้านด้วย F ซื้อและสร้างของได้เลย',x:[
    'กด Shift F1 เปิดรายชื่อคนที่ออนไลน์ เลื่อนด้วยลูกศร แต่ละบรรทัดบอกชื่อ ระดับขั้น ฉายา (ถ้ามี) และที่อยู่ ถ้าอยู่แมพเดียวกันจะบอกทิศทางด้วย บนมือถือใช้ปุ่มใครออนไลน์ในเมนูหลัก',
    'กด Enter ที่ชื่อ แล้วเลือกส่งข้อความส่วนตัว พิมพ์แล้วกด Enter ได้ครั้งละไม่เกิน 120 ตัวอักษร ส่งได้ทุก 3 วินาที ผู้รับได้ยินทันทีในหมวดส่วนตัว',
-   'ตำแหน่งของคนอื่นอัพเดตทุกประมาณ 30 ถึง 90 วินาที จึงอาจเก่ากว่าตำแหน่งจริงเล็กน้อย',
+   'ตำแหน่งของคนอื่นอัพเดตเป็นระยะทุกไม่กี่วินาทีถึงไม่กี่นาที จึงอาจเก่ากว่าตำแหน่งจริงได้เล็กน้อย',
    'เอาปุ่ม K ออกแล้ว เดินไปที่ร้านแล้วกด F คุย จะมีรายการสร้างของอยู่บรรทัดแรกในร้านตีเหล็ก ร้านโอสถ และร้านช่างหนัง',
    'ข้อความเรดาร์และรายชื่อ บอกแค่ชื่อและที่อยู่ ไม่มีคำนำหน้าชื่ออีกต่อไป']})}catch(e){}
 
  /* ===== แชทแมพ: ผู้เล่นในแมพเดียวกันเห็นข้อความของกันและกัน =====
-    หนึ่งเอกสารต่อผู้เล่น (mapchat/{uid}) เขียนทับเมื่อพิมพ์ใหม่ จึงไม่มีข้อความสะสมบนเซิร์ฟเวอร์
+    ใช้ Realtime Database (mapchat/{แมพ}/{uid}) เขียนทับเมื่อพิมพ์ใหม่ และลบเองเมื่อหลุด จึงไม่มีข้อความสะสมบนเซิร์ฟเวอร์
     ฟังเฉพาะแมพที่ยืนอยู่ ใช้ตัวฟังแบบเรียลไทม์ ได้อ่านเฉพาะข้อความที่เปลี่ยน ไม่วนถามซ้ำ
     ส่งได้ 3 วินาทีต่อครั้ง ยาวไม่เกิน 120 ตัวอักษร ปิดทั้งระบบได้ด้วย window.__MP_OFF=true */
  {
-  const CM={z:'',unsub:null,stable:'',stableN:0,seen:{},failed:false,lastSend:0};
+  const CM={z:'',unsubs:[],stable:'',stableN:0,seen:{},failed:false,lastSend:0,sentZ:''};
   const trimC=()=>{[1,2].forEach(i=>{if(S.chat[i].length>100)S.chat[i].splice(0,S.chat[i].length-100)});if(S.chat[0].length>100)S.chat[0].splice(0,S.chat[0].length-100)};
-  const isPerm=e=>String((e&&e.code)||'').indexOf('permission')>=0;
-  const PERM_MSG='เซิร์ฟเวอร์ยังไม่อนุญาตแชทแมพ ต้องเพิ่มกฎ mapchat ในหน้า Firestore Rules ของ Firebase ก่อน';
-  const detach=()=>{try{if(CM.unsub)CM.unsub()}catch(e){}CM.unsub=null;CM.z=''};
+  const PERM_MSG='Realtime Database ยังไม่อนุญาตแชทแมพ ต้องเพิ่มกฎ mapchat ในหน้า Realtime Database > Rules ของ Firebase ก่อน';
+  const detach=()=>{try{CM.unsubs.forEach(f=>f())}catch(e){}CM.unsubs=[];CM.z=''};
+  /* แชทแมพ: mapchat/{แมพ}/{uid} เขียนทับเมื่อพิมพ์ใหม่ ฟังเฉพาะแมพที่ยืนอยู่ ได้รับเฉพาะข้อความที่เปลี่ยน ไม่วนถามซ้ำ */
   const attach=async zid=>{
-   if(CM.unsub||CM.failed||window.__MP_OFF)return;
+   if(CM.unsubs.length||CM.failed||window.__MP_OFF)return;
    if(!(await init()))return;
-   if(CM.unsub||CM.stable!==zid)return;
-   const fs=MP.fs,u=MP.auth.currentUser;if(!u)return;
+   if(CM.unsubs.length||CM.stable!==zid)return;
+   const rd=MP.rt,u=MP.auth.currentUser;if(!u)return;
    CM.z=zid;
    try{
-    CM.unsub=fs.onSnapshot(fs.query(fs.collection(MP.db,'mapchat'),fs.where('z','==',zid)),snap=>{
-     snap.docChanges().forEach(ch=>{
-      if(ch.type==='removed'||ch.doc.id===u.uid)return;
-      const v=ch.doc.data();if(!v||typeof v.m!=='string'||!v.m)return;
-      const tm=v.t&&v.t.toMillis?v.t.toMillis():0;
-      if(!tm||tm<Date.now()-60000)return;
-      if((CM.seen[ch.doc.id]||0)>=tm)return;CM.seen[ch.doc.id]=tm;
-      const line='[แผนที่] '+String(v.n||'ผู้ฝึกตน').slice(0,20)+': '+v.m.slice(0,120);
-      S.chat[2].push(line);S.chat[0].push(line);trimC();
-      say(line,1)})},
-     e=>{CM.unsub=null;CM.z='';if(isPerm(e)){CM.failed=true;say(DEVM(PERM_MSG),1)}try{console.warn('MP chat listen',e)}catch(x){}});
-   }catch(e){CM.unsub=null;CM.z='';try{console.warn('MP chat attach',e)}catch(x){}}
+    const r=rd.ref(MP.rdb,'mapchat/'+safeK(zid));
+    const h=snap=>{
+     if(snap.key===u.uid)return;
+     const v=snap.val();if(!v||typeof v.m!=='string'||!v.m||typeof v.t!=='number')return;
+     if(v.t<srvNow()-60000)return;
+     if((CM.seen[snap.key]||0)>=v.t)return;CM.seen[snap.key]=v.t;
+     const line='[แผนที่] '+String(v.n||'ผู้ฝึกตน').slice(0,20)+': '+v.m.slice(0,120);
+     S.chat[2].push(line);S.chat[0].push(line);trimC();
+     say(line,1)};
+    const er=e=>{detach();if(isPerm(e)){CM.failed=true;say(DEVM(PERM_MSG),1)}try{console.warn('MP chat listen',e)}catch(x){}};
+    CM.unsubs=[rd.onChildAdded(r,h,er),rd.onChildChanged(r,h,er)];
+   }catch(e){detach();try{console.warn('MP chat attach',e)}catch(x){}}
   };
   /* ตรวจแมพทุก 2 วินาที เปลี่ยนตัวฟังเมื่ออยู่แมพใหม่นิ่งครบ 4 วินาที กันต่อใหม่ถี่ๆ ตอนเดินข้ามเขต หยุดฟังเมื่อซ่อนหน้าจอ */
   setInterval(()=>{try{
    if(window.__MP_OFF||!online())return;
    if(document.hidden){detach();detachW();return}
-   if(!W.failed&&!W.unsub&&!W.busy)attachW();
+   if(!W.failed&&!W.on&&!W.busy)attachW();
    if(CM.failed)return;
    const z=zoneAt(S.x,S.y),id=z?z.id:'';
    if(id!==CM.stable){CM.stable=id;CM.stableN=0;return}
@@ -2116,38 +2155,38 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
    if(CM.stableN<2||CM.z===id)return;
    detach();if(id)attach(id)
   }catch(e){}},2000);
-  /* แชทโลก: ทุกคนที่ออนไลน์เห็น เอกสารเดียวต่อผู้เล่น (worldchat/{uid}) ฟังเฉพาะข้อความใหม่ในช่วง 60 วินาทีล่าสุด ส่งได้ 10 วินาทีต่อครั้ง ยาวไม่เกิน 100 ตัวอักษร */
-  const W={unsub:null,busy:false,failed:false,lastSend:0,seen:{}};
-  const PERM_W='เซิร์ฟเวอร์ยังไม่อนุญาตแชทโลก ต้องเพิ่มกฎ worldchat ในหน้า Firestore Rules ของ Firebase ก่อน';
-  const detachW=()=>{try{if(W.unsub)W.unsub()}catch(e){}W.unsub=null};
+  /* แชทโลก: worldchat/{uid} ทุกคนที่ออนไลน์เห็น ฟังเฉพาะข้อความในช่วง 60 วินาทีล่าสุด ส่งได้ 10 วินาทีต่อครั้ง ยาวไม่เกิน 100 ตัวอักษร */
+  const W={unsubs:[],on:false,busy:false,failed:false,lastSend:0,seen:{}};
+  const PERM_W='Realtime Database ยังไม่อนุญาตแชทโลก ต้องเพิ่มกฎ worldchat ในหน้า Realtime Database > Rules ของ Firebase ก่อน';
+  const detachW=()=>{try{W.unsubs.forEach(f=>f())}catch(e){}W.unsubs=[];W.on=false};
   const attachW=async()=>{
-   if(W.unsub||W.busy||W.failed||window.__MP_OFF)return;
+   if(W.on||W.busy||W.failed||window.__MP_OFF)return;
    W.busy=true;
    try{
     if(!(await init()))return;
-    if(W.unsub||document.hidden)return;
-    const fs=MP.fs,u=MP.auth.currentUser;if(!u)return;
-    const since=new Date(Date.now()-60000);
-    W.unsub=fs.onSnapshot(fs.query(fs.collection(MP.db,'worldchat'),fs.where('t','>',since)),snap=>{
-     snap.docChanges().forEach(ch=>{
-      if(ch.type==='removed'||ch.doc.id===u.uid)return;
-      const v=ch.doc.data();if(!v||typeof v.m!=='string'||!v.m)return;
-      const tm=v.t&&v.t.toMillis?v.t.toMillis():0;
-      if(!tm||tm<Date.now()-60000)return;
-      if((W.seen[ch.doc.id]||0)>=tm)return;W.seen[ch.doc.id]=tm;
-      const line='[โลก] '+String(v.n||'ผู้ฝึกตน').slice(0,20)+': '+v.m.slice(0,100);
-      S.chat[1].push(line);S.chat[0].push(line);trimC();
-      say(line,1)})},
-     e=>{W.unsub=null;if(isPerm(e)){W.failed=true;say(DEVM(PERM_W),1)}try{console.warn('MP world listen',e)}catch(x){}});
-   }catch(e){W.unsub=null;try{console.warn('MP world attach',e)}catch(x){}}
+    if(W.on||document.hidden)return;
+    const rd=MP.rt,u=MP.auth.currentUser;if(!u)return;
+    const q=rd.query(rd.ref(MP.rdb,'worldchat'),rd.orderByChild('t'),rd.startAt(srvNow()-60000));
+    const h=snap=>{
+     if(snap.key===u.uid)return;
+     const v=snap.val();if(!v||typeof v.m!=='string'||!v.m||typeof v.t!=='number')return;
+     if(v.t<srvNow()-60000)return;
+     if((W.seen[snap.key]||0)>=v.t)return;W.seen[snap.key]=v.t;
+     const line='[โลก] '+String(v.n||'ผู้ฝึกตน').slice(0,20)+': '+v.m.slice(0,100);
+     S.chat[1].push(line);S.chat[0].push(line);trimC();
+     say(line,1)};
+    const er=e=>{detachW();if(isPerm(e)){W.failed=true;say(DEVM(PERM_W),1)}try{console.warn('MP world listen',e)}catch(x){}};
+    W.unsubs=[rd.onChildAdded(q,h,er),rd.onChildChanged(q,h,er)];W.on=true;
+   }catch(e){detachW();try{console.warn('MP world attach',e)}catch(x){}}
    finally{W.busy=false}
   };
   const sendW=async text=>{
    try{
     if(!(await init()))return say('ส่งแชทโลกไม่สำเร็จ ยังเชื่อมต่อเซิร์ฟเวอร์ไม่เสร็จ',1);
     const u=MP.auth.currentUser;if(!u)return;
-    const fs=MP.fs;
-    await fs.setDoc(fs.doc(MP.db,'worldchat',u.uid),{n:String(S.pname||'ผู้ฝึกตน').slice(0,20),m:text,t:fs.serverTimestamp()});
+    const rd=MP.rt,rf=rd.ref(MP.rdb,'worldchat/'+u.uid);
+    await rd.set(rf,{n:String(S.pname||'ผู้ฝึกตน').slice(0,20),m:text,t:rd.serverTimestamp()});
+    rd.onDisconnect(rf).remove().catch(()=>{});
    }catch(e){
     if(isPerm(e)){W.failed=true;say(DEVM(PERM_W),1)}else say('ส่งแชทโลกไม่สำเร็จ ลองใหม่ภายหลัง',1);
     try{console.warn('MP world send',e)}catch(x){}
@@ -2157,8 +2196,13 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
    try{
     if(!(await init()))return say('ส่งแชทแมพไม่สำเร็จ ยังเชื่อมต่อเซิร์ฟเวอร์ไม่เสร็จ',1);
     const u=MP.auth.currentUser;if(!u)return;
-    const fs=MP.fs,z=zoneAt(S.x,S.y);
-    await fs.setDoc(fs.doc(MP.db,'mapchat',u.uid),{n:String(S.pname||'ผู้ฝึกตน').slice(0,20),z:z?z.id:'',m:text,t:fs.serverTimestamp()});
+    const rd=MP.rt,z=zoneAt(S.x,S.y),zk=safeK(z?z.id:'');
+    if(!zk)return say('ตอนนี้อยู่นอกแผนที่ แชทแมพยังไม่ได้',1);
+    if(CM.sentZ&&CM.sentZ!==zk)rd.remove(rd.ref(MP.rdb,'mapchat/'+CM.sentZ+'/'+u.uid)).catch(()=>{});
+    const rf=rd.ref(MP.rdb,'mapchat/'+zk+'/'+u.uid);
+    await rd.set(rf,{n:String(S.pname||'ผู้ฝึกตน').slice(0,20),m:text,t:rd.serverTimestamp()});
+    rd.onDisconnect(rf).remove().catch(()=>{});
+    CM.sentZ=zk;
    }catch(e){
     if(isPerm(e)){CM.failed=true;say(DEVM(PERM_MSG),1)}else say('ส่งแชทแมพไม่สำเร็จ ลองใหม่ภายหลัง',1);
     try{console.warn('MP chat send',e)}catch(x){}
@@ -2176,7 +2220,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
    else if(st.failed)say(DEVM(w?PERM_W:PERM_MSG),1);
    else say('ออฟไลน์ ข้อความ'+(w?'แชทโลก':'แชทแมพ')+'เห็นเฉพาะตัวเอง',1)
   };
-  try{TIPS.push('กดเครื่องหมายทับ / พิมพ์แชทแมพ ผู้เล่นในแมพเดียวกันเห็นข้อความของเจ้า กดเครื่องหมาย \\ พิมพ์แชทโลก ทุกคนที่ออนไลน์เห็น กด P ดูว่ามีใครออนไลน์')}catch(e){}
+  try{TIPS.push('กดเครื่องหมายทับ / พิมพ์แชทแมพ ผู้เล่นในแมพเดียวกันเห็นข้อความของเจ้า กดเครื่องหมาย \\ พิมพ์แชทโลก ทุกคนที่ออนไลน์เห็น กด P ดูผู้เล่นใกล้เคียงในระยะ 39 ก้าว')}catch(e){}
   try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-10-28',c:[C_SYS],h:'แชทโลก แชทแมพ และลดข้อความที่ไม่จำเป็น',t:'แชทโลก (\\) ทุกคนที่ออนไลน์เห็นข้อความ แชทแมพ (/) เห็นเฉพาะในแมพเดียวกัน และประวัติข้อความเก็บเฉพาะเรื่องสำคัญ',x:[
    'กด / พิมพ์แชทแมพ ผู้เล่นออนไลน์ในแมพเดียวกันได้ยินข้อความทันที ส่งได้ 3 วินาทีต่อครั้ง ยาวไม่เกิน 120 ตัวอักษร หมู่บ้านลำธารใสกับทุ่งกระต่ายแต่ละทุ่งเป็นคนละแมพ',
    'กดเครื่องหมาย \\ พิมพ์แชทโลก ผู้เล่นทุกคนที่ออนไลน์เห็น ส่งได้ 10 วินาทีต่อครั้ง ยาวไม่เกิน 100 ตัวอักษร เมื่อเปิดโหมดข้อความเงียบ แชทโลกจะไม่อ่านออกเสียงแต่ยังเก็บในหมวดโลก',
@@ -2185,6 +2229,15 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
    'การเปิดกระเป๋า เลื่อนเมนู หยิบของ เปลี่ยนทิศ และผลของปุ่มทั่วไป ยังอ่านออกเสียงตามปกติ แต่ไม่เก็บลงประวัติ จึงไม่รกและเซฟเล็กลง',
    'ประวัติเก่าในเซฟถูกล้างให้เหลือเฉพาะเรื่องสำคัญอัตโนมัติตอนเข้าเกม']})}catch(e){}
  }
+}
+
+/* ===== PATCH QUOTA แจ้งผู้เล่นเมื่อโควตาเซิร์ฟเวอร์ฟรีเต็ม (ตั้งโดยโค้ดล็อกอินหรือระบบเรดาร์) ===== */
+{
+ let told=0;
+ try{if(window.__OFFLINE_SAVE)say('เซิร์ฟเวอร์ฟรีเต็มชั่วคราว คุณเข้าเล่นด้วยเซฟในเครื่อง รอบนี้เซฟจะยังไม่ขึ้นเซิร์ฟเวอร์ ปิดแล้วเปิดใหม่หลังโควตารีเซ็ตตอนบ่าย 2 หรือ 3 โมงเวลาไทยเพื่อซิงก์')}catch(e){}
+ setInterval(()=>{try{const q=window.__QUOTA_FULL,on=!!(q&&Date.now()-q<1800000);
+  if(on&&!told){told=1;say('โควตาเซฟตัวละครบนเซิร์ฟเวอร์ฟรีเต็มชั่วคราว เซฟอยู่ในเครื่องก่อน ส่วนแชทและรายชื่อคนออนไลน์ยังใช้ได้ตามปกติ')}
+  else if(!on&&told){told=0}}catch(e){}},10000);
 }
 </script>
 <script>
@@ -2236,18 +2289,27 @@ try{const p=JSON.parse(localStorage.getItem('ipo_pre')||'null');if(p){E('l_name'
 async function cloudStart(email,name){
  const u=FB.auth.currentUser;if(!u)throw new Error('ยังไม่ได้เข้าสู่ระบบ');
  const ref=FB.fs.doc(FB.db,'users',u.uid),KEY='ipo1_'+email;
- let cd=null;try{const sn=await FB.fs.getDoc(ref);cd=sn.exists()?sn.data():null}catch(e){throw new Error('โหลดข้อมูลจากเซิร์ฟเวอร์ไม่ได้ ลองใหม่อีกครั้ง')}
+ const quotaErr=e=>String((e&&e.code)||'').indexOf('resource-exhausted')>=0;
+ let cd=null,qf=false;try{const sn=await FB.fs.getDoc(ref);cd=sn.exists()?sn.data():null}catch(e){if(quotaErr(e))qf=true;else throw new Error('โหลดข้อมูลจากเซิร์ฟเวอร์ไม่ได้ ลองใหม่อีกครั้ง')}
  DBGM=!!(cd&&cd.isGM===true);const cs=cd&&typeof cd.save==='string'?cd.save:null;let ls=null;try{ls=localStorage.getItem(KEY)}catch(e){}
+ if(qf){if(!ls)throw new Error('เซิร์ฟเวอร์ฟรีเต็มชั่วคราว และเครื่องนี้ยังไม่มีเซฟของคุณ ลองใหม่อีกครั้งหลังบ่าย 2 หรือ 3 โมงเวลาไทย');window.__QUOTA_FULL=Date.now();window.__OFFLINE_SAVE=1;return}
  const tOf=s=>{try{return(JSON.parse(s)||{}).t||0}catch(e){return 0}};
  const body=s=>{try{const o=JSON.parse(s);delete o.t;return JSON.stringify(o)}catch(e){return s}};
  const push=s=>FB.fs.setDoc(ref,{name:name,email:email,save:s,t:Date.now()},{merge:true});
  if(cs&&(!ls||tOf(cs)>=tOf(ls))){try{localStorage.setItem(KEY,cs)}catch(e){}ls=cs}
- else if(ls){try{await push(ls)}catch(e){throw new Error('ส่งข้อมูลขึ้นเซิร์ฟเวอร์ไม่ได้ ลองใหม่อีกครั้ง')}}
- let last=null,sent=ls?body(ls):null,timer=null;
- const flush=()=>{if(last==null)return;const s=last;last=null;const b=body(s);if(b===sent)return;sent=b;push(s).catch(()=>{sent=null;if(last==null)last=s})};
+ else if(ls){try{await push(ls)}catch(e){if(quotaErr(e)){window.__QUOTA_FULL=Date.now();window.__OFFLINE_SAVE=1;return}throw new Error('ส่งข้อมูลขึ้นเซิร์ฟเวอร์ไม่ได้ ลองใหม่อีกครั้ง')}}
+ let last=null,sent=ls?body(ls):null,timer=null,lastP=0;
+ const VOL=['x','y','f','hp','qi','fp','med'];
+ const core=s=>{try{const o=JSON.parse(s);delete o.t;VOL.forEach(k=>{delete o[k]});return JSON.stringify(o)}catch(e){return s}};
+ let sentCore=ls?core(ls):null;
+ const flush=force=>{if(last==null)return;const s=last,b=body(s);if(b===sent){last=null;return}
+  if(!force&&core(s)===sentCore)return;
+  if(window.__QUOTA_FULL&&Date.now()-window.__QUOTA_FULL<1800000)return;
+  last=null;sent=b;sentCore=core(s);lastP=Date.now();
+  push(s).catch(e=>{sent=null;sentCore=null;if(last==null)last=s;if(quotaErr(e))window.__QUOTA_FULL=Date.now()})};
  const orig=Storage.prototype.setItem;
- Storage.prototype.setItem=function(k,v){orig.call(this,k,v);if(this===localStorage&&k===KEY){last=v;if(!timer)timer=setTimeout(()=>{timer=null;flush()},30000)}};
- addEventListener('pagehide',flush);addEventListener('beforeunload',flush);document.addEventListener('visibilitychange',()=>{if(document.hidden)flush()});
+ Storage.prototype.setItem=function(k,v){orig.call(this,k,v);if(this===localStorage&&k===KEY){last=v;if(!timer)timer=setTimeout(()=>{timer=null;flush(false)},180000)}};
+ addEventListener('pagehide',()=>flush(true));addEventListener('beforeunload',()=>flush(true));document.addEventListener('visibilitychange',()=>{if(document.hidden&&Date.now()-lastP>60000)flush(true)});
 }
 async function start(email,name){try{curMail=String(email||'').trim().toLowerCase();window.__ACC=email;window.__EMAIL=email;window.__NAME=name;window.__KEY='ipo1_'+email;try{sessionStorage.setItem('ipo_sess',email)}catch(e){}try{const rm=E('l_rem');if(!rm||rm.checked)localStorage.setItem('ipo_rem',JSON.stringify({m:email,n:name}));else localStorage.removeItem('ipo_rem');localStorage.setItem('ipo_pre',JSON.stringify({m:email,n:name}))}catch(e){}
  if(CLOUD)await cloudStart(email,name);
