@@ -1722,6 +1722,35 @@ try{
   'ชนสิ่งกีดขวางหรือขอบแผนที่ขณะกดค้าง จะหยุดเดิน ต้องปล่อยแล้วกดใหม่']})}catch(e){}
 }catch(e){console.error('PATCH22',e)}
 
+/* ===== PATCH 23 (เพิ่มต่อท้าย ไม่ลบโค้ดเดิม) ปุ่ม L ไม่อ่านหิน, กระเป๋าแยกหินกลาง สูง สุดยอดคนละช่อง, ถอดปุ่ม V ===== */
+// 1) ปุ่ม L อ่านเฉพาะระดับ แต้มฝึกฝน พลังโจมตี ป้องกัน พลังเหาะ ตัวคูณปราณ ไม่อ่านจำนวนหินวิญญาณ (ดูในกระเป๋าได้อยู่แล้ว)
+A.info=function(){const r=R[S.step];say(realmName(S.step)+' แต้มฝึกฝน '+Math.floor(S.exp)+' จาก '+r[3]+' โจมตี '+atk()+' ป้องกัน '+defn()+(S.known.includes('fly')?' พลังเหาะ '+Math.floor(S.fp)+'%':'')+' ตัวคูณปราณพื้นที่ +'+Math.round(100*(zoneAt(S.x,S.y).b))+'%')};
+// 2) กระเป๋า: หินกลาง สูง สุดยอด แยกเป็นช่องของตัวเอง เรียงติดกัน ดูดซับได้ทุกระดับ แต่ละระดับให้แต้มมากกว่าระดับล่าง 100 เท่า และจำกัดตามขั้นใหญ่ของผู้ฝึกตน
+// [id, ชื่อ, ตัวแปรใน S, ขั้นใหญ่ขั้นต่ำ (ขั้นใหญ่ = ขั้นพลัง หาร 10 ปัดลง), แต้มฝึกฝนต่อก้อน, ชื่อระดับที่ต้องถึง]
+const STN23=[['$sm','หินวิญญาณระดับกลาง','sm',1,400,'สร้างรากฐาน'],['$sh','หินวิญญาณระดับสูง','sh',2,40000,'แกนทองคำ'],['$sxx','หินวิญญาณระดับสุดยอด','sx',3,4000000,'วิญญาณแรกเริ่ม']];
+const stnOk23=s=>Math.floor(S.step/10)>=s[3];
+const _iv23=invMenu;invMenu=function(k){_iv23(k);if(mode==='menu'&&mn&&mn.t==='กระเป๋า'){
+ /* PATCH 25: คืนช่องเหรียญทองในกระเป๋า (เดิมบรรทัดนี้ถอดออก) ช่องแรกของกระเป๋ากลับเป็นเหรียญทอง ตามด้วยหินวิญญาณต่ำ */
+ const ix=mn.items.findIndex(x=>x.id==='$x'&&String(x.t).indexOf('หินวิญญาณระดับกลาง')===0);
+ if(ix>=0)mn.items.splice(ix,1,...STN23.map(s=>({t:s[1]+' '+(S[s[2]]||0)+' ก้อน ดูดซับ 1 ก้อน ได้ '+s[4].toLocaleString('en-US')+' แต้มฝึกฝน'+(stnOk23(s)?'':' ยังดูดซับไม่ได้ ต้องถึงระดับ'+s[5]),id:s[0]})));
+ const oe=mn.ent;mn.ent=function(x){const s=x&&STN23.find(q=>q[0]===x.id);if(s){
+   if(!stnOk23(s))return say('ระดับยังไม่ถึง ต้องถึงระดับ'+s[5]+' จึงดูดซับ'+s[1]+'ได้');
+   if((S[s[2]]||0)<1)return say('ไม่มี'+s[1]);
+   S[s[2]]--;S.exp+=s[4];sfx('levelup');const i0=mn.i;invMenu(true);if(mn&&mn.items[i0])mn.i=i0;
+   return say('ดูดซับ'+s[1]+' 1 ก้อน ได้แต้มฝึกฝน '+s[4].toLocaleString('en-US')+' เหลือ '+S[s[2]]+' ก้อน')}
+  return oe?oe(x):0}}};
+// 3) ถอดปุ่ม V ออก เหลือ F6 ปุ่มเดียวสำหรับโหมดข้อความเงียบ
+delete KEYS.v;MAIN.forEach(m=>{if(m[1]==='KeyV'){m[0]='โหมดข้อความเงียบ เปิด/ปิด (F6)';m[1]='F6'}});
+/* ===== PATCH 24 (เพิ่มต่อท้าย ไม่ลบโค้ดเดิม) ข้อความประจำวันและบันทึกการอัพเดท เอาเรื่อง GM แอดมิน ออก (PATCH 25: คืนบรรทัดเรื่องเหรียญทองกลับมา ผู้เล่นจะได้รู้ว่าเหรียญแลกหินวิญญาณได้) ===== */
+const NGM24=/GM|แอดมิน|ผู้ทดสอบ|ผู้พัฒนา|F8|ตรวจสอบบัก/,NBAD24=s=>NGM24.test(s);
+const nseg24=(s,hd)=>String(s||'').split(' ').filter(w=>!NBAD24(w)).join(' ').trim();
+const nclean24=n=>{if(!n||NGM24.test(n.h||''))return false;
+ n.h=nseg24(n.h,1);n.t=nseg24(n.t,1);if(Array.isArray(n.x))n.x=n.x.filter(l=>!NBAD24(l));
+ if(!n.t&&n.h)n.t=n.h;return !!n.t};
+for(let i=NEWS.length-1;i>=0;i--)if(!nclean24(NEWS[i]))NEWS.splice(i,1);
+const _np24=NEWS.push.bind(NEWS);NEWS.push=function(...a){return _np24(...a.filter(nclean24))};
+for(let i=TIPS.length-1;i>=0;i--)if(NBAD24(TIPS[i]))TIPS.splice(i,1);
+const _tp24=TIPS.push.bind(TIPS);TIPS.push=function(...a){return _tp24(...a.filter(s=>!NBAD24(s)))};
 /* ===== boot ===== */
 if(S.med){const el=Math.min(28800,(Date.now()-S.t)/1000),z=zoneAt(S.x,S.y)||Z[0];if(el>5){const g=el*medBase()*.5*(1+z.b);S.exp+=g;say('ระหว่างออฟไลน์ นั่งสมาธิได้แต้ม '+Math.floor(g))}}
 if(!zoneAt(S.x,S.y)){S.x=SP0[0];S.y=SP0[1]}
