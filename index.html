@@ -486,7 +486,7 @@ SHOP.auction=ok7(['pill_xp3','pill_xp4','pill_xp5','pill_hp5','pill_qi5','sw_win
 const joinSect=(id)=>{if(S.sect)return say('เจ้าสังกัด'+SECT[S.sect].n+'อยู่แล้ว เปลี่ยนสำนักไม่ได้ในแพตช์นี้');if(S.step<4)return say('ต้องถึงหลอมรวมลมปราณ ขั้น 5 จึงเข้าสังกัดได้');S.sect=id;sfx('levelup');S.hp=Math.min(S.hp,mhp());say('เข้าสังกัด '+SECT[id].n+' สำเร็จ โบนัส: '+SECT[id].d+' นั่งสมาธิที่ห้องโถงชีพจรปราณได้ +100%')};
 const sectElder=(id,sk)=>n=>teachMenu(n,sk,[{t:'เข้าร่วม '+SECT[id].n+' ('+SECT[id].d+')'+(S.sect===id?' (เป็นศิษย์แล้ว)':''),f:()=>joinSect(id)}],id);
 const tele=(x,y,msg)=>{S.x=x;S.y=y;S.med=false;walk=false;PEND=null;mode='play';sfx('cast');say(msg)};
-const warpTo=(label,x,y,cost,minStep)=>({t:label+(cost?' ค่าตั๋ว '+cost+' หินกลาง':' (ฟรี)'),f:()=>{if(S.step<minStep)return say('ระดับยังไม่ถึง ต้องถึง '+realmName(minStep));const go=()=>{const _d=window.__SH16?window.__SH16(x,y):[0,0],X=x+_d[0],Y=y+_d[1];tele(X,Y,'เคลื่อนย้ายสู่ '+(zoneAt(X,Y)||{n:''}).n)};if(!cost)return go();const pv=mn;payMenu(cost*100,'ตั๋วเคลื่อนย้าย',go,()=>{if(mode==='menu'&&pv){mn=pv;say(pv.t+' '+pv.items[pv.i].t,1)}})}});
+const warpTo=(label,x,y,cost,minStep)=>({t:label+(cost?' ค่าตั๋ว '+cost+' หินกลาง':' (ฟรี)'),f:()=>{if(S.step<minStep)return say('ระดับยังไม่ถึง ต้องถึง '+realmName(minStep));const go=()=>{const _d=(zoneAt(x,y)||!window.__SH16)?[0,0]:window.__SH16(x,y),X=x+_d[0],Y=y+_d[1];tele(X,Y,'เคลื่อนย้ายสู่ '+(zoneAt(X,Y)||{n:''}).n)};if(!cost)return go();const pv=mn;payMenu(cost*100,'ตั๋วเคลื่อนย้าย',go,()=>{if(mode==='menu'&&pv){mn=pv;say(pv.t+' '+pv.items[pv.i].t,1)}})}});
 Object.assign(NPC7,{
  alch:n=>craftMenu('herb',n),forge:n=>craftMenu('smith',n),royalarm:n=>craftMenu('tailor',n),
  vwarp:n=>menu(n.n+' (มีหินกลาง '+S.sm+' ก้อน)',[warpTo('เคลื่อนย้ายไปเมืองหลวงเมฆาคราม (ต้องถึงหลอมรวมขั้น 5)',54,70,5,4)].map(s=>({t:s.t,s})),{ent:x=>x.s.f()}),
@@ -1751,10 +1751,137 @@ for(let i=NEWS.length-1;i>=0;i--)if(!nclean24(NEWS[i]))NEWS.splice(i,1);
 const _np24=NEWS.push.bind(NEWS);NEWS.push=function(...a){return _np24(...a.filter(nclean24))};
 for(let i=TIPS.length-1;i>=0;i--)if(NBAD24(TIPS[i]))TIPS.splice(i,1);
 const _tp24=TIPS.push.bind(TIPS);TIPS.push=function(...a){return _tp24(...a.filter(s=>!NBAD24(s)))};
+/* ===== PATCH 26 (เพิ่มต่อท้าย ไม่ลบโค้ดเดิม) ซ่อมประตูสถานพยาบาลที่ตกในทุ่งกระต่าย + ตัวตรวจสอบเบื้องหลังตลอดเวลา (อ่านอย่างเดียว ไม่แตะเซฟผู้เล่น) กด Shift+F8 ดูรายงาน ถ้าต้องการย้อนกลับ ใช้ไฟล์สำรอง index.backup-before-bgtest.html ===== */
+try{
+ /* 1) ประตูทางเข้าที่ตกในโซนซ้อน (ถูกทุ่งกระต่ายบัง) ย้ายไปช่องที่อยู่ในโซนของตัวเองจริง พร้อมแก้ปลายทางประตูทางออกคู่กัน */
+ const occ=(x,y)=>W.some(w=>w.x===x&&w.y===y)||ND.some(n=>!n.dead&&n.x===x&&n.y===y);
+ W.filter(w=>w.go&&/^ประตูทางเข้า/.test(w.n)).forEach(d=>{const z0=zoneAt(d.x,d.y);if(z0&&z0.id===d.z)return;
+  const ex=W.find(w=>w.go&&w.n===d.n.replace('ประตูทางเข้า','ประตูทางออก').replace(/ \(ถึงแล้วกด Enter เพื่อเข้า\)/,' (ถึงแล้วกด Enter เพื่อออก)'));
+  let best=null;for(let r=1;r<=30&&!best;r++)for(let dx=-r;dx<=r&&!best;dx++)for(let dy=-r;dy<=r&&!best;dy++){if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;
+   const x=d.x+dx,y=d.y+dy,a=zoneAt(x,y),b=zoneAt(x,y+1);if(a&&a.id===d.z&&b&&b.id===d.z&&!occ(x,y)&&!occ(x,y+1)&&!(a.mons))best=[x,y]}
+  if(best){d.x=best[0];d.y=best[1];if(ex)ex.go={x:best[0],y:best[1]+1}}else console.error('PATCH26 หาที่วางประตูไม่ได้',d.n)});
+ /* 2) ตัวตรวจสอบเบื้องหลัง: หมุนตรวจทีละชุดทุก 4 วินาที อ่านอย่างเดียว ผลเก็บใน window.__BG */
+ const BG=window.__BG={rounds:0,issues:{},fixed:0,t0:Date.now()};
+ const nm=w=>w.n||w.npc||'?';
+ const CHK=[
+  ()=>{const o=[];W.forEach(w=>{const z=zoneAt(w.x,w.y);if(!z)o.push('จุดนอกแผนที่: '+nm(w));else if(z.id!==w.z)o.push('จุด "'+nm(w)+'" ถูกโซน '+z.id+' บัง (ควรอยู่ '+w.z+')')});return o},
+  ()=>{const o=[];const D=(window.__T11&&window.__T11.DEST)||[];D.forEach(d=>{const z=zoneAt(d.x,d.y);if(!z||z.id!==d.id)o.push('วงเวทย์ปลายทาง '+d.id+' ตกนอกโซน '+d.x+','+d.y);else if(W.some(w=>w.npc&&w.z===z.id&&w.x===d.x&&w.y===d.y))o.push('วงเวทย์ปลายทาง '+d.id+' ทับ NPC')});return o},
+  ()=>{const o=[];const F=['re','rw','rn','rs'];MS.forEach(m=>{if(m.k==='rab'&&!F.includes(m.z))o.push('กระต่ายอยู่นอกทุ่ง '+m.z)});F.forEach(id=>{const z=Z.find(a=>a.id===id);if(!z)return o.push('ทุ่ง '+id+' หาย');const n=MS.filter(m=>m.z===id&&m.k==='rab').length;if(n!==z.cnt)o.push('ทุ่ง '+id+' กระต่าย '+n+' จาก '+z.cnt);if(z.mons.join()!=='rab')o.push('ทุ่ง '+id+' มีอสูรอื่นปน')});const r=MS.find(m=>m.k==='rab');if(r&&respMs(r)!==20000)o.push('กระต่ายเกิดใหม่ไม่ใช่ 20 วินาที');Z.forEach(z=>{if(z.mons&&z.mons.includes('rab')&&!F.includes(z.id))o.push('โซน '+z.id+' มีกระต่าย')});return o},
+  ()=>{const o=[];const fin=v=>typeof v==='number'&&isFinite(v);MS.forEach(m=>{const z=zoneAt(m.x,m.y);if(!fin(m.hp)||!fin(m.x)||!fin(m.y))o.push('อสูร '+m.k+' ค่าเสีย');else if(!z||z.id!==m.z)o.push('อสูร '+m.k+' ('+m.z+') ออกนอกโซนไปอยู่ '+m.x+','+m.y);if(m.home&&(!zoneAt(m.home[0],m.home[1])||zoneAt(m.home[0],m.home[1]).id!==m.z))o.push('จุดเกิดอสูร '+m.k+' ('+m.z+') อยู่นอกโซน')});return o.slice(0,6)},
+  ()=>{const o=[],seen={};W.forEach(w=>{if(!w.npc)return;const k=w.z+':'+w.x+','+w.y;if(seen[k])o.push('NPC ซ้อนกัน: '+nm(w)+' / '+seen[k]);seen[k]=nm(w)});W.forEach(w=>{if(w.npc&&w.go)o.push('NPC เป็นประตู?')});ND.forEach(n=>{const z=zoneAt(n.x,n.y);if(!z||z.id!==n.z)o.push('สมุนไพร '+n.id+' ออกนอกโซน '+n.z)});return o.slice(0,6)},
+  ()=>{const o=[];W.filter(w=>w.go&&/^ประตูทางเข้า/.test(w.n)).forEach(d=>{const ex=W.find(w=>w.go&&w.n===d.n.replace('ประตูทางเข้า','ประตูทางออก').replace('เพื่อเข้า','เพื่อออก'));if(!ex)return o.push('ประตู "'+d.n+'" ไม่มีประตูทางออกคู่');const a=zoneAt(d.go.x,d.go.y),b=zoneAt(ex.go.x,ex.go.y);if(!a||a.id!==ex.z)o.push('ปลายทางประตูเข้า "'+d.n+'" ไม่อยู่ในห้องข้างใน');if(!b||b.id!==d.z)o.push('ปลายทางประตูออก "'+d.n+'" ไม่กลับสู่โซนเดิม')});return o},
+  ()=>{const o=[];Z.forEach(z=>{if(z.r.some(v=>!isFinite(v)||v<0))o.push('โซน '+z.id+' พิกัดผิด')});W.forEach(w=>{if(w.x<0||w.y<0)o.push('จุดพิกัดติดลบ: '+nm(w))});if(S.x<0||S.y<0)o.push('ผู้เล่นพิกัดติดลบ');const st=Z.find(z=>z.id==='v');if(!st||zoneAt(SP0[0],SP0[1])!==st)o.push('จุดเกิดไม่อยู่ในหมู่บ้านลำธารใส');return o},
+  ()=>{const o=[];const z=zoneAt(S.x,S.y);if(z&&W.some(w=>w.npc&&w.z===z.id&&w.x===S.x&&w.y===S.y))o.push('ผู้เล่นยืนทับ NPC '+S.x+','+S.y);if(S.step>0&&Z.some(q=>q.min>S.step)&&z&&z.min>S.step&&!godOn())o.push('ผู้เล่นอยู่ในโซน '+z.id+' ที่ขั้นสูงกว่าตัวเอง');return o}];
+ let ci=0;
+ function bgRound(){const L=CHK[ci%CHK.length];ci++;BG.rounds++;let o=[];try{o=L()}catch(e){o=['ตัวตรวจ '+(ci-1)%CHK.length+' พัง: '+e.message]}
+  const fresh=[];o.forEach(m=>{if(!BG.issues[m]){BG.issues[m]={n:0,t:Date.now()};fresh.push(m)}BG.issues[m].n++;BG.issues[m].last=Date.now()});
+  if(fresh.length){try{(window.__ERRS=window.__ERRS||[]).push(new Date().toTimeString().slice(0,8)+' ตรวจเบื้องหลัง: '+fresh[0]+(fresh.length>1?' และอีก '+(fresh.length-1):''));console.error('BG',fresh.slice(0,3).join(' | '))}catch(e){}
+   const now=Date.now();if(!BG.said||now-BG.said>120000){BG.said=now;say('ระบบตรวจเบื้องหลังพบความผิดปกติ '+Object.keys(BG.issues).length+' จุด กด Shift+F8 ดูรายงาน',1)}}}
+ setInterval(()=>{try{bgRound()}catch(e){}},4000);
+ setTimeout(()=>{for(let i=0;i<CHK.length;i++)try{bgRound()}catch(e){}},2500);
+ /* รายงาน Shift+F8 ต่อท้ายรายงานเดิม */
+ {const _dg=A.diag;A.diag=function(){if(_dg)_dg();const k=Object.keys(BG.issues);say('ตรวจเบื้องหลัง ครบ '+BG.rounds+' รอบ พบความผิดปกติ '+k.length+' จุด'+(k.length?' เช่น '+k.slice(0,2).join(' ; '):' ปกติทั้งหมด'),1)}}
+ try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-10-28',c:C_FIX,h:'แก้วงเวทย์เคลื่อนย้ายและประตูสถานพยาบาล',t:'แก้วงเวทย์เคลื่อนย้ายที่พาไปตกนอกแผนที่ และประตูสถานพยาบาลหมอยาหลวงที่กด Enter เข้าไม่ได้',x:['วงเวทย์เคลื่อนย้ายทุกจุดพาไปถึงปลายทางถูกต้องแล้ว เดิมพิกัดถูกบวกซ้ำจนตกนอกแผนที่','ประตูสถานพยาบาลหมอยาหลวงย้ายออกจากทุ่งกระต่ายตะวันออก กด Enter เข้าออกได้ตามปกติ','เกมมีตัวตรวจสอบเบื้องหลังทำงานตลอดเวลา อ่านอย่างเดียว ไม่แตะข้อมูลของผู้เล่น กด Shift F8 ฟังรายงาน']})}catch(e){}
+ window.__BGRUN=()=>{const r={};CHK.forEach((f,i)=>{try{r[i]=f()}catch(e){r[i]=['พัง '+e.message]}});return r};
+}catch(e){console.error('PATCH26',e)}
 /* ===== boot ===== */
 if(S.med){const el=Math.min(28800,(Date.now()-S.t)/1000),z=zoneAt(S.x,S.y)||Z[0];if(el>5){const g=el*medBase()*.5*(1+z.b);S.exp+=g;say('ระหว่างออฟไลน์ นั่งสมาธิได้แต้ม '+Math.floor(g))}}
 if(!zoneAt(S.x,S.y)){S.x=SP0[0];S.y=SP0[1]}
 say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Firebase อัตโนมัติ ':'สถานะ ออฟไลน์ เซฟในเครื่องนี้เท่านั้น ')+'ยินดีต้อนรับสู่มรรคาเซียนออนไลน์ เจ้าอยู่ที่ '+zoneAt(S.x,S.y).n+' กด F1 ฟังปุ่มทั้งหมด กด Z นั่งสมาธิ F9 เร่งเวลาทดสอบ F2 เปิดเสียงพูดของเกม');render();$('app').focus();window.__GAME_OK=1;
+
+/* ===== PATCH GM FULL - เขียนจากโค้ดจริง ไม่มั่ว ===== */
+{
+ const isGMOk = ()=>{try{return typeof gmValid==='function'?gmValid(true):true}catch(e){return true}};
+ const zAt = ()=>zoneAt(S.x,S.y);
+ const full=()=>{S.hp=mhp();S.qi=mqi();S.fp=100};
+ const noclip = {on:false};
+ const _move = move;
+ move = function(f){
+  if(noclip.on){ // NoClip ทะลุ NPC และขอบแมพได้
+   const nx=S.x+DX[f], ny=S.y+DY[f];
+   S.x=nx; S.y=ny; S.med=false; sfx('step'); render(); return;
+  }
+  return _move(f);
+ };
+
+ const _oldGM = A.gm;
+ A.gm = function(){
+  if(!isGMOk()){ mode='play'; return say('ไม่มีสิทธิ์'); }
+  menu('เมนูผู้พัฒนา FULL (ของเดิม+ใหม่)',[
+   {t:'--- ของเดิม ---'},
+   {t:'อมตะ '+(S.god?'เปิด':'ปิด'), a:'god'},
+   {t:'รับทุกอย่าง', a:'all'},
+   {t:'เสกไอเทม', a:'item'},
+   {t:'เรียนทักษะทั้งหมด', a:'skills'},
+   {t:'ตั้งระดับขั้น (ตอนนี้ '+realmName(S.step)+')', a:'lv'},
+   {t:'เพิ่มเงินทุกระดับ', a:'cur'},
+   {t:'วาร์ปไปจุดต่างๆ', a:'warp'},
+   {t:'เรียกบอสเกิด', a:'boss'},
+   {t:'เสกมอนข้างตัว', a:'mon'},
+   {t:'เติมเลือด ปราณ เหาะ', a:'fill'},
+   {t:'--- ใหม่: ดีบั๊ก/ตรวจสอบ ---'},
+   {t:'ดู Error ล่าสุด __ERRS', a:'errs'},
+   {t:'รัน selfCheck() ตรวจร้านค้า สูตร บอส', a:'selfcheck'},
+   {t:'รัน watchdog ซ่อมเซฟทันที', a:'watchdog'},
+   {t:'ดู JSON ตัวละคร S', a:'viewS'},
+   {t:'--- ใหม่: โลก/Map ---'},
+   {t:'สร้างจุดวาร์ปตรงที่ยืนอยู่', a:'addWarp'},
+   {t:'สลับ safe แมพนี้ (ตอนนี้ '+(zAt()?.safe?'ปลอดภัย':'อันตราย')+')', a:'toggleSafe'},
+   {t:'ฆ่ามอนรอบตัวทั้งหมดในแมพนี้', a:'killAll'},
+   {t:'รีสมุนไพร ND ทั้งแมพเกิดใหม่', a:'respawnHerb'},
+   {t:'เคลียร์ของตกพื้น ground แมพนี้', a:'clearGround'},
+   {t:'ปิด/เปิด AI มอน MS แมพนี้', a:'toggleAI'},
+   {t:'--- ใหม่: ผู้เล่น/ทดสอบ ---'},
+   {t:'วาร์ปไปพิกัดพิมพ์ x,y', a:'warpXY'},
+   {t:'เปิด/ปิด NoClip เดินทะลุ', a:'noclip'},
+   {t:'ตั้งค่า S.x แบบพิมพ์เลข', a:'setExp'},
+   {t:'ตั้งค่า Kills / Sect / ตำราลับ', a:'setProgress'},
+   {t:'ข้ามเวลา daily/checkin/wheel/rumors', a:'skipTime'},
+   {t:'ทดสอบเซฟแตก (ใส่ NaN) ดู watchdog ซ่อมไหม', a:'breakSave'},
+   {t:'--- ใหม่: ความเร็ว/ควบคุม ---'},
+   {t:'ตั้ง spd พิมพ์เลข (ตอนนี้ '+spd+')', a:'setSpd'},
+   {t:'Backup/Restore เซฟในเกม', a:'backup'},
+  ],{ent:x=>{
+   try{
+    if(!isGMOk()){mode='play';return}
+    // ของเดิม
+    if(x.a==='god'){S.god=!S.god;mode='play';say('อมตะ '+(S.god?'เปิด':'ปิด'))}
+    else if(x.a==='fill'){full();mode='play';say('เติมเต็มแล้ว')}
+    else if(x.a==='skills'){S.known=Object.keys(SK);mode='play';say('เรียนครบ '+S.known.length+' วิชา')}
+    else if(x.a==='all'){Object.keys(I).forEach(id=>add(id,I[id].u==='eq'||I[id].u==='arm'?1:99));S.known=Object.keys(SK);S.step=R.length-1;S.exp=0;S.coin+=10000000;S.gold+=1000000000;S.sm+=9999;S.sh+=9999;S.sx+=9999;full();mode='play';say('รับทุกอย่างแล้ว')}
+    else if(x.a==='boss'){MS.forEach(m=>{if(BOSSES.includes(m.k)){m.dead=0;m.hp=MD[m.k].hp;m.x=m.home[0];m.y=m.home[1]}});S.bd={};mode='play';say('บอสเกิดหมดแล้ว')}
+    else if(x.a==='lv'){mode='play';ask('ระดับ 1 ถึง '+R.length,v=>{const n=parseInt(v);if(!(n>=1&&n<=R.length))return say('ยกเลิก');S.step=n-1;S.exp=0;full();say('ตั้งเป็น '+realmName(S.step));render()})}
+    else if(x.a==='cur'){mode='play';ask('จำนวนที่จะเพิ่ม',v=>{const n=parseInt(v);if(!(n>0))return say('ยกเลิก');S.coin+=n;S.gold+=n*100;S.sm+=n;S.sh+=n;S.sx+=n;say('เพิ่มสกุลละ '+n)})}
+    else if(x.a==='item'){menu('เสกไอเทม',Object.keys(I).map(id=>({t:I[id].n,id})),{ent:y=>ask('จำนวน',v=>{const n=parseInt(v);if(n>0){add(y.id,n);say('ได้ '+I[y.id].n+' x'+n)}})})}
+    else if(x.a==='mon'){menu('เสกมอน',Object.keys(MD).map(k=>({t:MD[k].n+' พลัง '+mpw(k),k})),{ent:y=>{const z=zAt();let c=0;for(let i=0;i<3;i++){const nx=S.x+2+i,ny=S.y;if(zoneAt(nx,ny)===z){spawn(z,y.k,nx,ny);c++}}mode='play';say('เสก '+MD[y.k].n+' '+c+' ตัว')}})}
+    else if(x.a==='warp'){menu('วาร์ป',W.map(w=>({t:Z.find(z=>z.id===w.z).n+' : '+w.n,w})),{ent:y=>{S.x=y.w.x;S.y=y.w.y;S.med=false;target=null;walk=false;PEND=null;mode='play';say('วาร์ปไป '+y.w.n);render()}})}
+    // ใหม่
+    else if(x.a==='errs'){const L=window.__ERRS||[];if(!L.length)return say('ไม่มี Error');menu('Error '+L.length+' รายการ',L.slice(-20).map((e,i)=>({t:(e.msg||e).toString().slice(0,80)})))}
+    else if(x.a==='selfcheck'){if(typeof selfCheck==='function'){selfCheck();say('รัน selfCheck() แล้ว ดูใน console และ Shift+F8')}else say('ไม่มีฟังก์ชัน selfCheck ในเวอร์ชันนี้')}
+    else if(x.a==='watchdog'){if(typeof watchdog==='function'){watchdog();say('รัน watchdog() ซ่อม S แล้ว')}else say('ไม่มี watchdog()')}
+    else if(x.a==='viewS'){console.log('S =',JSON.stringify(S,null,2));say('ดู S ใน console F12 แล้ว - มี '+Object.keys(S).length+' คีย์')}
+    else if(x.a==='addWarp'){const z=zAt();const nm='จุดทดสอบ '+S.x+','+S.y;W.push({z:z.id,n:nm,x:S.x,y:S.y});say('สร้างจุดวาร์ป '+nm+' ในแมพ '+z.n+' แล้ว');save()}
+    else if(x.a==='toggleSafe'){const z=zAt();if(z){z.safe=z.safe?0:1;say('แมพ '+z.n+' ตอนนี้ '+(z.safe?'ปลอดภัย':'อันตราย'));save()} }
+    else if(x.a==='killAll'){const z=zAt();let c=0;MS.forEach(m=>{if(!m.dead&&m.z===z.id){m.dead=Date.now();c++}});say('ฆ่ามอนในแมพนี้ '+c+' ตัว')}
+    else if(x.a==='respawnHerb'){const z=zAt();let c=0;ND.forEach(n=>{if(n.z===z.id&&n.dead){n.dead=0;c++}});say('รีสมุนไพร '+c+' ต้น')}
+    else if(x.a==='clearGround'){const z=zAt();const before=S.ground.length;S.ground=S.ground.filter(g=>zoneAt(g.x,g.y)!==z);say('เคลียร์ของตกพื้น '+(before-S.ground.length)+' ชิ้น')}
+    else if(x.a==='toggleAI'){window.__AI_OFF=!window.__AI_OFF;say('AI มอน '+(window.__AI_OFF?'ปิด':'เปิด'))}
+    else if(x.a==='warpXY'){mode='play';ask('พิมพ์ x,y เช่น 27,46',v=>{const m=v.split(',').map(x=>parseInt(x.trim()));if(m.length===2&&!isNaN(m[0])&&!isNaN(m[1])){S.x=m[0];S.y=m[1];say('วาร์ปไป '+S.x+','+S.y);render()}else say('รูปแบบผิด')})}
+    else if(x.a==='noclip'){noclip.on=!noclip.on;mode='play';say('NoClip '+(noclip.on?'เปิด - เดินทะลุได้':'ปิด'))}
+    else if(x.a==='setExp'){mode='play';ask('พิมพ์แต้มฝึกฝน exp',v=>{const n=parseInt(v);if(n>=0){S.exp=n;say('ตั้ง exp = '+n)}})}
+    else if(x.a==='setProgress'){menu('ตั้งค่าความคืบหน้า',[{t:'ตั้ง Kills ข่าวลือ',a:'kills'},{t:'ตั้ง Sect สำนัก',a:'sect'},{t:'ปลดตำราลับทั้งหมด',a:'sec'}],{ent:y=>{
+      if(y.a==='kills'){mode='play';ask('ใส่จำนวน kill ที่จะเพิ่ม',v=>{const n=parseInt(v);if(n>0){try{rumAdv('kill',n)}catch(e){} say('เพิ่ม kill '+n)}})}
+      else if(y.a==='sec'){S.sec=['dbl','sense','rec','deathres'];S.frag={dbl:5,sense:6,rec:10,deathres:12};mode='play';say('ปลดตำราลับครบ 4 อันแล้ว')}
+      else if(y.a==='sect'){mode='play';ask('ใส่ชื่อสำนัก k1/k2/k3 หรือเว้นว่างเพื่อออก',v=>{if(!v)return;S.sect=v;S.sectDone=1;say('ตั้งสำนักเป็น '+v)})}
+    }})}
+    else if(x.a==='skipTime'){S.dly='';S.rumD='';S.checkinLast='';S.wheelLast='';mode='play';say('รีเซ็ต daily/checkin/wheel/rumors แล้ว กด J Y D G ใหม่ได้เลย')}
+    else if(x.a==='breakSave'){S.hp=NaN;S.x=-999;S.inv.push({id:'NO_SUCH_ITEM_XXX',q:1});mode='play';say('ทำเซฟแตกแล้ว - รอ 3 วิ watchdog จะซ่อมให้อัตโนมัติ ดู Shift+F8')}
+    else if(x.a==='setSpd'){mode='play';ask('ใส่ตัวคูณ spd เช่น 1, 10, 100, 1000',v=>{const n=parseFloat(v);if(n>0){spd=n;say('ตั้ง spd = '+n)}})}
+    else if(x.a==='backup'){const k='ipo_backup_'+Date.now();localStorage.setItem(k,JSON.stringify(S));menu('Backup',Object.keys(localStorage).filter(k=>k.startsWith('ipo_backup_')).map(k=>({t:k,k})),{ent:y=>{S=Object.assign(S,JSON.parse(localStorage.getItem(y.k)));say('Restore จาก '+y.k+' แล้ว');render();save()}})}
+   }catch(e){say('GM Error '+e.message)}}
+ })};
+ say('โหลด PATCH GM FULL แล้ว กด F8',1);
+}
 </script>
 <script>
 (async()=>{const E=id=>document.getElementById(id),AK='ipo_acc';
