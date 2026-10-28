@@ -89,8 +89,12 @@ function beep(f,d,v){try{AC=AC||new (window.AudioContext||window.webkitAudioCont
 var lastSay='',lastSayT=0,_sayW=[];let sayCue=()=>{},sayAgg=()=>false;/* ตะขอเสียงประกอบข้อความ และตัวสรุปข้อความตอนออโต้ ถูกกำหนดค่าภายหลัง */
 function say(t,sys){try{sayCue(t,sys)}catch(e){}let ag=false;try{ag=sayAgg(t,sys)}catch(e){}if(ag)return;return sayRaw(t,sys)}
 function sayRaw(t,sys){if(!sys&&t===lastSay&&Date.now()-lastSayT<1500)return;lastSay=t;lastSayT=Date.now();setTimeout(renderMob,0);const _n=Date.now();_sayW=_sayW.filter(x=>_n-x<1000);_sayW.push(_n);const L=$('log');if(sys||_sayW.length<=6||window.__NOTTS){const d=document.createElement('div');d.textContent=t;L.appendChild(d);while(L.children.length>60)L.removeChild(L.firstChild);L.scrollTop=L.scrollHeight}
- S.chat[5].push(t);S.chat[0].push(t);if(S.chat[5].length>150)S.chat[5].shift();if(S.chat[0].length>250)S.chat[0].shift();
+ if(histKeep(t)){S.chat[5].push(t);S.chat[0].push(t);if(S.chat[5].length>60)S.chat[5].shift();if(S.chat[0].length>100)S.chat[0].shift()}
  if(tts&&window.speechSynthesis&&!window.__NOTTS){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='th-TH';speechSynthesis.speak(u)}}
+/* ประวัติข้อความ (หมวด ทั้งหมด/ระบบ) เก็บเฉพาะเรื่องสำคัญ ส่วนข้อความตอบสนองปุ่ม เช่น เปิดกระเป๋า เลื่อนเมนู หยิบของ ถูกอ่านและแสดงในหน้าจอตามปกติ แต่ไม่เก็บลงประวัติและเซฟ */
+var HK=/^(สังหาร |ได้รับ: |ได้เศษตำราลับ|ปลดล็อก|ฝึกฝนจากการต่อสู้|ข่าวลือ |เช็กอินวันที่|วงล้อหยุดที่|พรโชค|จมูกหาสมบัติ|เข้าสังกัด|ประมูลสำเร็จ|ประกาศ |ข้อความประจำวัน|ของใหม่ในเกม|ระบบตรวจ|ตรวจระบบ|เตือน |มีการเปิดเกม|ระหว่างออฟไลน์|ยืนยันบัญชี|ล็อกสิทธิ์|สวนสมุนไพร แปลงที่|ผู้ใหญ่บ้านหลี่: เก่งมาก|เรียน .* สำเร็จ|เรียนรู้ )|ทะลวง(สำเร็จ|ล้มเหลว)|ฟื้นที่ลานเกิด|เกิดใหม่แล้ว$|จะเกิดใหม่ในอีก/;
+function histKeep(t){return typeof t==='string'&&HK.test(t)}
+try{[0,5].forEach(i=>{if(Array.isArray(S.chat[i]))S.chat[i]=S.chat[i].filter(t=>typeof t==='string'&&(t[0]==='['||histKeep(t)))})}catch(e){}
 function rel(dx,dy){const fx=DX[S.f],fy=DY[S.f],rx=-fy,ry=fx;const a=Math.round((dx*fx+dy*fy)/(fx*fx+fy*fy)),b=Math.round((dx*rx+dy*ry)/(rx*rx+ry*ry));
  const p=[];if(a)p.push((a>0?'ข้างหน้า ':'ด้านหลัง ')+Math.abs(a)+' ก้าว');if(b)p.push((b>0?'ทางขวา ':'ทางซ้าย ')+Math.abs(b)+' ก้าว');return p.join(' และ ')||'อยู่ตรงนี้'}
 function render(){const z=zoneAt(S.x,S.y);$('stat').textContent=(mode==='play'?'':'[เปิดเมนู '+((mode==='menu'||mode==='slot')&&mn?mn.t:mode)+' กด Esc เพื่อปิด] ')+realmName(S.step)+' | HP '+Math.floor(S.hp)+'/'+mhp()+' | ปราณ '+Math.floor(S.qi)+'/'+mqi()+' | แต้ม '+Math.floor(S.exp)+'/'+R[S.step][3]+' | พิกัด '+S.x+','+S.y+' | หัน'+DN[S.f]+' | '+(z?z.n:'')+(S.med?' | นั่งสมาธิ':'')+(auto?' | ออโต้':'')}
@@ -560,7 +564,7 @@ setInterval(()=>{if(!S.med||!S.sect)return;const h=W.find(w=>w.hall&&w.hall===S.
  let uT=performance.now()+3000,uq=[],uPend=false,lastUser=0,bg=[],lastBg=0;
  const mark=()=>{uT=performance.now()};
  ['keydown','click','pointerdown','touchstart'].forEach(ev=>document.addEventListener(ev,mark,true));
- const urgent=t=>/เลือดเหลือน้อย|สังหาร$|ถูก.*สังหาร|ฟื้นที่ลานเกิด|เกิดใหม่แล้ว|ทะลวงสำเร็จ|ระบบตรวจพบ|ได้ปลา|เบ็ดหลุด/.test(t);
+ const urgent=t=>/เลือดเหลือน้อย|สังหาร$|ถูก.*สังหาร|ฟื้นที่ลานเกิด|เกิดใหม่แล้ว|ทะลวงสำเร็จ|ระบบตรวจพบ|ได้ปลา|เบ็ดหลุด|^\[แผนที่\] /.test(t);
  function flushUser(){uPend=false;if(!uq.length)return;const t=uq.splice(0).join('. ');lastUser=Date.now();put(RA,t);ttsSay(t,true)}
  function onMsg(t){if(!t)return;if(performance.now()-uT<80){uq.push(t);if(!uPend){uPend=true;setTimeout(flushUser,0)}}else{if(S.quiet&&!urgent(t))return;bg.push(t);if(bg.length>40)bg.shift()}}
  const raw=Node.prototype.appendChild;
@@ -1974,6 +1978,118 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
    say(errMsg(e));
   }
  };
+
+ /* ===== แชทแมพ: ผู้เล่นในแมพเดียวกันเห็นข้อความของกันและกัน =====
+    หนึ่งเอกสารต่อผู้เล่น (mapchat/{uid}) เขียนทับเมื่อพิมพ์ใหม่ จึงไม่มีข้อความสะสมบนเซิร์ฟเวอร์
+    ฟังเฉพาะแมพที่ยืนอยู่ ใช้ตัวฟังแบบเรียลไทม์ ได้อ่านเฉพาะข้อความที่เปลี่ยน ไม่วนถามซ้ำ
+    ส่งได้ 3 วินาทีต่อครั้ง ยาวไม่เกิน 120 ตัวอักษร ปิดทั้งระบบได้ด้วย window.__MP_OFF=true */
+ {
+  const CM={z:'',unsub:null,stable:'',stableN:0,seen:{},failed:false,lastSend:0};
+  const trimC=()=>{[1,2].forEach(i=>{if(S.chat[i].length>100)S.chat[i].splice(0,S.chat[i].length-100)});if(S.chat[0].length>100)S.chat[0].splice(0,S.chat[0].length-100)};
+  const isPerm=e=>String((e&&e.code)||'').indexOf('permission')>=0;
+  const PERM_MSG='เซิร์ฟเวอร์ยังไม่อนุญาตแชทแมพ ต้องเพิ่มกฎ mapchat ในหน้า Firestore Rules ของ Firebase ก่อน';
+  const detach=()=>{try{if(CM.unsub)CM.unsub()}catch(e){}CM.unsub=null;CM.z=''};
+  const attach=async zid=>{
+   if(CM.unsub||CM.failed||window.__MP_OFF)return;
+   if(!(await init()))return;
+   if(CM.unsub||CM.stable!==zid)return;
+   const fs=MP.fs,u=MP.auth.currentUser;if(!u)return;
+   CM.z=zid;
+   try{
+    CM.unsub=fs.onSnapshot(fs.query(fs.collection(MP.db,'mapchat'),fs.where('z','==',zid)),snap=>{
+     snap.docChanges().forEach(ch=>{
+      if(ch.type==='removed'||ch.doc.id===u.uid)return;
+      const v=ch.doc.data();if(!v||typeof v.m!=='string'||!v.m)return;
+      const tm=v.t&&v.t.toMillis?v.t.toMillis():0;
+      if(!tm||tm<Date.now()-60000)return;
+      if((CM.seen[ch.doc.id]||0)>=tm)return;CM.seen[ch.doc.id]=tm;
+      const line='[แผนที่] '+String(v.n||'ผู้ฝึกตน').slice(0,20)+': '+v.m.slice(0,120);
+      S.chat[2].push(line);S.chat[0].push(line);trimC();
+      say(line,1)})},
+     e=>{CM.unsub=null;CM.z='';if(isPerm(e)){CM.failed=true;say(PERM_MSG,1)}try{console.warn('MP chat listen',e)}catch(x){}});
+   }catch(e){CM.unsub=null;CM.z='';try{console.warn('MP chat attach',e)}catch(x){}}
+  };
+  /* ตรวจแมพทุก 2 วินาที เปลี่ยนตัวฟังเมื่ออยู่แมพใหม่นิ่งครบ 4 วินาที กันต่อใหม่ถี่ๆ ตอนเดินข้ามเขต หยุดฟังเมื่อซ่อนหน้าจอ */
+  setInterval(()=>{try{
+   if(window.__MP_OFF||!online())return;
+   if(document.hidden){detach();detachW();return}
+   if(!W.failed&&!W.unsub&&!W.busy)attachW();
+   if(CM.failed)return;
+   const z=zoneAt(S.x,S.y),id=z?z.id:'';
+   if(id!==CM.stable){CM.stable=id;CM.stableN=0;return}
+   if(CM.stableN<2)CM.stableN++;
+   if(CM.stableN<2||CM.z===id)return;
+   detach();if(id)attach(id)
+  }catch(e){}},2000);
+  /* แชทโลก: ทุกคนที่ออนไลน์เห็น เอกสารเดียวต่อผู้เล่น (worldchat/{uid}) ฟังเฉพาะข้อความใหม่ในช่วง 60 วินาทีล่าสุด ส่งได้ 10 วินาทีต่อครั้ง ยาวไม่เกิน 100 ตัวอักษร */
+  const W={unsub:null,busy:false,failed:false,lastSend:0,seen:{}};
+  const PERM_W='เซิร์ฟเวอร์ยังไม่อนุญาตแชทโลก ต้องเพิ่มกฎ worldchat ในหน้า Firestore Rules ของ Firebase ก่อน';
+  const detachW=()=>{try{if(W.unsub)W.unsub()}catch(e){}W.unsub=null};
+  const attachW=async()=>{
+   if(W.unsub||W.busy||W.failed||window.__MP_OFF)return;
+   W.busy=true;
+   try{
+    if(!(await init()))return;
+    if(W.unsub||document.hidden)return;
+    const fs=MP.fs,u=MP.auth.currentUser;if(!u)return;
+    const since=new Date(Date.now()-60000);
+    W.unsub=fs.onSnapshot(fs.query(fs.collection(MP.db,'worldchat'),fs.where('t','>',since)),snap=>{
+     snap.docChanges().forEach(ch=>{
+      if(ch.type==='removed'||ch.doc.id===u.uid)return;
+      const v=ch.doc.data();if(!v||typeof v.m!=='string'||!v.m)return;
+      const tm=v.t&&v.t.toMillis?v.t.toMillis():0;
+      if(!tm||tm<Date.now()-60000)return;
+      if((W.seen[ch.doc.id]||0)>=tm)return;W.seen[ch.doc.id]=tm;
+      const line='[โลก] '+String(v.n||'ผู้ฝึกตน').slice(0,20)+': '+v.m.slice(0,100);
+      S.chat[1].push(line);S.chat[0].push(line);trimC();
+      say(line,1)})},
+     e=>{W.unsub=null;if(isPerm(e)){W.failed=true;say(PERM_W,1)}try{console.warn('MP world listen',e)}catch(x){}});
+   }catch(e){W.unsub=null;try{console.warn('MP world attach',e)}catch(x){}}
+   finally{W.busy=false}
+  };
+  const sendW=async text=>{
+   try{
+    if(!(await init()))return say('ส่งแชทโลกไม่สำเร็จ ยังเชื่อมต่อเซิร์ฟเวอร์ไม่เสร็จ',1);
+    const u=MP.auth.currentUser;if(!u)return;
+    const fs=MP.fs;
+    await fs.setDoc(fs.doc(MP.db,'worldchat',u.uid),{n:String(S.pname||'ผู้ฝึกตน').slice(0,20),m:text,t:fs.serverTimestamp()});
+   }catch(e){
+    if(isPerm(e)){W.failed=true;say(PERM_W,1)}else say('ส่งแชทโลกไม่สำเร็จ ลองใหม่ภายหลัง',1);
+    try{console.warn('MP world send',e)}catch(x){}
+   }
+  };
+  const send=async text=>{
+   try{
+    if(!(await init()))return say('ส่งแชทแมพไม่สำเร็จ ยังเชื่อมต่อเซิร์ฟเวอร์ไม่เสร็จ',1);
+    const u=MP.auth.currentUser;if(!u)return;
+    const fs=MP.fs,z=zoneAt(S.x,S.y);
+    await fs.setDoc(fs.doc(MP.db,'mapchat',u.uid),{n:String(S.pname||'ผู้ฝึกตน').slice(0,20),z:z?z.id:'',m:text,t:fs.serverTimestamp()});
+   }catch(e){
+    if(isPerm(e)){CM.failed=true;say(PERM_MSG,1)}else say('ส่งแชทแมพไม่สำเร็จ ลองใหม่ภายหลัง',1);
+    try{console.warn('MP chat send',e)}catch(x){}
+   }
+  };
+  const _msg=msg;
+  msg=function(c,t){
+   if(c!==1&&c!==2)return _msg(c,t);
+   const w=c===1,st=w?W:CM,gap=w?10000:3000,max=w?100:120;
+   const text=String(t).replace(w?/^\[โลก\] คุณ: /:/^\[แผนที่\] คุณ: /,'').slice(0,max);
+   const on=online()&&!window.__MP_OFF&&!st.failed;
+   if(on&&Date.now()-st.lastSend<gap)return say(w?'ส่งแชทโลกได้ทุก 10 วินาที รอสักครู่แล้วส่งใหม่':'ส่งแชทแมพถี่เกินไป รอสักครู่แล้วส่งใหม่');
+   _msg(c,t);trimC();
+   if(on){st.lastSend=Date.now();(w?sendW:send)(text)}
+   else if(st.failed)say(w?PERM_W:PERM_MSG,1);
+   else say('ออฟไลน์ ข้อความ'+(w?'แชทโลก':'แชทแมพ')+'เห็นเฉพาะตัวเอง',1)
+  };
+  try{TIPS.push('กดเครื่องหมายทับ / พิมพ์แชทแมพ ผู้เล่นในแมพเดียวกันเห็นข้อความของเจ้า กดเครื่องหมาย \\ พิมพ์แชทโลก ทุกคนที่ออนไลน์เห็น กด P ดูว่ามีใครออนไลน์')}catch(e){}
+  try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-10-28',c:[C_SYS],h:'แชทโลก แชทแมพ และลดข้อความที่ไม่จำเป็น',t:'แชทโลก (\\) ทุกคนที่ออนไลน์เห็นข้อความ แชทแมพ (/) เห็นเฉพาะในแมพเดียวกัน และประวัติข้อความเก็บเฉพาะเรื่องสำคัญ',x:[
+   'กด / พิมพ์แชทแมพ ผู้เล่นออนไลน์ในแมพเดียวกันได้ยินข้อความทันที ส่งได้ 3 วินาทีต่อครั้ง ยาวไม่เกิน 120 ตัวอักษร หมู่บ้านลำธารใสกับทุ่งกระต่ายแต่ละทุ่งเป็นคนละแมพ',
+   'กดเครื่องหมาย \\ พิมพ์แชทโลก ผู้เล่นทุกคนที่ออนไลน์เห็น ส่งได้ 10 วินาทีต่อครั้ง ยาวไม่เกิน 100 ตัวอักษร เมื่อเปิดโหมดข้อความเงียบ แชทโลกจะไม่อ่านออกเสียงแต่ยังเก็บในหมวดโลก',
+   'ข้อความแชทแมพจากผู้เล่นอื่นอ่านเสมอแม้เปิดโหมดข้อความเงียบ และเก็บไว้ในหมวดแผนที่ อ่านย้อนหลังด้วยปุ่มวงเล็บเหลี่ยม',
+   'ประวัติข้อความหมวดทั้งหมดและหมวดระบบ เก็บเฉพาะเรื่องสำคัญ เช่น สังหารอสูร ของที่ได้ ทะลวงขั้น ตาย บอสเกิดใหม่ รางวัล และประกาศ',
+   'การเปิดกระเป๋า เลื่อนเมนู หยิบของ เปลี่ยนทิศ และผลของปุ่มทั่วไป ยังอ่านออกเสียงตามปกติ แต่ไม่เก็บลงประวัติ จึงไม่รกและเซฟเล็กลง',
+   'ประวัติเก่าในเซฟถูกล้างให้เหลือเฉพาะเรื่องสำคัญอัตโนมัติตอนเข้าเกม']})}catch(e){}
+ }
 }
 </script>
 <script>
