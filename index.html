@@ -30,7 +30,7 @@ h1{font-size:18px;margin:0 0 6px}#stat{border:1px solid var(--bd);padding:6px;ma
 <button id="l_out" type="button" hidden>ออกจากระบบ / เปลี่ยนบัญชี</button>
 <script type="text/plain" id="game">
 /* ===== DATA: keybindings (ห้ามแตะ Core) ===== */
-const KEYS={ArrowUp:'fwd',ArrowDown:'back',ArrowLeft:'left',ArrowRight:'right',q:'tl',e:'tr',w:'snap',m:'map',n:'nav',a:'radar',p:'pradar',i:'inv',Enter:'enter','S+Enter':'give',Delete:'del',' ':'auto',s:'skills',h:'hp',l:'info',z:'med',b:'brk',f:'talk',x:'fly',r:'pos',g:'quest',t:'party',c:'equip',k:'craft',F1:'help','S+/':'help','\\':'chatW','/':'chatM','.':'catN',',':'catP','S+.':'catF','S+,':'catL',']':'msgN','[':'msgP','S+]':'msgNew','S+[':'msgOld',Escape:'esc',F2:'tts',F3:'ambT','S+n':'go',F9:'spd'};
+const KEYS={ArrowUp:'fwd',ArrowDown:'back',ArrowLeft:'left',ArrowRight:'right',q:'tl',e:'tr',w:'snap',m:'map',n:'nav',a:'radar',p:'pradar',i:'inv',Enter:'enter','S+Enter':'give',Delete:'del',' ':'auto',s:'skills',h:'hp',l:'info',z:'med',b:'brk',f:'talk',x:'fly',r:'pos',g:'quest',t:'party',c:'equip',F1:'help','S+/':'help','\\':'chatW','/':'chatM','.':'catN',',':'catP','S+.':'catF','S+,':'catL',']':'msgN','[':'msgP','S+]':'msgNew','S+[':'msgOld',Escape:'esc',F2:'tts',F3:'ambT','S+n':'go',F9:'spd'};
 /* ===== DATA: realms [dmg,hp,qi,need] ===== */
 const R=[[10,100,50,1000],[25,180,90,1500],[45,280,140,2200],[70,400,200,3200],[100,550,280,4800],[140,750,380,7000],[190,1000,500,10000],[250,1300,650,14500],[320,1700,850,21000],[400,2200,1100,30000],[600,3500,1800,45000]];
 const realmName=i=>i<10?'หลอมรวมลมปราณ '+(i<9?'ขั้น '+(i+1):'ขั้นสูงสุด'):'สร้างรากฐาน '+(i<19?'ขั้น '+(i-9):'ขั้นสูงสุด');
@@ -143,7 +143,7 @@ map(){const z=zoneAt(S.x,S.y);menu('แผนที่และจุดเช�
 nav(){if(!goal)return say('ยังไม่ได้เลือกเป้าหมาย กด M');say('เป้าหมาย '+goal.n+' อยู่ '+rel(goal.x-S.x,goal.y-S.y)+' รวมประมาณ '+Math.round(dist(S,goal))+' ก้าว')},
 radar(){const r=S.step>=10?30:15,z=zoneAt(S.x,S.y);const l=MS.filter(m=>!m.dead&&m.z===z.id&&dist(S,m)<=r).sort((a,b)=>dist(S,a)-dist(S,b));
  const n=W.filter(w=>w.npc&&w.z===z.id&&dist(S,w)<=r);const nd=ND.filter(a=>!a.dead&&a.z===z.id&&dist(S,a)<=r);nd.slice(0,4).forEach(a=>say('สมุนไพร '+I[a.id].n+' '+rel(a.x-S.x,a.y-S.y)));if(!l.length&&!n.length&&!nd.length)return say('ไม่พบเป้าหมายรอบตัว');
- n.forEach(w=>say('NPC '+w.n+' '+rel(w.x-S.x,w.y-S.y)));l.slice(0,5).forEach(m=>say(MD[m.k].n+' ระดับพลัง '+mpw(m.k)+' '+rel(m.x-S.x,m.y-S.y)));
+ n.forEach(w=>say(w.n+' '+rel(w.x-S.x,w.y-S.y)));l.slice(0,5).forEach(m=>say(MD[m.k].n+' ระดับพลัง '+mpw(m.k)+' '+rel(m.x-S.x,m.y-S.y)));
  rl=l;rlT=Date.now()+8000;if(l.length){target=l[0];say('ล็อกเป้า '+MD[l[0].k].n+' ลูกศรซ้ายขวาสลับเป้า')}},
 pradar(){say('ไม่พบผู้เล่นอื่น (โหมดทดลองเล่นคนเดียว)')},
 inv(){invMenu()},
@@ -158,15 +158,15 @@ brk(){const r=R[S.step];if(S.step>=R.length-1)return say('ถึงขั้น�
  if(S.step<9||S.step>=10){S.exp-=r[3];S.step++;S.hp=mhp();S.qi=mqi();return say('ทะลวงสำเร็จ '+realmName(S.step));}
  const has=S.inv.find(a=>a.id==='pill_f');if(has){rem('pill_f');S.exp-=r[3];S.step++;say('ใช้โอสถสร้างรากฐาน ทะลวงสำเร็จ '+realmName(S.step))}
  else if(Math.random()<.3){S.exp-=r[3];S.step++;say('โชคดี ทะลวงสำเร็จโดยไม่ใช้โอสถ '+realmName(S.step))}else{S.exp*=.8;say('ทะลวงล้มเหลว เสียแต้ม 20%')}S.hp=mhp();S.qi=mqi()},
-talk(){const z=zoneAt(S.x,S.y),n=W.find(w=>w.npc&&w.z===z.id&&dist(S,w)<=2.5);if(!n)return say('ไม่มี NPC ใกล้เคียง ใช้ปุ่ม A หา');
+talk(){const z=zoneAt(S.x,S.y),n=W.find(w=>w.npc&&w.z===z.id&&dist(S,w)<=2.5);if(!n)return say('ไม่มีใครอยู่ใกล้ ใช้ปุ่ม A หา');
  if(n.npc==='chief'){if(S.q.k>=3&&!S.q.got){S.q.got=1;S.coin+=500;say('ผู้ใหญ่บ้านหลี่: เก่งมาก รับรางวัล 500 เหรียญทอง')}else say('ผู้ใหญ่บ้านหลี่: กด Z นั่งสมาธิสะสมแต้ม กด B ทะลวงขั้น ไปล่ากระต่ายเขาเดียว 3 ตัวที่ทุ่งกระต่าย ทางตะวันออกหรือตะวันตกสุดขอบหมู่บ้าน กด M เลือกทางไปทุ่งกระต่ายได้ แล้วกลับมาหาข้า');return}
  menu('ร้าน '+n.n+' (มีหินวิญญาณ '+Math.floor(S.gold/100)+' ก้อน)',SHOP[n.npc].map(id=>({t:I[id].n+' ราคา '+I[id].p+' หินวิญญาณระดับต่ำ'+reqTxt(id),id})),{ent:x=>(lvOk(x.id,1)?ask:()=>0)('ซื้อ '+I[x.id].n+' กี่ชิ้น',v=>{const q=parseInt(v);if(!(q>0)){mode='menu';return say('ยกเลิก')}const c=q*I[x.id].p*100;if(S.gold<c)say('หินวิญญาณไม่พอ ต้องใช้ '+c/100+' ก้อน มี '+Math.floor(S.gold/100));else{S.gold-=c;add(x.id,q);sfx('buy');say('ซื้อแล้ว '+q+' ชิ้น')}})})},
 fly(){if(!S.known.includes('fly')||S.step<10)return say('ต้องเรียนวิชาขี่กระบี่และถึงระดับสร้างรากฐาน');say('ขี่กระบี่เหาะ (ระบบบินเต็มรูปแบบรอแพตช์ถัดไป)')},
 quest(){say('เควสต์: ล่ากระต่ายเขาเดียวที่ทุ่งกระต่าย '+Math.min(3,S.q.k)+' จาก 3 ตัว'+(S.q.got?' รับรางวัลแล้ว':S.q.k>=3?' กลับไปคุยผู้ใหญ่บ้านหลี่ (F)':''))},
 party(){say('ระบบปาร์ตี้ต้องมีผู้เล่นอื่น ยังไม่เปิดในโหมดทดลอง')},craft(){say('วิชาชีพเสริมยังไม่เปิดในแพตช์ทดลองนี้')},
 equip(){menu('อุปกรณ์',[{t:'อาวุธ: '+(S.wpn?I[S.wpn].n:'ไม่มี')}],{ent:()=>{if(S.wpn){add(S.wpn,1);S.wpn=null;say('ถอดอาวุธแล้ว');mode='play'}}})},
-help(){const L=['ลูกศรเดิน Q E หัน W รีเซ็ตทิศ','M เมนูแผนที่ N เช็กระยะ A เรดาร์มอนสเตอร์ P เรดาร์ผู้เล่น','I กระเป๋า Enter เก็บหรือใช้ของ Delete ทิ้ง','S จัดทักษะ เลข 1 ถึง 0 ใช้ทักษะ Space ออโต้','H เลือดปราณ L ข้อมูลตัวละคร Z สมาธิ B ทะลวง F คุยหรือซื้อของ','C อุปกรณ์ G เควสต์ X ขี่กระบี่','F8 เมนูผู้ทดสอบ (เฉพาะบัญชีเจ้าของ) อมตะ ตั้งระดับ วาร์ป','ข้ามเขตแผนที่ ต้องกด Enter ที่ทางเข้าเพื่อยืนยัน','K สร้างของที่ร้านช่างหนัง ร้านตีเหล็ก ร้านเภสัชกร X ขี่กระบี่เหาะ (ไม่ต้องติดตั้งทักษะ)','A เช็ค NPC ไกล 39 ก้าว O เช็คอสูรและสมุนไพร ไกล 29 ก้าว U คู่มือเกม F4 ประกาศล่าสุดและข้อความประจำวัน F5 บันทึกการอัพเดท F10 ออกจากระบบ NPC เดินชนได้ และมีเสียงประจำตัว','แชท: ทับ \\ โลก / แผนที่ จุด คอมมา เปลี่ยนหมวด วงเล็บเหลี่ยม อ่านข้อความ','F2 เปิดปิดเสียงพูดของเกม F9 เร่งแต้มสมาธิ 60 เท่าสำหรับทดสอบ','F3 เปิดปิดเสียงบรรยากาศ Shift N เดินอัตโนมัติไปเป้าหมายที่ล็อกไว้ใน M ถึงสมุนไพรกด Enter เก็บ'];menu('คู่มือปุ่ม',L.map(t=>({t})))},
-go(){if(!goal)return say('ยังไม่ได้เลือกเป้าหมาย กด M');walk=true;say('เริ่มเดินอัตโนมัติไป '+goal.n+' กดปุ่มใดก็ได้เพื่อหยุด')},ambT(){ambOn=!ambOn;say('เสียงบรรยากาศ '+(ambOn?'เปิด':'ปิด'))},tts(){tts=!tts;say('เสียงพูดของเกม '+(tts?'เปิด':'ปิด'))},spd(){if(GMV.srv&&!gmValid(true))return say('ฟังก์ชันนี้ปิดในโหมดออนไลน์');spd=spd===1?60:1;say('ตัวคูณแต้มสมาธิทดสอบ '+spd+' เท่า')},esc(){},
+help(){const L=['ลูกศรเดิน Q E หัน W รีเซ็ตทิศ','M เมนูแผนที่ N เช็กระยะ A เช็คคนรอบตัว P เช็คคนออนไลน์ใกล้ตัว Shift F1 รายชื่อคนออนไลน์','I กระเป๋า Enter เก็บหรือใช้ของ Delete ทิ้ง','S จัดทักษะ เลข 1 ถึง 0 ใช้ทักษะ Space ออโต้','H เลือดปราณ L ข้อมูลตัวละคร Z สมาธิ B ทะลวง F คุยหรือซื้อของ','C อุปกรณ์ G เควสต์ X ขี่กระบี่','ข้ามเขตแผนที่ ต้องกด Enter ที่ทางเข้าเพื่อยืนยัน','ซื้อของและสร้างของที่ร้าน กด F คุยกับเจ้าของร้าน X ขี่กระบี่เหาะ (ไม่ต้องติดตั้งทักษะ)','A เช็คคนรอบตัว ไกล 39 ก้าว O เช็คอสูรและสมุนไพร ไกล 29 ก้าว U คู่มือเกม F4 ประกาศล่าสุดและข้อความประจำวัน F5 บันทึกการอัพเดท F10 ออกจากระบบ เดินชนคนได้ และแต่ละคนมีเสียงประจำตัว','แชท: ทับ \\ โลก / แผนที่ จุด คอมมา เปลี่ยนหมวด วงเล็บเหลี่ยม อ่านข้อความ','F2 เปิดปิดเสียงพูดของเกม','F3 เปิดปิดเสียงบรรยากาศ Shift N เดินอัตโนมัติไปเป้าหมายที่ล็อกไว้ใน M ถึงสมุนไพรกด Enter เก็บ'];menu('คู่มือปุ่ม',L.map(t=>({t})))},
+go(){if(!goal)return say('ยังไม่ได้เลือกเป้าหมาย กด M');walk=true;say('เริ่มเดินอัตโนมัติไป '+goal.n+' กดปุ่มใดก็ได้เพื่อหยุด')},ambT(){ambOn=!ambOn;say('เสียงบรรยากาศ '+(ambOn?'เปิด':'ปิด'))},tts(){tts=!tts;say('เสียงพูดของเกม '+(tts?'เปิด':'ปิด'))},spd(){if(!isGM())return;spd=spd===1?60:1;say('ตัวคูณแต้มสมาธิทดสอบ '+spd+' เท่า')},esc(){},
 chatW(){ask('พิมพ์แชทโลก',v=>{endAsk();if(v)msg(1,'[โลก] คุณ: '+v)})},chatM(){ask('พิมพ์แชทแผนที่',v=>{endAsk();if(v)msg(2,'[แผนที่] คุณ: '+v)})},
 catN(){cat(1)},catP(){cat(-1)},catF(){ci=0;cat(0)},catL(){ci=5;cat(0)},
 msgN(){rd(1)},msgP(){rd(-1)},msgNew(){mi[ci]=S.chat[ci].length-1;rd(0)},msgOld(){mi[ci]=0;rd(0)}};
@@ -182,13 +182,13 @@ function handle(e){if(!AC)beep(1,.01,.001);if(walk&&mode==='play'){walk=false;sa
  if(mode==='slot'){if(dg!=null){const i=dg==='0'?9:+dg-1;S.slots=S.slots.map(s=>s===mn.pick?null:s);S.slots[i]=mn.pick;mode='play';say(SK[mn.pick].n+' ติดตั้งที่ปุ่ม '+dg)}else{mode='play';say('ยกเลิก ปิดเมนูทักษะแล้ว')}return}
  if(mode==='menu'){if(act==='fwd'||act==='left'){mn.i=(mn.i-1+mn.items.length)%mn.items.length}else if(act==='back'||act==='right'){mn.i=(mn.i+1)%mn.items.length}
   else if(act==='enter'){const x=mn.items[mn.i];if(mn.ent)mn.ent(x);return}else if(act==='del'){if(mn.del)mn.del(mn.items[mn.i]);return}
-  else if(act==='esc'||act===mn.t||['inv','map','help','skills','equip'].includes(act)){mode='play';say('ปิดเมนู');return}else return;say(mn.items[mn.i].t,1);beep(400,.03);return}
+  else if(act==='esc'||act===mn.t||['inv','map','help','skills','equip','whoOn'].includes(act)){mode='play';say('ปิดเมนู');return}else return;say(mn.items[mn.i].t,1);beep(400,.03);return}
  if(dg!=null){const i=dg==='0'?9:+dg-1;lastSlot=i;warned=0;useSlot(i);rl=null;return}
  if(act){if(!['left','right','radar'].includes(act))rl=null;A[act]();render()}}
 document.addEventListener('keydown',e=>{if(mode==='input')return;if(e.ctrlKey||e.metaKey||e.altKey)return;const k=keyName(e);if(KEYS[k]||/^\d$/.test(k)){e.preventDefault();if(e.repeat&&!['fwd','back','left','right'].includes(KEYS[k]))return;if(e.repeat&&moveBlocked&&['fwd','back','left','right'].includes(KEYS[k]))return;handle(e)}});
 $('in').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();const v=$('in').value.trim(),cb=cbk;endAsk();cb(v)}else if(e.key==='Escape'){endAsk();mode='play';say('ยกเลิก ปิดเมนูแล้ว')}});
 /* touch pad */
-[['↑','ArrowUp'],['↓','ArrowDown'],['←','ArrowLeft'],['→','ArrowRight'],['Q','KeyQ'],['W','KeyW'],['E','KeyE'],['M','KeyM'],['N','KeyN'],['A','KeyA'],['P','KeyP'],['I','KeyI'],['Enter','Enter'],['Del','Delete'],['Space','Space'],['S','KeyS'],['H','KeyH'],['L','KeyL'],['Z','KeyZ'],['B','KeyB'],['F','KeyF'],['X','KeyX'],['C','KeyC'],['G','KeyG'],['R','KeyR'],['Esc','Escape'],['F1','F1'],['F2','F2'],['F9','F9'],['แชทโลก','Backslash'],['แชทแผนที่','Slash'],['หมวด+','Period'],['หมวด-','Comma'],['อ่านใหม่','BracketRight'],['อ่านเก่า','BracketLeft'],['1','Digit1'],['2','Digit2'],['3','Digit3'],['4','Digit4'],['5','Digit5'],['6','Digit6'],['7','Digit7'],['8','Digit8'],['9','Digit9'],['0','Digit0']].forEach(([l,c])=>{const b=document.createElement('button');b.tabIndex=-1;b.onmousedown=e=>e.preventDefault();b.textContent=l;b.setAttribute('aria-label','ปุ่ม '+l);b.onclick=()=>{if(mode==='input')return;handle({code:c,shiftKey:false});render()};$('pad').appendChild(b)});
+[['↑','ArrowUp'],['↓','ArrowDown'],['←','ArrowLeft'],['→','ArrowRight'],['Q','KeyQ'],['W','KeyW'],['E','KeyE'],['M','KeyM'],['N','KeyN'],['A','KeyA'],['P','KeyP'],['I','KeyI'],['Enter','Enter'],['Del','Delete'],['Space','Space'],['S','KeyS'],['H','KeyH'],['L','KeyL'],['Z','KeyZ'],['B','KeyB'],['F','KeyF'],['X','KeyX'],['C','KeyC'],['G','KeyG'],['R','KeyR'],['Esc','Escape'],['F1','F1'],['F2','F2'],['แชทโลก','Backslash'],['แชทแผนที่','Slash'],['หมวด+','Period'],['หมวด-','Comma'],['อ่านใหม่','BracketRight'],['อ่านเก่า','BracketLeft'],['1','Digit1'],['2','Digit2'],['3','Digit3'],['4','Digit4'],['5','Digit5'],['6','Digit6'],['7','Digit7'],['8','Digit8'],['9','Digit9'],['0','Digit0']].forEach(([l,c])=>{const b=document.createElement('button');b.tabIndex=-1;b.onmousedown=e=>e.preventDefault();b.textContent=l;b.setAttribute('aria-label','ปุ่ม '+l);b.onclick=()=>{if(mode==='input')return;handle({code:c,shiftKey:false});render()};$('pad').appendChild(b)});
 /* ===== ticks ===== */
 setInterval(()=>{if(mode==='input'&&false)return;const now=Date.now(),z=zoneAt(S.x,S.y);if(!z)return;
  S.hp=Math.min(mhp(),S.hp+mhp()*(S.med?.015:.004));S.qi=Math.min(mqi(),S.qi+mqi()*(S.med?.03:.01));if(S.med)S.exp+=medBase()*(1+z.b)*spd;
@@ -240,7 +240,7 @@ setInterval(()=>{if(!walk||mode!=='play')return;if(!goal){walk=false;return}cons
  const f=DX.findIndex((v,i)=>v===ch[0]&&DY[i]===ch[1]);S.f=f;move(f);render()},140);
 /* ===== MOBILE MENU UI ===== */
 const isMob=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
-const MAIN=[['⬆ เดินไปข้างหน้า','ArrowUp'],['⬇ ถอยหลัง','ArrowDown'],['⬅ ก้าวไปทางซ้าย','ArrowLeft'],['➡ ก้าวไปทางขวา','ArrowRight'],['หันซ้าย','KeyQ'],['หันขวา','KeyE'],['รีเซ็ตทิศ','KeyW'],['เปิดกระเป๋า','KeyI'],['แผนที่และจุดหมาย','KeyM'],['เช็กระยะเป้าหมาย','KeyN'],['เดินไปเป้าหมายอัตโนมัติ','S+KeyN'],['เรดาร์มอนสเตอร์','KeyA'],['เก็บของที่พื้น','Enter'],['จัดทักษะ','KeyS'],['เช็กเลือดและปราณ','KeyH'],['ข้อมูลตัวละคร','KeyL'],['นั่งสมาธิ / ลุก','KeyZ'],['ทะลวงขั้น','KeyB'],['คุยกับ NPC / ร้านค้า','KeyF'],['อุปกรณ์','KeyC'],['เควสต์','KeyG'],['ออโต้ เปิด/ปิด','Space'],['แชทโลก','Backslash'],['แชทแผนที่','Slash'],['หมวดแชทถัดไป','Period'],['อ่านข้อความเก่า','BracketLeft'],['อ่านข้อความใหม่','BracketRight'],['คู่มือ','F1'],['เสียงพูดของเกม เปิด/ปิด','F2'],['เร่งแต้มทดสอบ x60','F9']];
+const MAIN=[['⬆ เดินไปข้างหน้า','ArrowUp'],['⬇ ถอยหลัง','ArrowDown'],['⬅ ก้าวไปทางซ้าย','ArrowLeft'],['➡ ก้าวไปทางขวา','ArrowRight'],['หันซ้าย','KeyQ'],['หันขวา','KeyE'],['รีเซ็ตทิศ','KeyW'],['เปิดกระเป๋า','KeyI'],['แผนที่และจุดหมาย','KeyM'],['เช็กระยะเป้าหมาย','KeyN'],['เดินไปเป้าหมายอัตโนมัติ','S+KeyN'],['เรดาร์มอนสเตอร์','KeyA'],['เก็บของที่พื้น','Enter'],['จัดทักษะ','KeyS'],['เช็กเลือดและปราณ','KeyH'],['ข้อมูลตัวละคร','KeyL'],['นั่งสมาธิ / ลุก','KeyZ'],['ทะลวงขั้น','KeyB'],['คุยกับคน / ร้านค้า','KeyF'],['อุปกรณ์','KeyC'],['เควสต์','KeyG'],['ออโต้ เปิด/ปิด','Space'],['แชทโลก','Backslash'],['แชทแผนที่','Slash'],['หมวดแชทถัดไป','Period'],['อ่านข้อความเก่า','BracketLeft'],['อ่านข้อความใหม่','BracketRight'],['คู่มือ','F1'],['เสียงพูดของเกม เปิด/ปิด','F2'],];
 let mobSel=null,mobSig='';
 function renderMob(){if(!isMob)return;const m=$('mob');$('pad').hidden=true;m.hidden=false;const H=c=>handle({code:c.replace('S+',''),shiftKey:c.startsWith('S+')});let L=[];if(mode!=='menu')mobSel=null;
  if(mode==='menu'){L.push([mn.t]);L.push(['✖ ปิดเมนูนี้',()=>{mode='play';say('ปิดเมนู')}]);
@@ -314,7 +314,7 @@ const RECIPES={tailor:[{o:'arm_hide',m:{hide:5,fur:5}},{o:'arm_bear',m:{rock:6,h
 function craftMenu(np,n){const has=id=>(S.inv.find(a=>a.id===id)||{q:0}).q;menu(n.n+' (สร้างของ)',RECIPES[np].map(r=>({t:I[r.o].n+' ต้องการ '+Object.entries(r.m).map(([k,v])=>I[k].n+' '+has(k)+'/'+v).join(' ')+reqTxt(r.o),r})),{ent:x=>{const r=x.r;if(!lvOk(r.o,2))return;if(!Object.entries(r.m).every(([k,v])=>has(k)>=v))return say('วัตถุดิบไม่พอ');Object.entries(r.m).forEach(([k,v])=>{for(let i=0;i<v;i++)rem(k)});add(r.o,1);sfx('buy');say('สร้าง '+I[r.o].n+' สำเร็จ')}})}
 const npcNear=()=>{const z=zoneAt(S.x,S.y);return W.find(w=>w.npc&&w.z===z.id&&dist(S,w)<=2.5)};
 const _talk=A.talk;A.talk=function(){const n=npcNear();if(n&&n.npc==='exch')return exchMenu();if(n&&n.npc==='tailor')return craftMenu('tailor',n);return _talk()};
-A.craft=function(){const n=npcNear();if(n&&RECIPES[n.npc])return craftMenu(n.npc,n);say('ต้องอยู่ใกล้ร้านช่างหนัง ร้านตีเหล็ก หรือร้านเภสัชกร แล้วกด K')};
+A.craft=function(){const n=npcNear();if(n&&RECIPES[n.npc])return craftMenu(n.npc,n);say('ต้องอยู่ใกล้ร้านช่างหนัง ร้านตีเหล็ก หรือร้านเภสัชกร แล้วกด F คุยกับเจ้าของร้าน')};
 W.push({z:'v',n:'ร้านช่างหนังป้าหลิว',x:36,y:38,npc:'tailor'},{z:'v',n:'ผู้แลกเงินเศรษฐีเฉียน',x:40,y:42,npc:'exch'});
 Object.assign(W.find(w=>w.n.startsWith('ถิ่นราชา')),{x:54,y:12});
 W.push({z:'b',n:'ถิ่นงูมรกตราชินี (บอส)',x:54,y:28});
@@ -334,7 +334,7 @@ const _rn=render;render=function(){_rn();if(S.known.includes('fly'))$('stat').te
 // boss lairs: clear normal monsters from boss area, restore boss death timers across reloads
 Z.forEach(z=>{if(!z.boss)return;const bx=z.boss[1],by=z.boss[2];MS.forEach(m=>{if(m.z!==z.id||BOSSES.includes(m.k))return;let t=0;while(Math.hypot(m.x-bx,m.y-by)<12&&t++<60){m.x=z.r[0]+1+Math.floor(Math.random()*(z.r[2]-z.r[0]-1));m.y=z.r[1]+1+Math.floor(Math.random()*(z.r[3]-z.r[1]-1))}m.home=[m.x,m.y]})});
 MS.forEach(m=>{if(BOSSES.includes(m.k)&&S.bd[m.k]&&Date.now()-S.bd[m.k]<BOSS_MS)m.dead=S.bd[m.k]});
-MAIN.push(['สร้างของ (ช่างหนัง ตีเหล็ก เภสัชกร)','KeyK'],['ขี่กระบี่เหาะ / ลง','KeyX']);renderMob();
+MAIN.push(['ใครออนไลน์ (Shift+F1)','S+F1'],['ขี่กระบี่เหาะ / ลง','KeyX']);renderMob();
 /* ===== PATCH 4 (เพิ่มต่อท้าย) เมนูผู้พัฒนาแบบเต็ม ===== */
 A.gm=function(){if(!isGM())return;/*PATCH14b ผู้เล่นทั่วไปกดแล้วไม่เกิดอะไรขึ้น*/
  const full=()=>{S.hp=mhp();S.qi=mqi();S.fp=100};
@@ -355,27 +355,27 @@ A.gm=function(){if(!isGM())return;/*PATCH14b ผู้เล่นทั่ว�
   else if(x.a==='mon'){menu('เสกมอนสเตอร์',Object.keys(MD).map(k=>({t:MD[k].n+' ระดับพลัง '+mpw(k),k})),{ent:y=>{if(!gmValid(true))return;const z=zoneAt(S.x,S.y);let c=0;for(let i=0;i<3;i++){const nx=S.x+2+i,ny=S.y;if(zoneAt(nx,ny)===z){spawn(z,y.k,nx,ny);c++}}mode='play';say('เสก '+MD[y.k].n+' '+c+' ตัวข้างตัว')}})}
   else menu('วาร์ป',W.map(w=>({t:Z.find(z=>z.id===w.z).n+' : '+w.n,w})),{ent:y=>{if(!gmValid(true))return;const w=y.w;S.x=w.x;S.y=w.y;S.med=false;target=null;walk=false;PEND=null;mode='play';say('วาร์ปไป '+w.n);render()}})
  }catch(e){say('ผิดพลาด '+e.message)}}})};
-/* ===== PATCH 5 (เพิ่มต่อท้าย) ประกาศ คู่มือ NPC เสียง เรดาร์ ===== */
+/* ===== PATCH 5 (เพิ่มต่อท้าย) ประกาศ คู่มือ ผู้คน เสียง เรดาร์ ===== */
 const NEWS=[/* เพิ่มประกาศใหม่: push {id:เลขถัดไป,d:'วันที่',t:'ข้อความ'} ผู้เล่นทุกคนจะเห็นอัตโนมัติ */
 {id:1,d:'2026-10-24',t:'ต้องสร้างบัญชี (ชื่อ อีเมล รหัสผ่าน) และเข้าสู่ระบบก่อนเล่น กด F10 เพื่อออกจากระบบ'},
 {id:2,d:'2026-10-24',t:'แผนที่กว้าง 109 ช่อง มีป่าชายหมู่บ้านสำหรับขั้น 1 ถึง 3 บอสทุกแผนที่เกิดใหม่ทุก 30 นาที อสูรทั่วไปเกิดใหม่ทุก 1 นาที'},
-{id:3,d:'2026-10-24',t:'ของจากอสูรเข้ากระเป๋าอัตโนมัติ เพิ่มเกราะ ระบบสร้างของ (K) ผู้แลกเงิน หินวิญญาณหลายระดับ และวิชาเหาะ (X)'},
-{id:4,d:'2026-10-24',t:'กด A เช็ค NPC ไกล 39 ก้าว กด O เช็คอสูร ไกล 29 ก้าว NPC มีเสียงประจำตัวและเดินชนได้ กด U อ่านคู่มือ'}];
-const TIPS=['ล่ากระต่ายที่ทุ่งกระต่ายรอบหมู่บ้านก่อน','เก็บหนังสัตว์และขนไปสร้างเกราะที่ร้านช่างหนัง (K)','บอสเกิดใหม่ทุก 30 นาที ตายแล้วต้องรอ','กด Z นั่งสมาธิสะสมแต้ม ตอนอยู่เขตปลอดภัย','พกโอสถสมานแผลไว้เสมอก่อนเข้าหุบเขาหมาป่า','หินวิญญาณ 100 ก้อนแลกเป็นระดับถัดไปได้ที่ผู้แลกเงิน','ขั้นสร้างรากฐานขึ้นไปเหาะได้ด้วยปุ่ม X'];
+{id:3,d:'2026-10-24',t:'ของจากอสูรเข้ากระเป๋าอัตโนมัติ เพิ่มเกราะ ระบบสร้างของ (กด F คุย) ผู้แลกเงิน หินวิญญาณหลายระดับ และวิชาเหาะ (X)'},
+{id:4,d:'2026-10-24',t:'กด A เช็คคนรอบตัว ไกล 39 ก้าว กด O เช็คอสูร ไกล 29 ก้าว ทุกคนมีเสียงประจำตัวและเดินชนได้ กด U อ่านคู่มือ'}];
+const TIPS=['ล่ากระต่ายที่ทุ่งกระต่ายรอบหมู่บ้านก่อน','เก็บหนังสัตว์และขนไปสร้างเกราะที่ร้านช่างหนัง (กด F คุย)','บอสเกิดใหม่ทุก 30 นาที ตายแล้วต้องรอ','กด Z นั่งสมาธิสะสมแต้ม ตอนอยู่เขตปลอดภัย','พกโอสถสมานแผลไว้เสมอก่อนเข้าหุบเขาหมาป่า','หินวิญญาณ 100 ก้อนแลกเป็นระดับถัดไปได้ที่ผู้แลกเงิน','ขั้นสร้างรากฐานขึ้นไปเหาะได้ด้วยปุ่ม X'];
 function descOf(id){const d=I[id];let s='';if(d.u==='hp')s='ฟื้นเลือด '+d.v;else if(d.u==='qi')s='ฟื้นปราณ '+d.v;else if(d.u==='xp')s='เพิ่มแต้มฝึกฝน '+d.v;else if(d.u==='eq')s='อาวุธ โจมตี +'+d.atk;else if(d.u==='arm')s='เกราะ ป้องกัน +'+d.def;else if(d.u==='sk')s='คัมภีร์ เรียนวิชา '+SK[d.k].n;else if(d.u==='pf')s='ใช้ทะลวงขั้น 9 ไปสร้างรากฐาน';else if(d.u==='esc')s='ส่งกลับหมู่บ้านทันที';else s=MUSE[id]||'วัตถุดิบ';if(d.p)s+=' ราคา '+d.p+' หินต่ำ';if(SELLP[id])s+=' ขายได้ '+SELLP[id]+' เหรียญ';return s}
-const NPCDO={chief:'รับเควสต์ล่ากระต่ายและรางวัล',smith:'ซื้ออาวุธและคัมภีร์ สร้างกระบี่ (K)',herb:'ซื้อน้ำยาและโอสถ สร้างน้ำยา (K)',tailor:'สร้างเกราะ (K)',exch:'แลกเหรียญและหินวิญญาณ ขายวัตถุดิบ'};
+const NPCDO={chief:'รับเควสต์ล่ากระต่ายและรางวัล',smith:'ซื้ออาวุธและคัมภีร์ สร้างกระบี่ (กด F คุย)',herb:'ซื้อน้ำยาและโอสถ สร้างน้ำยา (กด F คุย)',tailor:'สร้างเกราะ (กด F คุย)',exch:'แลกเหรียญและหินวิญญาณ ขายวัตถุดิบ'};
 const zn=id=>Z.find(z=>z.id===id).n,names=a=>a.map(k=>I[k].n).join(', ');
-const GUIDE={how:()=>['เดินด้วยลูกศร หันด้วย Q E','ล่าอสูรด้วยทักษะเลข 1 ถึง 0 จัดช่องที่ปุ่ม S กด Space เปิดออโต้','ของจากอสูรเข้ากระเป๋าเอง ของที่ทิ้งเองต้องกด Enter เก็บ','Z นั่งสมาธิ B ทะลวงขั้น H ดูเลือด L ข้อมูล','เดินถึงขอบแผนที่แล้วกด Enter เพื่อเข้าแผนที่ใหม่','M เลือกจุดหมาย Shift N เดินอัตโนมัติ ชน NPC แล้วกด F','A เช็ค NPC ไกล 39 ก้าว O เช็คอสูร ไกล 29 ก้าว','K สร้างของใกล้ร้าน F4 ประกาศล่าสุดและข้อความประจำวัน F5 บันทึกการอัพเดท F10 ออกจากระบบ'].map(t=>({t})),
+const GUIDE={how:()=>['เดินด้วยลูกศร หันด้วย Q E','ล่าอสูรด้วยทักษะเลข 1 ถึง 0 จัดช่องที่ปุ่ม S กด Space เปิดออโต้','ของจากอสูรเข้ากระเป๋าเอง ของที่ทิ้งเองต้องกด Enter เก็บ','Z นั่งสมาธิ B ทะลวงขั้น H ดูเลือด L ข้อมูล','เดินถึงขอบแผนที่แล้วกด Enter เพื่อเข้าแผนที่ใหม่','M เลือกจุดหมาย Shift N เดินอัตโนมัติ ชนคนแล้วกด F','A เช็คคนรอบตัว ไกล 39 ก้าว O เช็คอสูร ไกล 29 ก้าว','Shift F1 ดูรายชื่อคนออนไลน์ F4 ประกาศล่าสุดและข้อความประจำวัน F5 บันทึกการอัพเดท F10 ออกจากระบบ'].map(t=>({t})),
 maps:()=>Z.map(z=>({t:z.n+(z.safe?' เขตปลอดภัย':' เหมาะกับขั้น '+(z.min+1)+' ขึ้นไป')+(z.mons?' อสูร: '+z.mons.map(k=>MD[k].n+' ระดับพลัง '+mpw(k)+' ตก '+names(MD[k].it)).join(' | '):'')+(NP[z.id]?' สมุนไพร: '+names([...new Set(NP[z.id])]):'')+(z.boss?' บอส '+MD[z.boss[0]].n+' อยู่กลางแผนที่ ตก: '+(BOSS_DROP[z.boss[0]]||[]).map(r=>r.cur?'หินกลาง':I[r.id].n).join(', '):'')})),
 npc:()=>W.filter(w=>w.npc).map(w=>({t:w.n+' ใน'+zn(w.z)+' พิกัด '+w.x+','+w.y+' : '+(NPCDO[w.npc]||'')})),
 items:()=>Object.keys(I).map(id=>({t:I[id].n+' : '+descOf(id)})),
 money:()=>[{t:'หินวิญญาณต่ำ กลาง สูง สุดยอด แลกขึ้นทีละระดับ 100 ต่อ 1'},{t:'เหรียญทอง 100 แลกหินต่ำ 1 ก้อน ขายหินต่ำคืนได้ 80 เหรียญ'},{t:'แลกลงระดับล่างได้ 95 ต่อ 1 ก้อน'},{t:'ของซื้อได้ด้วยหินต่ำ ขายวัตถุดิบเป็นเหรียญที่ผู้แลกเงิน'}],
 fly:()=>[{t:'ต้องเรียนวิชาขี่กระบี่เหาะเหินและถึงขั้นสร้างรากฐาน'},{t:'กด X ขึ้นหรือลง ไม่ต้องติดตั้งช่องทักษะ เดินปกติด้วยลูกศร'},{t:'ขั้น 1 เหาะได้ 30 นาที เพิ่มอีก 10 นาทีต่อขั้น ลงพื้นแล้วฟื้น 1 เปอร์เซ็นต์ต่อ 18 วินาที'},{t:'ขณะเหาะอสูรโจมตีไม่ถึง และเราโจมตีไม่ได้'}]};
-A.guide=function(){menu('คู่มือเกม',[{t:'วิธีเล่นเบื้องต้น',g:'how'},{t:'แผนที่ อสูร และบอส',g:'maps'},{t:'NPC และสถานที่',g:'npc'},{t:'ไอเทมทั้งหมดและหน้าที่',g:'items'},{t:'เงินและการแลกเปลี่ยน',g:'money'},{t:'การเหาะ',g:'fly'}],{ent:x=>menu(x.t,GUIDE[x.g](),{})})};
+A.guide=function(){menu('คู่มือเกม',[{t:'วิธีเล่นเบื้องต้น',g:'how'},{t:'แผนที่ อสูร และบอส',g:'maps'},{t:'ผู้คนและสถานที่',g:'npc'},{t:'ไอเทมทั้งหมดและหน้าที่',g:'items'},{t:'เงินและการแลกเปลี่ยน',g:'money'},{t:'การเหาะ',g:'fly'}],{ent:x=>menu(x.t,GUIDE[x.g](),{})})};
 function showNews(all){const L=NEWS.filter(n=>all||n.id>(S.newsSeen||0));if(!L.length)return say('ไม่มีประกาศใหม่');L.forEach(n=>say('ประกาศ '+n.d+' : '+n.t));S.newsSeen=Math.max(...NEWS.map(n=>n.id))}
 A.news=function(){showNews(true)};
 A.logout=function(){save();try{sessionStorage.removeItem('ipo_sess')}catch(e){}location.reload()};
-function autoNew(){const cur={i:Object.keys(I),m:Object.keys(MD),n:W.filter(w=>w.npc).map(w=>w.npc),z:Z.map(z=>z.id)},old=S.snap;S.snap=cur;if(!old)return;const nw=(a,b,f)=>b.filter(x=>!a.includes(x)).map(f);const o=[...nw(old.i,cur.i,k=>'ไอเทม '+I[k].n),...nw(old.m,cur.m,k=>'อสูร '+MD[k].n),...nw(old.n,cur.n,k=>'NPC '+W.find(w=>w.npc===k).n),...nw(old.z,cur.z,k=>'แผนที่ '+zn(k))];if(o.length)say('ของใหม่ในเกม: '+o.join(', '))}
+function autoNew(){const cur={i:Object.keys(I),m:Object.keys(MD),n:W.filter(w=>w.npc).map(w=>w.npc),z:Z.map(z=>z.id)},old=S.snap;S.snap=cur;if(!old)return;const nw=(a,b,f)=>b.filter(x=>!a.includes(x)).map(f);const o=[...nw(old.i,cur.i,k=>'ไอเทม '+I[k].n),...nw(old.m,cur.m,k=>'อสูร '+MD[k].n),...nw(old.n,cur.n,k=>W.find(w=>w.npc===k).n),...nw(old.z,cur.z,k=>'แผนที่ '+zn(k))];if(o.length)say('ของใหม่ในเกม: '+o.join(', '))}
 function daily(){const d=new Date(),key=d.toISOString().slice(0,10);if(S.dly===key)return;S.dly=key;const bs=MS.filter(m=>BOSSES.includes(m.k)).map(m=>MD[m.k].n+(m.dead?' เกิดอีก '+Math.max(1,Math.ceil((respMs(m)-(Date.now()-m.dead))/60000))+' นาที':' พร้อมท้า')).join(' / ');say('ข้อความประจำวัน '+d.toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+' : '+TIPS[Math.floor(Date.now()/86400000)%TIPS.length]+' บอส: '+bs)}
 // descriptions in inventory
 const _iv2=invMenu;invMenu=function(k){_iv2(k);if(mode==='menu'&&mn&&mn.t==='กระเป๋า')mn.items.forEach(x=>{if(I[x.id])x.t+=' — '+descOf(x.id)})};
@@ -390,11 +390,11 @@ npc_tailor:(p,v)=>[0,180].forEach(d=>later(()=>nz(.06,6500,3,.16*v,p,'highpass')
 npc_exch:(p,v)=>[0,70,140,210].forEach((d,i)=>later(()=>tn(3000+i*350,3000+i*350,.1,.07*v,p,'triangle'),d))});
 Object.assign(VD,{npc_chief:1.2,npc_smith:1,npc_herb:.9,npc_tailor:.6,npc_exch:.6});
 setInterval(()=>{const z=zoneAt(S.x,S.y);if(!z||!ambOn||mode==='input')return;W.forEach(w=>{if(!w.npc||w.z!==z.id)return;const d=dist(S,w);if(d<=39&&Math.random()<(d<10?.25:.1))sfx('npc_'+w.npc,panOf(w),Math.max(.15,1-d/39))})},1500);
-// radar: A = NPC only (39), O = monsters and herbs (29)
-A.radar=function(){const z=zoneAt(S.x,S.y),n=W.filter(w=>w.npc&&w.z===z.id&&dist(S,w)<=39).sort((a,b)=>dist(S,a)-dist(S,b));if(!n.length)return say('ไม่พบ NPC ใน 39 ก้าว');n.forEach(w=>say('NPC '+w.n+' '+rel(w.x-S.x,w.y-S.y)+' ประมาณ '+Math.round(dist(S,w))+' ก้าว'))};
+// radar: A = ผู้คน only (39), O = monsters and herbs (29)
+A.radar=function(){const z=zoneAt(S.x,S.y),n=W.filter(w=>w.npc&&w.z===z.id&&dist(S,w)<=39).sort((a,b)=>dist(S,a)-dist(S,b));if(!n.length)return say('ไม่พบใครใน 39 ก้าว');n.forEach(w=>say(w.n+' '+rel(w.x-S.x,w.y-S.y)+' ประมาณ '+Math.round(dist(S,w))+' ก้าว'))};
 A.mradar=function(){const z=zoneAt(S.x,S.y),l=MS.filter(m=>!m.dead&&m.z===z.id&&dist(S,m)<=29).sort((a,b)=>dist(S,a)-dist(S,b)),nd=ND.filter(a=>!a.dead&&a.z===z.id&&dist(S,a)<=29);nd.slice(0,4).forEach(a=>say('สมุนไพร '+I[a.id].n+' '+rel(a.x-S.x,a.y-S.y)));if(!l.length&&!nd.length)return say('ไม่พบอสูรหรือสมุนไพรใน 29 ก้าว');l.slice(0,5).forEach(m=>say(MD[m.k].n+' ระดับพลัง '+mpw(m.k)+' '+rel(m.x-S.x,m.y-S.y)));rl=l;rlT=Date.now()+8000;if(l.length){target=l[0];say('ล็อกเป้า '+MD[l[0].k].n+' ลูกศรซ้ายขวาสลับเป้า')}};
 Object.assign(KEYS,{o:'mradar',u:'guide',F4:'news',F10:'logout'});
-{const r=MAIN.find(x=>x[1]==='KeyA');if(r)r[0]='เรดาร์ NPC (A)';MAIN.push(['เรดาร์อสูรและสมุนไพร (O)','KeyO'],['คู่มือเกม (U)','KeyU'],['ประกาศ (F4)','F4'],['ออกจากระบบ (F10)','F10']);
+{const r=MAIN.find(x=>x[1]==='KeyA');if(r)r[0]='เช็คคนรอบตัว (A)';MAIN.push(['เรดาร์อสูรและสมุนไพร (O)','KeyO'],['คู่มือเกม (U)','KeyU'],['ประกาศ (F4)','F4'],['ออกจากระบบ (F10)','F10']);
 [['O','KeyO'],['U','KeyU'],['F4','F4'],['F10','F10']].forEach(([l,c])=>{const b=document.createElement('button');b.tabIndex=-1;b.onmousedown=e=>e.preventDefault();b.textContent=l;b.setAttribute('aria-label','ปุ่ม '+l);b.onclick=()=>{if(mode==='input')return;handle({code:c,shiftKey:false});render()};$('pad').appendChild(b)})}
 renderMob();
 setTimeout(()=>{say('สวัสดี '+(S.pname||'ผู้ฝึกตน')+' กด U อ่านคู่มือ F4 อ่านประกาศ F5 บันทึกการอัพเดท');autoNew();showNews(false);daily();save()},900);
@@ -427,7 +427,7 @@ Object.assign(SFX,{leo:(p,v)=>tn(520,200,.4,.18*v,p,'sawtooth',14),ape:(p,v)=>{t
 const _us6=useSlot;useSlot=function(i,qt){const id=S.slots[i],r=_us6(i,qt);if(r&&id){const k=SK[id];if(k&&k.stun&&target&&!target.dead)target.at=Date.now()+k.stun*1000-2000;if(id==='wshield')buff=Date.now()+20000}return r};
 setInterval(()=>{if(!S.med)return;const e=W.find(w=>w.eye&&dist(S,w)<=1.5),z=zoneAt(S.x,S.y);if(e&&z)S.exp+=medBase()*(1.2-z.b)*spd},1000);
 
-/* ===== PATCH 7 (เพิ่มต่อท้าย ไม่ลบโค้ดเดิม) สัตว์อสูรบิน, NPC/ร้านค้า/ครูสอนวิชาเพิ่ม, ทักษะหลายขั้นพร้อมโจมตีกลุ่มและรักษา ===== */
+/* ===== PATCH 7 (เพิ่มต่อท้าย ไม่ลบโค้ดเดิม) สัตว์อสูรบิน, ผู้คน/ร้านค้า/ครูสอนวิชาเพิ่ม, ทักษะหลายขั้นพร้อมโจมตีกลุ่มและรักษา ===== */
 MD.phx.fly=1;
 Object.assign(I,{arm_cloth:{n:'ชุดผ้าไหมปราณ (ป้องกัน +6)',u:'arm',def:6},arm_iron:{n:'เกราะเหล็กกล้า (ป้องกัน +20)',u:'arm',def:20},arm_silk:{n:'เสื้อคลุมไหมปราณ (ป้องกัน +45)',u:'arm',def:45},arm_jade:{n:'เกราะหยกวิญญาณ (ป้องกัน +90)',u:'arm',def:90},arm_scale:{n:'เกราะเกล็ดมรกต (ป้องกัน +150)',u:'arm',def:150}});
 Object.assign(LV,{arm_iron:2,arm_silk:4,arm_jade:8,arm_scale:10});
@@ -509,9 +509,9 @@ setInterval(()=>{if(!S.med||!S.sect)return;const h=W.find(w=>w.hall&&w.hall===S.
 
 /* ===== [รวมจากไฟล์แพตช์ 12] PATCH 9 (เพิ่มต่อท้าย ไม่ลบโค้ดเดิม) ระบบตรวจสอบบักอัตโนมัติตลอดเวลา + ซ่อมแซมข้อมูลเสียอัตโนมัติ (กด Shift+F8 ดูรายงาน) ===== */
 {const ER=window.__ERRS=window.__ERRS||[];let lastE=0,nE=0,nF=0;const lastFix={};let SELF=[];
- const rec=m=>{ER.push(new Date().toTimeString().slice(0,8)+' '+m);if(ER.length>50)ER.shift();nE++;if(Date.now()-lastE>20000){lastE=Date.now();say('ระบบตรวจพบข้อผิดพลาดเล็กน้อย เกมยังเล่นต่อได้ กด Shift+F8 ดูรายงาน',1)}};
+ const rec=m=>{ER.push(new Date().toTimeString().slice(0,8)+' '+m);if(ER.length>50)ER.shift();nE++;if(Date.now()-lastE>20000){lastE=Date.now();(isGM()&&say('ระบบตรวจพบข้อผิดพลาดเล็กน้อย เกมยังเล่นต่อได้ กด Shift+F8 ดูรายงาน',1))}};
  if(window.addEventListener){window.addEventListener('error',e=>rec('error: '+(e&&e.message)));window.addEventListener('unhandledrejection',e=>rec('promise: '+((e&&e.reason&&e.reason.message)||(e&&e.reason))))}
- const fx=(k,m)=>{nF++;if(!lastFix[k]||Date.now()-lastFix[k]>60000){lastFix[k]=Date.now();say('ตรวจระบบ: '+m+' (แก้ไขอัตโนมัติแล้ว)',1)}};
+ const fx=(k,m)=>{nF++;if(!lastFix[k]||Date.now()-lastFix[k]>60000){lastFix[k]=Date.now();(isGM()&&say('ตรวจระบบ: '+m+' (แก้ไขอัตโนมัติแล้ว)',1))}};
  const fin=v=>typeof v==='number'&&isFinite(v);
  function watchdog(){
   if(!Number.isInteger(S.step)||S.step<0||S.step>=R.length){S.step=Math.max(0,Math.min(R.length-1,Math.floor(+S.step)||0));fx('step','ขั้นพลังผิดปกติ')}
@@ -545,9 +545,9 @@ setInterval(()=>{if(!S.med||!S.sect)return;const h=W.find(w=>w.hall&&w.hall===S.
   R.forEach((r,i)=>{if(r.length<4||r.some(v=>!fin(v)))is.push('ตารางพลัง '+i)});
   return is}
  A.diag=function(){SELF=selfCheck();say('ตรวจระบบ: ข้อผิดพลาดที่ดักได้ '+nE+' ครั้ง แก้ข้อมูลอัตโนมัติ '+nF+' ครั้ง ตรวจข้อมูลเกม '+(SELF.length?SELF.length+' จุดผิดปกติ เช่น '+SELF.slice(0,3).join(', '):'ปกติทั้งหมด')+(ER.length?' ล่าสุด '+ER[ER.length-1]:''),1)};
- KEYS['S+F8']='diag';MAIN.push(['ตรวจสอบระบบ (Shift+F8)','S+F8']);const _lo9=A.logout;A.logout=function(){try{localStorage.removeItem('ipo_rem');localStorage.removeItem('ipo_tok')}catch(e){}return _lo9()};
+ KEYS['S+F8']='diag';const _lo9=A.logout;A.logout=function(){try{localStorage.removeItem('ipo_rem');localStorage.removeItem('ipo_tok')}catch(e){}return _lo9()};
  setInterval(()=>{try{watchdog()}catch(e){rec('watchdog: '+e.message)}},3000);
- setTimeout(()=>{try{SELF=selfCheck();if(SELF.length)say('ตรวจระบบตอนเริ่ม พบข้อมูลเกมผิดปกติ '+SELF.length+' จุด กด Shift+F8 ดูรายงาน',1)}catch(e){rec('selfcheck: '+e.message)}},1500);
+ setTimeout(()=>{try{SELF=selfCheck();if(SELF.length&&isGM())say('ตรวจระบบตอนเริ่ม พบข้อมูลเกมผิดปกติ '+SELF.length+' จุด กด Shift+F8 ดูรายงาน',1)}catch(e){rec('selfcheck: '+e.message)}},1500);
  window.__DIAG=()=>({errors:ER.slice(),nE,nF,self:selfCheck()});window.__WD=watchdog}
 
 /* ===== [รวมจากไฟล์แพตช์ 12] PATCH 10 (เพิ่มต่อท้าย ไม่ลบโค้ดเดิม) แก้ข้อความท่วมสำหรับผู้เล่นตาบอด: แยกข้อความตอบสนองปุ่ม (อ่านทันที) ออกจากข้อความเบื้องหลัง (รวมสรุป ไม่บัง) ===== */
@@ -564,7 +564,7 @@ setInterval(()=>{if(!S.med||!S.sect)return;const h=W.find(w=>w.hall&&w.hall===S.
  let uT=performance.now()+3000,uq=[],uPend=false,lastUser=0,bg=[],lastBg=0;
  const mark=()=>{uT=performance.now()};
  ['keydown','click','pointerdown','touchstart'].forEach(ev=>document.addEventListener(ev,mark,true));
- const urgent=t=>/เลือดเหลือน้อย|สังหาร$|ถูก.*สังหาร|ฟื้นที่ลานเกิด|เกิดใหม่แล้ว|ทะลวงสำเร็จ|ระบบตรวจพบ|ได้ปลา|เบ็ดหลุด|^\[แผนที่\] /.test(t);
+ const urgent=t=>/เลือดเหลือน้อย|สังหาร$|ถูก.*สังหาร|ฟื้นที่ลานเกิด|เกิดใหม่แล้ว|ทะลวงสำเร็จ|ระบบตรวจพบ|ได้ปลา|เบ็ดหลุด|^\[แผนที่\] |^\[ส่วนตัว\] /.test(t);
  function flushUser(){uPend=false;if(!uq.length)return;const t=uq.splice(0).join('. ');lastUser=Date.now();put(RA,t);ttsSay(t,true)}
  function onMsg(t){if(!t)return;if(performance.now()-uT<80){uq.push(t);if(!uPend){uPend=true;setTimeout(flushUser,0)}}else{if(S.quiet&&!urgent(t))return;bg.push(t);if(bg.length>40)bg.shift()}}
  const raw=Node.prototype.appendChild;
@@ -584,7 +584,7 @@ setInterval(()=>{if(!S.med||!S.sect)return;const h=W.find(w=>w.hall&&w.hall===S.
  window.__SR={RA,RP,flushBg,bg:()=>bg.length};
  renderMob()}
 
-/* ===== [รวมจากไฟล์แพตช์ 12] PATCH 11 (เพิ่มต่อท้าย) วงเวทย์เคลื่อนย้ายทุกเมืองใกล้จุดมาถึง, ผู้แลกเงินทุกเมือง, ป้ายทางออก, อสูรไม่ตีใกล้ NPC รัศมี 29, หอการค้ารับซื้อของ, โรงประมูลจริง ===== */
+/* ===== [รวมจากไฟล์แพตช์ 12] PATCH 11 (เพิ่มต่อท้าย) วงเวทย์เคลื่อนย้ายทุกเมืองใกล้จุดมาถึง, ผู้แลกเงินทุกเมือง, ป้ายทางออก, อสูรไม่ตีใกล้ ผู้คน รัศมี 29, หอการค้ารับซื้อของ, โรงประมูลจริง ===== */
 let nsT=0,nsV=false;
 function npcSafe(){const t=Date.now();if(t-nsT>300){nsT=t;const z=zoneAt(S.x,S.y);nsV=!!z&&W.some(w=>w.npc&&w.z===z.id&&dist(S,w)<=29)}return nsV}
 {
@@ -626,17 +626,17 @@ function npcSafe(){const t=Date.now();if(t-nsT>300){nsT=t;const z=zoneAt(S.x,S.y
  TIPS.push('วงเวทย์เคลื่อนย้ายอยู่ติดจุดที่เคลื่อนย้ายมาถึง กด F คุย');
  renderMob()}
 
-/* ===== [รวมจากไฟล์แพตช์ 12] PATCH 12 (เพิ่มต่อท้าย) ย้ายบอสหมูป่า, ร้านค้า/สมาคมเป็นอาคารมีประตูเข้า-ออกและเจ้าของร้านเป็นชื่อคน, NPC ตกปลา ตู้ปลา ร้านตัดเย็บทุกเมือง ===== */
+/* ===== [รวมจากไฟล์แพตช์ 12] PATCH 12 (เพิ่มต่อท้าย) ย้ายบอสหมูป่า, ร้านค้า/สมาคมเป็นอาคารมีประตูเข้า-ออกและเจ้าของร้านเป็นชื่อคน, ผู้คน ตกปลา ตู้ปลา ร้านตัดเย็บทุกเมือง ===== */
 {
  S.tank=S.tank||{};
  const has12=id=>(S.inv.find(a=>a.id===id)||{q:0}).q;
  const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
- /* 1) ย้ายบอสหมูป่าเขี้ยวทองคำไปปลายป่าด้านตะวันออก ห่างตลาดและ NPC */
+ /* 1) ย้ายบอสหมูป่าเขี้ยวทองคำไปปลายป่าด้านตะวันออก ห่างตลาดและ ผู้คน */
  {const BX=95,BY=57,zf=Z.find(z=>z.id==='f');if(zf)zf.boss=['pboar',BX,BY];
   const b=MS.find(m=>m.k==='pboar');if(b){b.x=BX;b.y=BY;b.home=[BX,BY]}
   const bw=W.find(w=>/^ถิ่นหมูป่า/.test(w.n));if(bw){bw.x=BX;bw.y=BY}
   MS.forEach(m=>{if(m.z!=='f'||m.k==='pboar')return;let t=0;while(Math.hypot(m.x-BX,m.y-BY)<12&&t++<60){m.x=zf.r[0]+1+Math.floor(Math.random()*(zf.r[2]-zf.r[0]-1));m.y=zf.r[1]+1+Math.floor(Math.random()*(zf.r[3]-zf.r[1]-1))}m.home=[m.x,m.y]})}
- /* 2) เปลี่ยนชื่อ NPC ที่ยังเป็นแค่ตำแหน่ง ให้เป็นชื่อคน */
+ /* 2) เปลี่ยนชื่อ ผู้คน ที่ยังเป็นแค่ตำแหน่ง ให้เป็นชื่อคน */
  const ren=(npc,n)=>{const w=W.find(w=>w.npc===npc);if(w)w.n=n;return w};
  ren('elder1','ผู้อาวุโสเฉิงอวิ๋น แห่งสำนักกระบี่ชิงหยุน');ren('elder2','เจ้าสำนักเหยาหวัง แห่งหุบเขาโอสถพฤกษา');ren('elder3','อาจารย์ใหญ่ฟ่านกัง แห่งอารามวัชระกายา');
  ren('guide','ผู้ตรวจการหลัวหยง แห่งเมืองหลวง');ren('tailor','ร้านตัดเย็บป้าหลิว (ตลาดหมู่บ้าน)');
@@ -677,7 +677,7 @@ function npcSafe(){const t=Date.now();if(t-nsT>300){nsT=t;const z=zoneAt(S.x,S.y
    const f=x.f;if(S.tank[f.id])return say('ปลาชนิดนี้อยู่ในตู้แล้ว');if(!has12(f.id))return say('ไม่มี '+f.n+' ในกระเป๋า');rem(f.id);S.tank[f.id]=1;S.exp+=f.sell*2;sfx('levelup');say('ใส่ '+f.n+' ลงตู้ปลา ได้แต้มฝึกฝน '+f.sell*2);
    if(FISH.every(g=>S.tank[g.id])&&!S.tankDone){S.tankDone=1;add('pill_xp3',1);say('ตู้ปลาครบทุกชนิด รับรางวัลโอสถเพิ่มปราณระดับสูง 1 เม็ด')}
    NPC7.tank(n);if(mn&&mn.items[ix]){mn.i=ix;say(mn.items[ix].t,1)}}})};
- /* 5) NPC ตกปลา ตู้ปลา ร้านตัดเย็บ ทุกเมือง */
+ /* 5) ผู้คน ตกปลา ตู้ปลา ร้านตัดเย็บ ทุกเมือง */
  [['v','หมู่บ้านลำธารใส',[16,43],[62,46],[46,41],'ลุงเฉินหลง','ป้าหยูเหม่ย'],['c','เมืองหลวง',[35,76],[70,76],[20,76],'ลุงเฉินเป่า','ป้าหยูหลาน'],['k1','สำนักกระบี่ชิงหยุน',[6,98],[28,98],[17,101],'ลุงโหวเจียง','ป้าซูเจิน'],['k2','หุบเขาโอสถพฤกษา',[42,98],[66,98],[54,101],'ลุงหมาจวิน','ป้าเมิ่งเฉียน'],['k3','อารามวัชระกายา',[79,98],[103,98],[90,101],'ลุงเซียวหลี่','ป้าตงหยิง']].forEach(([z,t,f,a,s,fn,an])=>{
   W.push({z,n:fn+' ผู้ตกปลา',x:f[0],y:f[1],npc:'fisher'},{z,n:an+' ผู้ดูแลตู้ปลา',x:a[0],y:a[1],npc:'tank'},{z,n:'ร้านตัดเย็บป้าหลิว (สาขา'+t+')',x:s[0],y:s[1],npc:(z==='v'?'tailor':'tailorc')})});
  Object.assign(NPCDO,{fisher:'ตกปลา ซื้อคันเบ็ด ขายปลา',tank:'ใส่ปลาลงตู้ปลาเพื่อรับแต้มและรางวัล รับค่าชมตู้ปลา',tailor:'สร้างเกราะ (K หรือคุย F)'});
@@ -715,7 +715,8 @@ function payMenu(total,label,onPay,back){
 // ร้านค้า: แต่ละร้านขายเฉพาะของในขั้นใหญ่ของร้านนั้น
 const SH9={},TC9={};
 function shop9(n,key){const T=SH9[key];
- menu('ร้าน '+n.n+' สินค้าระดับ'+MAJOR[T.tier]+' (มี '+wallet9()+')',T.list.map(id=>({t:I[id].n+' ราคา '+priceFull(I[id].p)+' — '+_d9(id).replace(/ ?ราคา \d+ หินต่ำ/,'')+(LV[id]?' (ต้องถึง'+realmName(LV[id])+')':''),id})),{ent:x=>{
+ menu('ร้าน '+n.n+' สินค้าระดับ'+MAJOR[T.tier]+' (มี '+wallet9()+')',(RECIPES[key]&&RECIPES[key].length?[{t:'สร้างของที่ร้านนี้ ใช้วัตถุดิบที่เก็บได้',craft:1}]:[]).concat(T.list.map(id=>({t:I[id].n+' ราคา '+priceFull(I[id].p)+' — '+_d9(id).replace(/ ?ราคา \d+ หินต่ำ/,'')+(LV[id]?' (ต้องถึง'+realmName(LV[id])+')':''),id}))),{ent:x=>{
+  if(x.craft)return craftMenu(key,n);
   if(!lvOk(x.id,1))return;const ix=mn.i;
   ask('ซื้อ '+I[x.id].n+' กี่ชิ้น',v=>{const q=parseInt(v);if(!(q>0)){mode='menu';return say('ยกเลิก')}
    payMenu(q*I[x.id].p,I[x.id].n+' '+q+' ชิ้น',()=>{add(x.id,q);say('ซื้อแล้ว '+q+' ชิ้น')},()=>{shop9(n,key);mn.i=ix;say(mn.items[ix].t,1)})})}})}
@@ -745,15 +746,15 @@ TC9.tgroup_1={tier:1,ids:GR9.filter(i=>skillTier(i)===1)};TC9.healer_1={tier:1,i
 RECIPES.smith_1=RECIPES.smith.filter(r=>itemTier(r.o)===1);RECIPES.smith=RECIPES.smith.filter(r=>itemTier(r.o)===0);
 RECIPES.tailor_1=RECIPES.tailor.filter(r=>itemTier(r.o)===1);RECIPES.tailor=RECIPES.tailor.filter(r=>itemTier(r.o)===0);
 ['smith','herb','armor','talman','tgroup','healer','tailor'].forEach(k=>{const w=W.find(a=>a.npc===k);if(w&&w.n.indexOf('ระดับ')<0)w.n+=' (ระดับหลอมรวมลมปราณ)'});
-Object.assign(NPCDO,{smith:'ซื้ออาวุธและคัมภีร์ระดับหลอมรวมลมปราณ สร้างกระบี่ (K)',herb:'ซื้อโอสถระดับหลอมรวมลมปราณ สร้างน้ำยา (K)',armor:'ซื้อเกราะระดับหลอมรวมลมปราณ',gen:'ซื้อของชำและสมุนไพรระดับหลอมรวมลมปราณ',herb2:'ซื้อโอสถและวัตถุดิบระดับหลอมรวมลมปราณขั้นสูง',talman:'ซื้อยันต์ระดับหลอมรวมลมปราณ',tailor:'สร้างเกราะระดับหลอมรวมลมปราณ (K)',
- smith_1:'ซื้ออาวุธและคัมภีร์ระดับสร้างรากฐาน สร้างกระบี่ (K)',armor_1:'ซื้อเกราะระดับสร้างรากฐาน',herb_1:'ซื้อโอสถระดับสร้างรากฐาน',talman_1:'ซื้อยันต์และคัมภีร์ระดับสร้างรากฐาน',tailor_1:'สร้างเกราะระดับสร้างรากฐาน (K)',tgroup_1:'เรียนวิชากลุ่มระดับสร้างรากฐาน',healer_1:'เรียนวิชารักษาระดับสร้างรากฐาน'});
+Object.assign(NPCDO,{smith:'ซื้ออาวุธและคัมภีร์ระดับหลอมรวมลมปราณ สร้างกระบี่ (กด F คุย)',herb:'ซื้อโอสถระดับหลอมรวมลมปราณ สร้างน้ำยา (กด F คุย)',armor:'ซื้อเกราะระดับหลอมรวมลมปราณ',gen:'ซื้อของชำและสมุนไพรระดับหลอมรวมลมปราณ',herb2:'ซื้อโอสถและวัตถุดิบระดับหลอมรวมลมปราณขั้นสูง',talman:'ซื้อยันต์ระดับหลอมรวมลมปราณ',tailor:'สร้างเกราะระดับหลอมรวมลมปราณ (กด F คุย)',
+ smith_1:'ซื้ออาวุธและคัมภีร์ระดับสร้างรากฐาน สร้างกระบี่ (กด F คุย)',armor_1:'ซื้อเกราะระดับสร้างรากฐาน',herb_1:'ซื้อโอสถระดับสร้างรากฐาน',talman_1:'ซื้อยันต์และคัมภีร์ระดับสร้างรากฐาน',tailor_1:'สร้างเกราะระดับสร้างรากฐาน (กด F คุย)',tgroup_1:'เรียนวิชากลุ่มระดับสร้างรากฐาน',healer_1:'เรียนวิชารักษาระดับสร้างรากฐาน'});
 Object.assign(SFX,{npc_smith_1:SFX.npc_smith,npc_herb_1:SFX.npc_herb});Object.assign(VD,{npc_smith_1:VD.npc_smith,npc_herb_1:VD.npc_herb});
 const _talk9=A.talk;A.talk=function(){const n=npcNear();if(n){if(SH9[n.npc])return shop9(n,n.npc);if(TC9[n.npc])return teach9(n,n.npc);if(n.npc==='tailor_1')return craftMenu('tailor_1',n)}return _talk9()};
 // คำอธิบายสินค้าในกระเป๋าและคู่มือ แสดงราคาด้วยหินระดับที่เหมาะสม
 const totalLow9=()=>CUR.l[1]()+S.sm*100+S.sh*10000+S.sx*1000000;
 RECIPES.forge=RECIPES.smith.concat(RECIPES.smith_1);RECIPES.royalarm=RECIPES.tailor.concat(RECIPES.tailor_1);RECIPES.tailorc=RECIPES.royalarm;
 Object.assign(NPC7,{forge:n=>craftMenu('forge',n),royalarm:n=>craftMenu('royalarm',n),tailorc:n=>craftMenu('tailorc',n)});
-Object.assign(NPCDO,{forge:'สร้างกระบี่ระดับหลอมรวมลมปราณและสร้างรากฐาน (K)',royalarm:'สร้างเกราะระดับหลอมรวมลมปราณและสร้างรากฐาน (K)',tailorc:'สร้างเกราะระดับหลอมรวมลมปราณและสร้างรากฐาน (K หรือคุย F)'});
+Object.assign(NPCDO,{forge:'สร้างกระบี่ระดับหลอมรวมลมปราณและสร้างรากฐาน (กด F คุย)',royalarm:'สร้างเกราะระดับหลอมรวมลมปราณและสร้างรากฐาน (กด F คุย)',tailorc:'สร้างเกราะระดับหลอมรวมลมปราณและสร้างรากฐาน (K หรือคุย F)'});
 [['elder1','k1',['sw_wave','sw_thrust']],['elder2','k2',['heal_s','mist']],['elder3','k3',['iron_body','vajra']]].forEach(([k,id,ids])=>{TC9[k]={ids,need:id,svc:()=>[{t:'เข้าร่วม '+SECT[id].n+' ('+SECT[id].d+')'+(S.sect===id?' (เป็นศิษย์แล้ว)':''),f:()=>joinSect(id)}]}});
 descOf=function(id){return _d9(id).replace(/ราคา (\d+) หินต่ำ/,(m,a)=>'ราคา '+priceTxt(+a))};
 /* ===== PATCH 10 (เพิ่มต่อท้าย ไม่ลบโค้ดเดิม) ข้อความประจำวันแบบเรียลไทม์ + บันทึกการอัพเดท (F5) แบ่งหมวดหมู่ ===== */
@@ -775,14 +776,14 @@ _nm(2,{c:C_MAP,h:'แผนที่ และการเกิดใหม่�
  'การข้ามเขตแผนที่ ต้องเดินถึงทางเข้าแล้วกด Enter ยืนยัน ถ้าแผนที่อันตรายเกินขั้นของเจ้า เกมจะเตือนก่อน']});
 _nm(3,{c:[C_ITEM,C_SKILL],h:'ของตก เกราะ การสร้างของ เงิน และวิชาเหาะ',x:[
  'ของที่อสูรทิ้งไว้จะเข้ากระเป๋าอัตโนมัติ ส่วนของที่ทิ้งเองต้องกด Enter เพื่อเก็บ',
- 'มีเกราะป้องกันและระบบสร้างของ กด K เมื่ออยู่ใกล้ร้านช่างหนัง ร้านตีเหล็ก หรือร้านเภสัชกร',
+ 'มีเกราะป้องกันและระบบสร้างของ กด F คุยเมื่ออยู่ใกล้ร้านช่างหนัง ร้านตีเหล็ก หรือร้านเภสัชกร',
  'ผู้แลกเงินเศรษฐีเฉียนที่ตลาดหมู่บ้าน แลกเหรียญทองกับหินวิญญาณ และรับซื้อวัตถุดิบ',
  'หินวิญญาณมี 4 ระดับ ต่ำ กลาง สูง สุดยอด แลกขึ้นทีละระดับในอัตรา 100 ต่อ 1 แลกลงระดับล่างได้ 1 ต่อ 95',
  'วิชาขี่กระบี่เหาะเหิน กด X เพื่อขึ้นหรือลง ใช้ได้ตั้งแต่ขั้นสร้างรากฐาน ขั้น 1 เหาะได้ 30 นาที และเพิ่มอีก 10 นาทีต่อขั้น']});
-_nm(4,{c:C_SYS,h:'เรดาร์ เสียงของ NPC และคู่มือเกม',x:[
- 'กด A เช็ค NPC ในรัศมี 39 ก้าว กด O เช็คอสูรและสมุนไพรในรัศมี 29 ก้าว',
- 'NPC เดินชนได้ และมีเสียงประจำตัว ยิ่งอยู่ใกล้เสียงยิ่งชัด และเสียงจะบอกทิศซ้ายขวา',
- 'กด U อ่านคู่มือเกม แบ่งเป็นวิธีเล่น แผนที่ NPC ไอเทม เงิน และการเหาะ',
+_nm(4,{c:C_SYS,h:'เรดาร์ เสียงของผู้คน และคู่มือเกม',x:[
+ 'กด A เช็คคนรอบตัว ในรัศมี 39 ก้าว กด O เช็คอสูรและสมุนไพรในรัศมี 29 ก้าว',
+ 'เดินชนคนได้ และแต่ละคนมีเสียงประจำตัว ยิ่งอยู่ใกล้เสียงยิ่งชัด และเสียงจะบอกทิศซ้ายขวา',
+ 'กด U อ่านคู่มือเกม แบ่งเป็นวิธีเล่น แผนที่ ผู้คน ไอเทม เงิน และการเหาะ',
  'กด F4 อ่านประกาศ']});
 
 // ประวัติอัพเดทตั้งแต่แพตช์ 6 เป็นต้นมา (วันที่ของแพตช์ 6 และ 7 ไฟล์ไม่ได้บันทึกไว้ จึงใช้วันที่ของไฟล์นี้ แก้ได้ที่ช่อง d)
@@ -793,10 +794,10 @@ NEWS.push(
  'อสูรใหม่ ได้แก่ เสือดาวสายฟ้า วานรแขนเหล็ก วิหคเพลิงปีกแดง และบอสราชสีห์เพลิงสวรรค์',
  'ของใหม่ ได้แก่ โอสถบรรพกาล 3 ชนิด กระบี่สายฟ้าฟาด กระบี่ราชสีห์ที่ได้จากบอส และเกราะเสือดาว วานร ราชสีห์ที่สร้างได้ที่ช่างหนัง',
  'คัมภีร์ใหม่ 4 เล่ม คือ บังคับกระบี่บิน ยันต์เพลิง ค่ายกลกักขังที่ตรึงศัตรู 5 วินาที และโล่ปราณวารีที่ลดความเสียหาย 50 เปอร์เซ็นต์นาน 20 วินาที']},
-{id:6,d:'2026-10-25',c:[C_ITEM,C_SKILL,C_MAP],h:'แพตช์ 7 NPC ทักษะ และสัตว์อสูรบิน',t:'เพิ่ม NPC ร้านค้าและครูสอนวิชาในหมู่บ้าน ทักษะหลายขั้น โจมตีกลุ่ม รักษา เกราะ 5 ชิ้น และอสูรบิน',x:[
+{id:6,d:'2026-10-25',c:[C_ITEM,C_SKILL,C_MAP],h:'แพตช์ 7 ผู้คน ทักษะ และสัตว์อสูรบิน',t:'เพิ่มร้านค้าและครูสอนวิชาในหมู่บ้าน ทักษะหลายขั้น โจมตีกลุ่ม รักษา เกราะ 5 ชิ้น และอสูรบิน',x:[
  'วิหคเพลิงบินได้ จึงโจมตีผู้เล่นที่กำลังเหาะอยู่ได้ ส่วนอสูรทั่วไปโจมตีผู้เล่นที่เหาะไม่ถึง',
  'เพิ่มเกราะ 5 ชิ้น ชุดผ้าไหมปราณ เกราะเหล็กกล้า เสื้อคลุมไหมปราณ เกราะหยกวิญญาณ และเกราะเกล็ดมรกต ป้องกันเพิ่มขึ้นตามลำดับ',
- 'NPC ใหม่ในหมู่บ้าน คือ ครูฝึกวิชาต่อสู้เดี่ยว ร้านเกราะ ร้านของชำ ครูวิชาป้องกัน ร้านวัตถุดิบและโอสถระดับสูง ร้านยันต์ ครูวิชากลุ่มและปราณ และหมอยาหลวง',
+ 'คนใหม่ในหมู่บ้าน คือ ครูฝึกวิชาต่อสู้เดี่ยว ร้านเกราะ ร้านของชำ ครูวิชาป้องกัน ร้านวัตถุดิบและโอสถระดับสูง ร้านยันต์ ครูวิชากลุ่มและปราณ และหมอยาหลวง',
  'ทักษะรวม 15 วิชา แบ่งเป็นขั้นต้น กลาง สูง มีทั้งโจมตีเดี่ยว โจมตีกลุ่ม ป้องกัน และรักษา เรียนได้จากครูสอนวิชาด้วยหินวิญญาณ',
  'หมอยาหลวงรักษาเลือดและปราณจนเต็มได้ โดยเสียค่ารักษาตามขั้นฝึกตน']},
 {id:7,d:'2026-10-25',c:C_FIX,h:'แก้บั๊กข้อความซ้ำบนเวอร์ชัน PC',t:'แก้ข้อความชนซ้ำจนคิวเสียงล้นบนคอมพิวเตอร์ และกันการกดปุ่มเดินค้างแล้วส่งก้าวซ้ำ',x:[
@@ -813,7 +814,7 @@ NEWS.push(
  'สมุนไพร เอาเห็ดวิญญาณระดับต่ำออกจากหุบเขาหมาป่า และเพิ่มสมุนไพรระดับสูงในเทือกเขาอสูรบรรพกาล คือ โสมหมื่นปีบรรพกาล บัวเพลิงสวรรค์ และเห็ดวิญญาณหมื่นปี']},
 {id:9,d:'2026-10-25',c:[C_ITEM,C_SKILL],h:'แพตช์ 9 ร้านแยกตามขั้นใหญ่ และจ่ายด้วยหินวิญญาณหลายระดับ',t:'ร้านแยกตามขั้นใหญ่ เพิ่มร้านระดับสร้างรากฐานในหมู่บ้าน จ่ายด้วยหินวิญญาณระดับไหนก็ได้ มีเงินทอน',x:[
  'ร้านระดับหลอมรวมลมปราณขายเฉพาะของหลอมรวมลมปราณ ร้านระดับสร้างรากฐานขายเฉพาะของสร้างรากฐาน ขั้นใหญ่ต่อไปคือแกนทองคำและวิญญาณแรกเริ่ม จะมีร้านของตัวเองเมื่อเปิดขั้นเหล่านั้น',
- 'เพิ่ม NPC ระดับสร้างรากฐานในหมู่บ้าน 7 คน ร้านตีเหล็กและคัมภีร์ ร้านเกราะ ร้านโอสถ ร้านยันต์ ร้านช่างหนัง ครูวิชากลุ่ม และครูวิชารักษา',
+ 'เพิ่มผู้ขายระดับสร้างรากฐานในหมู่บ้าน 7 คน ร้านตีเหล็กและคัมภีร์ ร้านเกราะ ร้านโอสถ ร้านยันต์ ร้านช่างหนัง ครูวิชากลุ่ม และครูวิชารักษา',
  'การสร้างของด้วยปุ่ม K แยกตามขั้นใหญ่เช่นกัน',
  'ราคาไม่เกิน 100 หินต่ำ แสดงเป็นหินต่ำ เกิน 100 และหารลงตัว แสดงเป็นหินระดับสูงขึ้น เช่น 200 เป็น 2 หินกลาง',
  'เมนูชำระเงินบอกว่าต้องใช้หินแต่ละระดับกี่ก้อน และคุณมีเท่าไร จ่ายด้วยหินระดับที่สูงกว่าราคาได้ ระบบทอนเป็นหินระดับต่ำลงมา',
@@ -836,7 +837,7 @@ NEWS.push(
 {id:12,d:'2026-10-25',c:C_FIX,h:'ระบบตรวจสอบบักอัตโนมัติ',t:'ตรวจและซ่อมข้อมูลที่ผิดปกติให้อัตโนมัติ กด Shift F8 ดูรายงาน',x:[
  'ทุก 3 วินาที เกมตรวจข้อมูลของตัวละคร เช่น เลือดติดลบ ตำแหน่งอยู่นอกแผนที่ ไอเทมหรือวิชาที่ไม่มีอยู่จริง แล้วซ่อมให้เองโดยไม่ต้องทำอะไร',
  'ดักข้อผิดพลาดของเกม ถ้ามีจะแจ้งสั้นๆ และเกมเล่นต่อได้',
- 'ตอนเริ่มเกมตรวจข้อมูลเกมทั้งหมด เช่น ร้านค้า สูตรสร้างของ อสูร และตำแหน่ง NPC',
+ 'ตอนเริ่มเกมตรวจข้อมูลเกมทั้งหมด เช่น ร้านค้า สูตรสร้างของ อสูร และตำแหน่ง ผู้คน',
  'กด Shift F8 เพื่อฟังรายงานสรุป']},
 {id:13,d:'2026-10-25',c:[C_SYS,C_FIX],h:'แก้ข้อความท่วมสำหรับผู้เล่นตาบอด และโหมดข้อความเงียบ',t:'ผลของปุ่มที่กดอ่านทันที เหตุการณ์เบื้องหลังรวมสรุปทุก 3 วินาที กด V หรือ F6 เปิดโหมดข้อความเงียบ',x:[
  'ข้อความที่เกิดจากการกดปุ่มหรือแตะ จะอ่านทันทีและไม่ถูกบัง',
@@ -847,7 +848,7 @@ NEWS.push(
 {id:14,d:'2026-10-25',c:[C_MAP,C_ITEM],h:'วงเวทย์เคลื่อนย้าย ผู้แลกเงินทุกเมือง หอการค้า และโรงประมูล',t:'วงเวทย์เคลื่อนย้ายทุกเมือง ผู้แลกเงินทุกเมือง หอการค้ารับซื้อของ และโรงประมูลแบบเสนอราคาจริง',x:[
  'วงเวทย์เคลื่อนย้ายอยู่ติดจุดที่เคลื่อนย้ายมาถึงในทุกเมือง และทุกเมืองมีผู้แลกเงินสาขา',
  'เพิ่มป้ายทางเข้าออกที่ขาดไป',
- 'อสูรทั่วไปจะไม่ไล่และไม่โจมตีเมื่อคุณอยู่ในรัศมี 29 ก้าวจาก NPC แต่บอสยังโจมตีตามปกติ',
+ 'อสูรทั่วไปจะไม่ไล่และไม่โจมตีเมื่อคุณอยู่ในรัศมี 29 ก้าวจาก ผู้คน แต่บอสยังโจมตีตามปกติ',
  'หอการค้าหมื่นสมบัติรับซื้อของจากกระเป๋าในราคา 50 เปอร์เซ็นต์ของราคาซื้อ',
  'โรงประมูลมีของหายาก 5 ล็อต เปลี่ยนทุก 30 นาที เสนอราคาได้ล็อตละ 3 ครั้ง ต้องให้ราคาสูงกว่าผู้ประมูลคนอื่นจึงจะชนะ']},
 {id:15,d:'2026-10-25',c:[C_MAP,C_ITEM],h:'อาคารร้านค้า การตกปลา ตู้ปลา และย้ายบอสหมูป่า',t:'ร้านค้าและสมาคมเป็นอาคารมีประตู เพิ่มการตกปลาและตู้ปลา และบอสหมูป่าย้ายไปปลายป่า',x:[
@@ -855,7 +856,7 @@ NEWS.push(
  'เพิ่มลุงตกปลา ป้าผู้ดูแลตู้ปลา และร้านตัดเย็บป้าหลิวในทุกเมือง',
  'ซื้อคันเบ็ดจากลุงตกปลา แล้วทิ้งเบ็ดรอ 4 ถึง 8 วินาที อย่าเดินห่างเกิน 6 ก้าว ปลามี 6 ชนิด ขั้นสูงขึ้นจะได้ปลาหายากบ่อยขึ้น',
  'นำปลาไปใส่ตู้ปลาได้ชนิดละตัวเพื่อรับแต้มฝึกฝน ใส่ครบทุกชนิดรับโอสถเพิ่มปราณระดับสูง 1 เม็ด และรับค่าชมตู้ปลาเป็นเหรียญทองวันละครั้ง',
- 'บอสหมูป่าเขี้ยวทองคำย้ายไปปลายป่าด้านตะวันออก ห่างจากตลาดและ NPC']},
+ 'บอสหมูป่าเขี้ยวทองคำย้ายไปปลายป่าด้านตะวันออก ห่างจากตลาดและ ผู้คน']},
 {id:16,d:'2026-10-25',c:[C_SYS,C_ITEM],h:'รวมระบบใหม่เข้ากับร้านแยกขั้นและการจ่ายหินหลายระดับ',t:'ซื้อของ ตั๋วเคลื่อนย้าย คันเบ็ด และการประมูล จ่ายด้วยหินวิญญาณระดับไหนก็ได้ และเพิ่มการจำการเข้าสู่ระบบ',x:[
  'หอการค้า ตั๋วเคลื่อนย้าย คันเบ็ด การเรียนวิชาของสำนัก และการประมูล ใช้เมนูชำระเงินแบบใหม่ เลือกจ่ายด้วยหินวิญญาณระดับไหนก็ได้ มีเงินทอน',
  'หอการค้าขายเฉพาะของระดับหลอมรวมลมปราณ ส่วนของระดับสร้างรากฐานดูได้ที่ร้านระดับสร้างรากฐานในหมู่บ้านหรือโรงประมูล',
@@ -1195,8 +1196,8 @@ const playSkill=()=>{const id=curId,k=curSk;if(!k)return false;const r=skRole(id
  const OWNER={};
  /* ===== ตัวจ่ายเสียงตัวเดียว แยกสองทางอิสระ ไม่ใช้ตัวนับหรือด่านร่วมกัน =====
   ทางผู้เล่น: ฝีเท้า ชน เปิดเมนู หยิบ ซื้อ ต่อสู้ ถูกตี เลื่อนขั้น ตาย นั่งสมาธิ ผ่านเฉพาะตัวหน่วง MI ของแต่ละเสียง
-  ทางรอบข้าง: NPC อสูร และธรรมชาติ ผ่านด่านของตัวเอง (โหมดข้อความเงียบ ระยะ ช่วงห่าง voice) ไม่แตะทางผู้เล่น
-  เสียงรอบข้างที่เกิดจากการกระทำของผู้เล่น (ชน NPC ส่งค่า v=1.01) ข้ามด่านได้ */
+  ทางรอบข้าง: ผู้คน อสูร และธรรมชาติ ผ่านด่านของตัวเอง (โหมดข้อความเงียบ ระยะ ช่วงห่าง voice) ไม่แตะทางผู้เล่น
+  เสียงรอบข้างที่เกิดจากการกระทำของผู้เล่น (ชน ผู้คน ส่งค่า v=1.01) ข้ามด่านได้ */
  const AMBK={bird:1,owl:1,cricket:1,cicada:1,wind:1,windh:1,water:1};
  const isWorld=k=>/^npc_/.test(k)||!!MONR[k]||!!AMBK[k];
  const WG={npc:0,mon:0};
@@ -1270,25 +1271,25 @@ const playSkill=()=>{const id=curId,k=curSk;if(!k)return false;const r=skRole(id
  A.sndtest=function(){const it=[{t:'ทดสอบลิงก์เสียงทั้งหมดตอนนี้ (ใช้เวลาประมาณครึ่งนาที)',a:'t'},{t:'ดูรายชื่อลิงก์ที่เสีย'+(LT?' '+LT.bad.length+' ลิงก์':' (ต้องทดสอบก่อน)'),a:'b'}].concat(Object.keys(ROLE).map(r=>({t:(NM[r]||r)+' ['+ROLE[r].bus+'] : '+stat(r)+' กด Enter ลองเล่น',r})));
   menu('ตรวจสอบเสียง',it,{ent:x=>{if(x.a==='t')return linkTest();if(x.a==='b'){if(!LT||!LT.done)return say('ยังไม่ได้ทดสอบ หรือทดสอบยังไม่เสร็จ',1);const L=LT.bad.map(u=>({t:nameOf(u)+' ('+u.split('/')[2]+')'}));if(!L.length)return say('ไม่มีลิงก์เสีย',1);return menu('ลิงก์เสีย '+L.length,L)}
    const e=play(x.r,1,{loop:0});say((NM[x.r]||x.r)+' : '+stat(x.r)+(e?'':' (ตอนนี้เล่นด้วยเสียงสังเคราะห์สำรอง)'),1)}})};
- KEYS.F7='sndtest';setTimeout(()=>{try{if(navigator.onLine!==false)linkTest(1)}catch(e){}},7000);setInterval(()=>{try{if(navigator.onLine!==false&&LT&&LT.done)linkTest(1)}catch(e){}},1800000);MAIN.push(['ตรวจสอบเสียง (F7)','F7']);
+ KEYS.F7='sndtest';setTimeout(()=>{try{if(navigator.onLine!==false)linkTest(1)}catch(e){}},7000);setInterval(()=>{try{if(navigator.onLine!==false&&LT&&LT.done)linkTest(1)}catch(e){}},1800000);
  window.__AUDIO={ROLE,LIVE,play,stopRole,setLayer,skRole,dbg:()=>({duckCur,duckUntil,now:Date.now(),tick:!!tick})};
- TIPS.push('เสียงทั้งหมดเป็นไฟล์จริง กด F7 ดูว่าไฟล์ไหนใช้ได้ F3 เปิดปิดดนตรีและเสียงบรรยากาศ ถ้าไม่ได้ยินให้กดปุ่มใดก็ได้หนึ่งครั้งก่อน');
+ TIPS.push('เสียงทั้งหมดเป็นไฟล์จริง กด F3 เปิดปิดดนตรีและเสียงบรรยากาศ ถ้าไม่ได้ยินให้กดปุ่มใดก็ได้หนึ่งครั้งก่อน');
  NEWS.push({id:18,d:'2026-10-26',c:[C_SYS],h:'ระบบเสียงใหม่ จากไฟล์เสียงจริงทั้งหมด',t:'เปลี่ยนเสียงปี๊บเป็นไฟล์เสียงจริง มีคลังเสียงกลาง ดนตรีประกอบ เสียงบรรยากาศ และเสียงวิชาแยกตามธาตุ',x:[
   'ปิดเสียงปี๊บและเสียงสังเคราะห์ทุกชนิด เปลี่ยนเป็นไฟล์เสียงจริง ลิงก์ไหนเสียจะลองลิงก์สำรองเองอัตโนมัติ',
   'เสียงแบ่งเป็น 4 ช่อง คือ เมนู ต่อสู้ บรรยากาศ และดนตรี เสียงสำคัญเช่นระเบิดวิชา เลื่อนขั้น และตาย จะทำให้ดนตรีและบรรยากาศเบาลงชั่วครู่',
   'วิชาแต่ละธาตุมีเสียงของตัวเอง เช่น ไฟ สายฟ้า น้ำแข็ง ศิลา รักษา และเกราะปราณ',
   'เสียงสั้นเล่นสั้นตามธรรมชาติ เสียงต่อเนื่องเล่นเต็มไฟล์ เสียงเดินและฟันกระบี่เปลี่ยนโทนเล็กน้อยไม่ให้ซ้ำเหมือนเดิม',
-  'กด F7 ตรวจว่าเสียงไหนมีไฟล์ใช้ได้ F3 เปิดปิดดนตรีและเสียงบรรยากาศ']});
+  'กด F3 เปิดปิดดนตรีและเสียงบรรยากาศ']});
   /* ===== PATCH 14 AUDIO FIX (เพิ่มต่อท้าย) ถ้าต้องการย้อนกลับ ใช้ไฟล์สำรอง index.backup-before-patch14.html ===== */
   try{
    ROLE.button.cap=.12;ROLE.button.vol=.45;ROLE.open.cap=.35;
    ['swoosh','punch','spell','fire','thunder','ice','earth','heal','buff','whoosh','explosion','clash'].forEach(r=>{const R=ROLE[r];if(R){R.mode='short';R.cap=Math.min(R.cap||.65,.65)}});
    
-   if(typeof NEWS!=='undefined')NEWS.push({id:19,d:'2026-10-26',c:[C_SYS],h:'แก้เสียงซ้อนในเมนูและกระเป๋า',t:'เสียงเลื่อนเมนูและกระเป๋านิ่งและสั้นลง ไม่ซ้อนกัน เสียงมอนสเตอร์ NPC และบรรยากาศไม่ดังทะลุเข้าเมนู วิชาแต่ละครั้งมีเสียงเดียว',x:[
+   if(typeof NEWS!=='undefined')NEWS.push({id:19,d:'2026-10-26',c:[C_SYS],h:'แก้เสียงซ้อนในเมนูและกระเป๋า',t:'เสียงเลื่อนเมนูและกระเป๋านิ่งและสั้นลง ไม่ซ้อนกัน เสียงมอนสเตอร์ ผู้คน และบรรยากาศไม่ดังทะลุเข้าเมนู วิชาแต่ละครั้งมีเสียงเดียว',x:[
     'เสียงเมนูเล่นทีละเสียง ใช้ไฟล์เดียวและโทนเดียวทุกครั้ง',
     'เปิดกระเป๋าแล้วใช้ไอเทม ไม่ยิงเสียงเปิดกระเป๋าซ้ำ',
-    'ขณะอยู่ในเมนู กระเป๋า หรือหน้าตั้งค่า ดนตรีและบรรยากาศเบาลง และไม่มีเสียงมอนสเตอร์หรือ NPC',
-    'NPC ส่งเสียงเฉพาะตัวที่อยู่ใกล้ในระยะ 6 ก้าว ห่างกันอย่างน้อย 8 วินาที มอนสเตอร์ระยะ 8 ก้าว ห่างกัน 6 วินาที ปิดได้ด้วยโหมดข้อความเงียบ',
+    'ขณะอยู่ในเมนู กระเป๋า หรือหน้าตั้งค่า ดนตรีและบรรยากาศเบาลง และไม่มีเสียงมอนสเตอร์หรือ ผู้คน',
+    'ผู้คนส่งเสียงเฉพาะตัวที่อยู่ใกล้ในระยะ 6 ก้าว ห่างกันอย่างน้อย 8 วินาที มอนสเตอร์ระยะ 8 ก้าว ห่างกัน 6 วินาที ปิดได้ด้วยโหมดข้อความเงียบ',
     'วิชาแต่ละครั้งเล่นเสียงเดียว ตอนออโต้เสียงเบาลงและห่างกันอย่างน้อย 1.2 วินาที']});
   }catch(e){}
   /* ===== PATCH 16 AUDIO: เสียงใหม่ทั้งหมดจาก audio_links.txt ===== */
@@ -1303,13 +1304,13 @@ const playSkill=()=>{const id=curId,k=curSk;if(!k)return false;const r=skRole(id
     if(z&&z.id==='v'&&once('frog',50000)&&Math.random()<.5)play('frog',.5)}catch(e){}},2000);
    window.addEventListener('offline',()=>play('offline',.8));window.addEventListener('online',()=>play('online',.8));
    const _lo16=A.logout;A.logout=function(){play('logout',1);setTimeout(()=>{_lo16()},650)};
-   NEWS.push({id:21,d:'2026-10-27',c:[C_SYS],h:'เปลี่ยนเสียงทั้งหมดเป็นชุดใหม่ ทุกทักษะ ทุกอสูร ทุกแผนที่มีเสียงของตัวเอง',t:'ลบเสียงเก่าออกหมด ใช้ลิงก์เสียงชุดใหม่ 176 ลิงก์ ทักษะ 29 วิชา อสูร 13 ชนิด NPC บรรยากาศ และดนตรีแยกตามแผนที่มีเสียงเฉพาะตัว',x:[
+   NEWS.push({id:21,d:'2026-10-27',c:[C_SYS],h:'เปลี่ยนเสียงทั้งหมดเป็นชุดใหม่ ทุกทักษะ ทุกอสูร ทุกแผนที่มีเสียงของตัวเอง',t:'ลบเสียงเก่าออกหมด ใช้ลิงก์เสียงชุดใหม่ 176 ลิงก์ ทักษะ 29 วิชา อสูร 13 ชนิด ผู้คน บรรยากาศ และดนตรีแยกตามแผนที่มีเสียงเฉพาะตัว',x:[
     'ลบคลังเสียงเก่าทั้งหมดออกจากเกม ทั้งไฟล์ในโฟลเดอร์ sounds และลิงก์ชุดเดิม ใช้เฉพาะลิงก์ในไฟล์เสียงชุดใหม่',
     'ทุกทักษะมีเสียงของตัวเอง ทั้งหมัด ดัชนีปราณ กระบี่ ไฟ สายฟ้า ศิลา รักษา เกราะปราณ และวิชาของสามสำนัก',
     'อสูรแต่ละชนิดมีเสียงเฉพาะตัว ตั้งแต่กระต่ายจนถึงราชสีห์เพลิงสวรรค์ และมีเสียงเตือนเมื่อเข้าใกล้บอส',
     'แต่ละแผนที่มีเสียงบรรยากาศและดนตรีของตัวเอง เดินเท้าบนพื้นต่างชนิดเสียงฝีเท้าต่างกัน',
     'เสียงเข้าสู่ระบบ สร้างบัญชี ออกจากระบบ ซื้อขาย สวมใส่ ถอด ทิ้งของ ทะลวงสำเร็จหรือล้มเหลว หัวใจเต้นเมื่อเลือดต่ำ มีเสียงของตัวเอง',
-    'ลิงก์ไหนโหลดไม่ได้ ระบบข้ามไปใช้เสียงสำรองในหมวดเดียวกันเอง กด F7 ดูว่าหน้าที่ไหนมีไฟล์ใช้ได้']});
+    'ลิงก์ไหนโหลดไม่ได้ ระบบข้ามไปใช้เสียงสำรองในหมวดเดียวกันเอง']});
   }catch(e){}
 
   renderMob()}
@@ -1321,11 +1322,11 @@ const GM_SALT='mxg-28cb56df5d2f',GM_HASH='b49462a40bfdd17410c9cc1a2cb187564769cf
 async function gmHash(v){let h=await GMV.hs(v,GM_SALT);for(let i=0;i<10000;i++)h=await GMV.hs(h,GM_SALT);return h}
 const gmBtn=()=>Array.from($('pad').children).find(b=>b.textContent==='GM');
 function gmGrant(){gmOn=true;gmT=0;gmV=false;
- if(!MAIN.some(x=>x[1]==='F8'))MAIN.push(['เมนูผู้ทดสอบ (GM)','F8']);
+ if(!MAIN.some(x=>x[1]==='F8'))MAIN.push(['เมนูผู้ทดสอบ (GM)','F8']);[['เร่งแต้มทดสอบ x60','F9'],['ตรวจสอบระบบ (Shift+F8)','S+F8'],['ตรวจสอบเสียง (F7)','F7']].forEach(e=>{if(!MAIN.some(x=>x[1]===e[1]))MAIN.push(e)});
  if(!gmBtn()){const b=document.createElement('button');b.tabIndex=-1;b.onmousedown=e=>e.preventDefault();b.textContent='GM';b.setAttribute('aria-label','ปุ่ม เมนูผู้ทดสอบ');b.onclick=()=>{if(mode==='input')return;handle({code:'F8',shiftKey:false});render()};$('pad').appendChild(b)}
  mobSig='';renderMob()}
 function gmRevoke(){gmOn=false;gmT=0;gmV=false;spd=1;
- for(let i=MAIN.length-1;i>=0;i--)if(MAIN[i][1]==='F8')MAIN.splice(i,1);
+ for(let i=MAIN.length-1;i>=0;i--)if(['F8','F9','S+F8','F7'].includes(MAIN[i][1]))MAIN.splice(i,1);
  {const b=gmBtn();if(b)b.remove()}
  mobSig='';renderMob();say('ล็อกสิทธิ์ผู้พัฒนากลับแล้ว',1)}
 let gmFail=0,gmLock=0;
@@ -1746,7 +1747,7 @@ const _iv23=invMenu;invMenu=function(k){_iv23(k);if(mode==='menu'&&mn&&mn.t==='�
 // 3) ถอดปุ่ม V ออก เหลือ F6 ปุ่มเดียวสำหรับโหมดข้อความเงียบ
 delete KEYS.v;MAIN.forEach(m=>{if(m[1]==='KeyV'){m[0]='โหมดข้อความเงียบ เปิด/ปิด (F6)';m[1]='F6'}});
 /* ===== PATCH 24 (เพิ่มต่อท้าย ไม่ลบโค้ดเดิม) ข้อความประจำวันและบันทึกการอัพเดท เอาเรื่อง GM แอดมิน ออก (PATCH 25: คืนบรรทัดเรื่องเหรียญทองกลับมา ผู้เล่นจะได้รู้ว่าเหรียญแลกหินวิญญาณได้) ===== */
-const NGM24=/GM|แอดมิน|ผู้ทดสอบ|ผู้พัฒนา|F8|ตรวจสอบบัก/,NBAD24=s=>NGM24.test(s);
+const NGM24=/GM|แอดมิน|ผู้ทดสอบ|ผู้พัฒนา|F8|F9|ตรวจสอบบัก|ตรวจสอบระบบ|ตรวจสอบเสียง|เร่งแต้ม/,NBAD24=s=>NGM24.test(s);
 const nseg24=(s,hd)=>String(s||'').split(' ').filter(w=>!NBAD24(w)).join(' ').trim();
 const nclean24=n=>{if(!n||NGM24.test(n.h||''))return false;
  n.h=nseg24(n.h,1);n.t=nseg24(n.t,1);if(Array.isArray(n.x))n.x=n.x.filter(l=>!NBAD24(l));
@@ -1769,18 +1770,18 @@ try{
  const nm=w=>w.n||w.npc||'?';
  const CHK=[
   ()=>{const o=[];W.forEach(w=>{const z=zoneAt(w.x,w.y);if(!z)o.push('จุดนอกแผนที่: '+nm(w));else if(z.id!==w.z)o.push('จุด "'+nm(w)+'" ถูกโซน '+z.id+' บัง (ควรอยู่ '+w.z+')')});return o},
-  ()=>{const o=[];const D=(window.__T11&&window.__T11.DEST)||[];D.forEach(d=>{const z=zoneAt(d.x,d.y);if(!z||z.id!==d.id)o.push('วงเวทย์ปลายทาง '+d.id+' ตกนอกโซน '+d.x+','+d.y);else if(W.some(w=>w.npc&&w.z===z.id&&w.x===d.x&&w.y===d.y))o.push('วงเวทย์ปลายทาง '+d.id+' ทับ NPC')});return o},
+  ()=>{const o=[];const D=(window.__T11&&window.__T11.DEST)||[];D.forEach(d=>{const z=zoneAt(d.x,d.y);if(!z||z.id!==d.id)o.push('วงเวทย์ปลายทาง '+d.id+' ตกนอกโซน '+d.x+','+d.y);else if(W.some(w=>w.npc&&w.z===z.id&&w.x===d.x&&w.y===d.y))o.push('วงเวทย์ปลายทาง '+d.id+' ทับ ผู้คน')});return o},
   ()=>{const o=[];const F=['re','rw','rn','rs'];MS.forEach(m=>{if(m.k==='rab'&&!F.includes(m.z))o.push('กระต่ายอยู่นอกทุ่ง '+m.z)});F.forEach(id=>{const z=Z.find(a=>a.id===id);if(!z)return o.push('ทุ่ง '+id+' หาย');const n=MS.filter(m=>m.z===id&&m.k==='rab').length;if(n!==z.cnt)o.push('ทุ่ง '+id+' กระต่าย '+n+' จาก '+z.cnt);if(z.mons.join()!=='rab')o.push('ทุ่ง '+id+' มีอสูรอื่นปน')});const r=MS.find(m=>m.k==='rab');if(r&&respMs(r)!==20000)o.push('กระต่ายเกิดใหม่ไม่ใช่ 20 วินาที');Z.forEach(z=>{if(z.mons&&z.mons.includes('rab')&&!F.includes(z.id))o.push('โซน '+z.id+' มีกระต่าย')});return o},
   ()=>{const o=[];const fin=v=>typeof v==='number'&&isFinite(v);MS.forEach(m=>{const z=zoneAt(m.x,m.y);if(!fin(m.hp)||!fin(m.x)||!fin(m.y))o.push('อสูร '+m.k+' ค่าเสีย');else if(!z||z.id!==m.z)o.push('อสูร '+m.k+' ('+m.z+') ออกนอกโซนไปอยู่ '+m.x+','+m.y);if(m.home&&(!zoneAt(m.home[0],m.home[1])||zoneAt(m.home[0],m.home[1]).id!==m.z))o.push('จุดเกิดอสูร '+m.k+' ('+m.z+') อยู่นอกโซน')});return o.slice(0,6)},
-  ()=>{const o=[],seen={};W.forEach(w=>{if(!w.npc)return;const k=w.z+':'+w.x+','+w.y;if(seen[k])o.push('NPC ซ้อนกัน: '+nm(w)+' / '+seen[k]);seen[k]=nm(w)});W.forEach(w=>{if(w.npc&&w.go)o.push('NPC เป็นประตู?')});ND.forEach(n=>{const z=zoneAt(n.x,n.y);if(!z||z.id!==n.z)o.push('สมุนไพร '+n.id+' ออกนอกโซน '+n.z)});return o.slice(0,6)},
+  ()=>{const o=[],seen={};W.forEach(w=>{if(!w.npc)return;const k=w.z+':'+w.x+','+w.y;if(seen[k])o.push('ผู้คน ซ้อนกัน: '+nm(w)+' / '+seen[k]);seen[k]=nm(w)});W.forEach(w=>{if(w.npc&&w.go)o.push('ผู้คน เป็นประตู?')});ND.forEach(n=>{const z=zoneAt(n.x,n.y);if(!z||z.id!==n.z)o.push('สมุนไพร '+n.id+' ออกนอกโซน '+n.z)});return o.slice(0,6)},
   ()=>{const o=[];W.filter(w=>w.go&&/^ประตูทางเข้า/.test(w.n)).forEach(d=>{const ex=W.find(w=>w.go&&w.n===d.n.replace('ประตูทางเข้า','ประตูทางออก').replace('เพื่อเข้า','เพื่อออก'));if(!ex)return o.push('ประตู "'+d.n+'" ไม่มีประตูทางออกคู่');const a=zoneAt(d.go.x,d.go.y),b=zoneAt(ex.go.x,ex.go.y);if(!a||a.id!==ex.z)o.push('ปลายทางประตูเข้า "'+d.n+'" ไม่อยู่ในห้องข้างใน');if(!b||b.id!==d.z)o.push('ปลายทางประตูออก "'+d.n+'" ไม่กลับสู่โซนเดิม')});return o},
   ()=>{const o=[];Z.forEach(z=>{if(z.r.some(v=>!isFinite(v)||v<0))o.push('โซน '+z.id+' พิกัดผิด')});W.forEach(w=>{if(w.x<0||w.y<0)o.push('จุดพิกัดติดลบ: '+nm(w))});if(S.x<0||S.y<0)o.push('ผู้เล่นพิกัดติดลบ');const st=Z.find(z=>z.id==='v');if(!st||zoneAt(SP0[0],SP0[1])!==st)o.push('จุดเกิดไม่อยู่ในหมู่บ้านลำธารใส');return o},
-  ()=>{const o=[];const z=zoneAt(S.x,S.y);if(z&&W.some(w=>w.npc&&w.z===z.id&&w.x===S.x&&w.y===S.y))o.push('ผู้เล่นยืนทับ NPC '+S.x+','+S.y);if(S.step>0&&Z.some(q=>q.min>S.step)&&z&&z.min>S.step&&!godOn())o.push('ผู้เล่นอยู่ในโซน '+z.id+' ที่ขั้นสูงกว่าตัวเอง');return o}];
+  ()=>{const o=[];const z=zoneAt(S.x,S.y);if(z&&W.some(w=>w.npc&&w.z===z.id&&w.x===S.x&&w.y===S.y))o.push('ผู้เล่นยืนทับ ผู้คน '+S.x+','+S.y);if(S.step>0&&Z.some(q=>q.min>S.step)&&z&&z.min>S.step&&!godOn())o.push('ผู้เล่นอยู่ในโซน '+z.id+' ที่ขั้นสูงกว่าตัวเอง');return o}];
  let ci=0;
  function bgRound(){const L=CHK[ci%CHK.length];ci++;BG.rounds++;let o=[];try{o=L()}catch(e){o=['ตัวตรวจ '+(ci-1)%CHK.length+' พัง: '+e.message]}
   const fresh=[];o.forEach(m=>{if(!BG.issues[m]){BG.issues[m]={n:0,t:Date.now()};fresh.push(m)}BG.issues[m].n++;BG.issues[m].last=Date.now()});
   if(fresh.length){try{(window.__ERRS=window.__ERRS||[]).push(new Date().toTimeString().slice(0,8)+' ตรวจเบื้องหลัง: '+fresh[0]+(fresh.length>1?' และอีก '+(fresh.length-1):''));console.error('BG',fresh.slice(0,3).join(' | '))}catch(e){}
-   const now=Date.now();if(!BG.said||now-BG.said>120000){BG.said=now;say('ระบบตรวจเบื้องหลังพบความผิดปกติ '+Object.keys(BG.issues).length+' จุด กด Shift+F8 ดูรายงาน',1)}}}
+   const now=Date.now();if(!BG.said||now-BG.said>120000){BG.said=now;(isGM()&&say('ระบบตรวจเบื้องหลังพบความผิดปกติ '+Object.keys(BG.issues).length+' จุด กด Shift+F8 ดูรายงาน',1))}}}
  setInterval(()=>{try{bgRound()}catch(e){}},4000);
  setTimeout(()=>{for(let i=0;i<CHK.length;i++)try{bgRound()}catch(e){}},2500);
  /* รายงาน Shift+F8 ต่อท้ายรายงานเดิม */
@@ -1788,10 +1789,12 @@ try{
  try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-10-28',c:C_FIX,h:'แก้วงเวทย์เคลื่อนย้ายและประตูสถานพยาบาล',t:'แก้วงเวทย์เคลื่อนย้ายที่พาไปตกนอกแผนที่ และประตูสถานพยาบาลหมอยาหลวงที่กด Enter เข้าไม่ได้',x:['วงเวทย์เคลื่อนย้ายทุกจุดพาไปถึงปลายทางถูกต้องแล้ว เดิมพิกัดถูกบวกซ้ำจนตกนอกแผนที่','ประตูสถานพยาบาลหมอยาหลวงย้ายออกจากทุ่งกระต่ายตะวันออก กด Enter เข้าออกได้ตามปกติ','เกมมีตัวตรวจสอบเบื้องหลังทำงานตลอดเวลา อ่านอย่างเดียว ไม่แตะข้อมูลของผู้เล่น กด Shift F8 ฟังรายงาน']})}catch(e){}
  window.__BGRUN=()=>{const r={};CHK.forEach((f,i)=>{try{r[i]=f()}catch(e){r[i]=['พัง '+e.message]}});return r};
 }catch(e){console.error('PATCH26',e)}
+/* ===== PATCH 27 (เพิ่มต่อท้าย) กฎเหล็ก: ของฝั่งผู้พัฒนา (ตรวจสอบระบบ ตรวจสอบเสียง เร่งแต้มทดสอบ) ใช้ได้เฉพาะแอดมิน ผู้เล่นทั่วไปกดแล้วไม่เกิดอะไรขึ้น ===== */
+['diag','sndtest','spd'].forEach(k=>{const f=A[k];if(typeof f==='function')A[k]=function(){if(!isGM())return;return f.apply(this,arguments)}});
 /* ===== boot ===== */
 if(S.med){const el=Math.min(28800,(Date.now()-S.t)/1000),z=zoneAt(S.x,S.y)||Z[0];if(el>5){const g=el*medBase()*.5*(1+z.b);S.exp+=g;say('ระหว่างออฟไลน์ นั่งสมาธิได้แต้ม '+Math.floor(g))}}
 if(!zoneAt(S.x,S.y)){S.x=SP0[0];S.y=SP0[1]}
-say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Firebase อัตโนมัติ ':'สถานะ ออฟไลน์ เซฟในเครื่องนี้เท่านั้น ')+'ยินดีต้อนรับสู่มรรคาเซียนออนไลน์ เจ้าอยู่ที่ '+zoneAt(S.x,S.y).n+' กด F1 ฟังปุ่มทั้งหมด กด Z นั่งสมาธิ F9 เร่งเวลาทดสอบ F2 เปิดเสียงพูดของเกม');render();$('app').focus();window.__GAME_OK=1;
+say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Firebase อัตโนมัติ ':'สถานะ ออฟไลน์ เซฟในเครื่องนี้เท่านั้น ')+'ยินดีต้อนรับสู่มรรคาเซียนออนไลน์ เจ้าอยู่ที่ '+zoneAt(S.x,S.y).n+' กด F1 ฟังปุ่มทั้งหมด กด Z นั่งสมาธิ F2 เปิดเสียงพูดของเกม');render();$('app').focus();window.__GAME_OK=1;
 
 /* ===== PATCH GM FULL - เขียนจากโค้ดจริง ไม่มั่ว ===== */
 {
@@ -1801,7 +1804,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
  const noclip = {on:false};
  const _move = move;
  move = function(f){
-  if(noclip.on){ // NoClip ทะลุ NPC และขอบแมพได้
+  if(noclip.on){ // NoClip ทะลุ ผู้คน และขอบแมพได้
    const nx=S.x+DX[f], ny=S.y+DY[f];
    S.x=nx; S.y=ny; S.med=false; sfx('step'); render(); return;
   }
@@ -1926,8 +1929,9 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
  const MP={ready:false,failed:false,err:null,db:null,auth:null,fs:null,lastW:0,lx:null,ly:null,busy:false};
  const FBU='https://www.gstatic.com/firebasejs/10.14.1/';
  const online=()=>{try{return typeof GMV!=='undefined'&&!!GMV.online}catch(e){return false}};
+ const DEVM=t=>{try{return isGM()?t:'ระบบนี้ยังใช้งานไม่ได้ชั่วคราว ลองใหม่ภายหลัง'}catch(e){return 'ระบบนี้ยังใช้งานไม่ได้ชั่วคราว ลองใหม่ภายหลัง'}};
  const errMsg=e=>String((e&&e.code)||'').indexOf('permission')>=0
-  ?'เซิร์ฟเวอร์ยังไม่อนุญาตให้ใช้ระบบเห็นผู้เล่นอื่น ต้องเพิ่มกฎ presence ในหน้า Firestore Rules ของ Firebase ก่อน'
+  ?DEVM('เซิร์ฟเวอร์ยังไม่อนุญาตให้ใช้ระบบเห็นผู้เล่นอื่น ต้องเพิ่มกฎ presence ในหน้า Firestore Rules ของ Firebase ก่อน')
   :'ระบบเห็นผู้เล่นอื่นเชื่อมต่อไม่ได้ในตอนนี้ ลองใหม่ภายหลัง';
  const zn=(x,y)=>{const z=zoneAt(x,y);return z?z.n:'นอกแผนที่'};
  const init=async()=>{
@@ -1950,7 +1954,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
    if(!(await init()))return;
    const u=MP.auth.currentUser;if(!u)return;
    const z=zoneAt(S.x,S.y);
-   await MP.fs.setDoc(MP.fs.doc(MP.db,'presence',u.uid),{n:String(S.pname||'ผู้ฝึกตน').slice(0,20),x:S.x,y:S.y,z:z?z.id:'',t:now});
+   await MP.fs.setDoc(MP.fs.doc(MP.db,'presence',u.uid),{n:String(S.pname||'ผู้ฝึกตน').slice(0,20),lv:S.step|0,ch:String(S.title||'').slice(0,20),x:S.x,y:S.y,z:z?z.id:'',t:now});
    MP.lastW=now;MP.lx=S.x;MP.ly=S.y;
   }catch(e){
    if(String((e&&e.code)||'').indexOf('permission')>=0){MP.failed=true;MP.err=e}
@@ -1958,6 +1962,17 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
   }finally{MP.busy=false}
  };
  setTimeout(push,5000);setInterval(push,30000);
+ const ON={t:0,L:[],busy:null};
+ const fetchOnline=()=>{
+  if(Date.now()-ON.t<30000)return Promise.resolve(ON.L);
+  if(ON.busy)return ON.busy;
+  ON.busy=(async()=>{try{
+   const fs=MP.fs;
+   const sn=await fs.getDocs(fs.query(fs.collection(MP.db,'presence'),fs.where('t','>',Date.now()-180000)));
+   const L=[];sn.forEach(d=>{const v=d.data();if(v&&typeof v.x==='number'&&typeof v.y==='number')L.push({id:d.id,n:String(v.n||'ผู้ฝึกตน').slice(0,20),x:v.x,y:v.y,lv:(typeof v.lv==='number'?v.lv:null),ch:String(v.ch||'').slice(0,20)})});
+   ON.L=L;ON.t=Date.now();return L
+  }finally{ON.busy=null}})();
+  return ON.busy};
  A.pradar=async function(){
   if(window.__MP_OFF)return say('ระบบเห็นผู้เล่นอื่นถูกปิดอยู่');
   if(!online())return say('ไม่พบผู้เล่นอื่น เกมอยู่ในโหมดออฟไลน์ ระบบนี้ใช้ได้เฉพาะตอนออนไลน์');
@@ -1965,19 +1980,99 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
    if(MP.failed)return say(errMsg(MP.err));
    if(!(await init()))return say(MP.failed?errMsg(MP.err):'ยังเชื่อมต่อเซิร์ฟเวอร์ไม่เสร็จ รอสักครู่แล้วกด P ใหม่');
    const u=MP.auth.currentUser,fs=MP.fs;
-   const sn=await fs.getDocs(fs.query(fs.collection(MP.db,'presence'),fs.where('t','>',Date.now()-180000)));
-   const L=[];sn.forEach(d=>{if(d.id===u.uid)return;const v=d.data();if(v&&typeof v.x==='number'&&typeof v.y==='number')L.push({n:String(v.n||'ผู้ฝึกตน').slice(0,20),x:v.x,y:v.y})});
+   const L=(await fetchOnline()).filter(v=>v.id!==u.uid);
    if(!L.length)return say('ไม่พบผู้เล่นอื่นออนไลน์ในตอนนี้');
    const zid=(x,y)=>{const z=zoneAt(x,y);return z?z.id:''},me=zid(S.x,S.y),same=L.filter(v=>zid(v.x,v.y)===me).sort((a,b)=>dist(S,a)-dist(S,b)),other=L.filter(v=>zid(v.x,v.y)!==me);
-   same.slice(0,5).forEach(v=>say('ผู้เล่น '+v.n+' '+rel(v.x-S.x,v.y-S.y)));
-   other.slice(0,3).forEach(v=>say('ผู้เล่น '+v.n+' อยู่ที่ '+zn(v.x,v.y)));
-   if(other.length>3)say('ยังมีผู้เล่นในแมพอื่นอีก '+(other.length-3)+' คน');
+   same.slice(0,5).forEach(v=>say(v.n+' '+rel(v.x-S.x,v.y-S.y)));
+   other.slice(0,3).forEach(v=>say(v.n+' อยู่ที่ '+zn(v.x,v.y)));
+   if(other.length>3)say('ยังมีคนในแมพอื่นอีก '+(other.length-3)+' คน');
   }catch(e){
    if(String((e&&e.code)||'').indexOf('permission')>=0){MP.failed=true;MP.err=e}
    try{console.warn('MP1 radar',e)}catch(x){}
    say(errMsg(e));
   }
  };
+
+ /* ===== PATCH 28: รายชื่อคนออนไลน์ (Shift+F1) และข้อความส่วนตัว =====
+    แสดงเฉพาะชื่อ ระดับขั้น ฉายา (ถ้ามี) และที่อยู่ อ่านจาก presence ครั้งเดียวแล้วเก็บไว้ 30 วินาที (ใช้ร่วมกับปุ่ม P)
+    ข้อความส่วนตัวเขียนลง pm/{ผู้ส่ง}_{ผู้รับ} หนึ่งเอกสารต่อคู่ ผู้รับฟังเฉพาะเอกสารที่ส่งถึงตัวเอง */
+ const isPermX=e=>String((e&&e.code)||'').indexOf('permission')>=0;
+ const PERM_PM='เซิร์ฟเวอร์ยังไม่อนุญาตข้อความส่วนตัว ต้องเพิ่มกฎ pm ในหน้า Firestore Rules ของ Firebase ก่อน';
+ const PM={unsub:null,failed:false,busy:false,lastSend:0,seen:{}};
+ const pushPriv=line=>{S.chat[4].push(line);S.chat[0].push(line);if(S.chat[4].length>100)S.chat[4].shift();if(S.chat[0].length>100)S.chat[0].shift()};
+ const lvTxt=v=>v.lv==null?'ไม่ทราบระดับ':realmName(Math.max(0,Math.min(R.length-1,v.lv)));
+ const sendPM=async(to,text)=>{
+  text=String(text||'').trim().slice(0,120);if(!text)return say('ยกเลิก');
+  if(Date.now()-PM.lastSend<3000)return say('ส่งข้อความส่วนตัวถี่เกินไป รอสักครู่แล้วส่งใหม่');
+  if(PM.failed)return say(DEVM(PERM_PM),1);
+  try{
+   if(!(await init()))return say('ส่งไม่สำเร็จ ยังเชื่อมต่อเซิร์ฟเวอร์ไม่เสร็จ',1);
+   const u=MP.auth.currentUser;if(!u)return;const fs=MP.fs;
+   await fs.setDoc(fs.doc(MP.db,'pm',u.uid+'_'+to.id),{from:u.uid,to:to.id,n:String(S.pname||'ผู้ฝึกตน').slice(0,20),m:text,t:fs.serverTimestamp()});
+   PM.lastSend=Date.now();pushPriv('[ส่วนตัว] ถึง '+to.n+': '+text);say('ส่งข้อความส่วนตัวถึง '+to.n+' แล้ว',1);
+  }catch(e){
+   if(isPermX(e)){PM.failed=true;say(DEVM(PERM_PM),1)}else say('ส่งข้อความส่วนตัวไม่สำเร็จ ลองใหม่ภายหลัง',1);
+   try{console.warn('MP pm send',e)}catch(x){}
+  }};
+ const detachPM=()=>{try{if(PM.unsub)PM.unsub()}catch(e){}PM.unsub=null};
+ const attachPM=async()=>{
+  if(PM.unsub||PM.busy||PM.failed||window.__MP_OFF)return;
+  PM.busy=true;
+  try{
+   if(!(await init()))return;
+   if(PM.unsub||document.hidden)return;
+   const fs=MP.fs,u=MP.auth.currentUser;if(!u)return;
+   PM.unsub=fs.onSnapshot(fs.query(fs.collection(MP.db,'pm'),fs.where('to','==',u.uid)),snap=>{
+    snap.docChanges().forEach(ch=>{
+     if(ch.type==='removed')return;
+     const v=ch.doc.data();if(!v||typeof v.m!=='string'||!v.m)return;
+     const tm=v.t&&v.t.toMillis?v.t.toMillis():0;
+     if(!tm||tm<Date.now()-600000)return;
+     if((PM.seen[ch.doc.id]||0)>=tm)return;PM.seen[ch.doc.id]=tm;
+     const line='[ส่วนตัว] '+String(v.n||'ผู้ฝึกตน').slice(0,20)+': '+v.m.slice(0,120);
+     pushPriv(line);say(line,1)})},
+    e=>{PM.unsub=null;if(isPermX(e)){PM.failed=true;say(DEVM(PERM_PM),1)}try{console.warn('MP pm listen',e)}catch(x){}});
+  }catch(e){PM.unsub=null;try{console.warn('MP pm attach',e)}catch(x){}}
+  finally{PM.busy=false}
+ };
+ setInterval(()=>{try{
+  if(window.__MP_OFF||!online())return;
+  if(document.hidden){detachPM();return}
+  if(!PM.failed&&!PM.unsub&&!PM.busy)attachPM()
+ }catch(e){}},3000);
+ const playerMenu=(v,back)=>{
+  const zid=(x,y)=>{const z=zoneAt(x,y);return z?z.id:''};
+  const same=zid(v.x,v.y)===zid(S.x,S.y);
+  menu(v.n,[{t:'ส่งข้อความส่วนตัวหา '+v.n,a:'pm'},{t:v.n+' '+lvTxt(v)+(v.ch?' ฉายา '+v.ch:'')+' อยู่ที่ '+zn(v.x,v.y)+(same?' '+rel(v.x-S.x,v.y-S.y):'')+' ตำแหน่งล่าสุดที่ส่งขึ้นเซิร์ฟเวอร์'},{t:'กลับไปรายชื่อ',a:'back'}],{ent:x=>{
+   if(x.a==='back')return back();
+   if(x.a==='pm'){ask('พิมพ์ข้อความส่วนตัวถึง '+v.n,txt=>{mode='play';sendPM(v,txt)});return}
+   say(x.t,1)}})};
+ A.whoOn=async function(){
+  if(window.__MP_OFF||!online())return say('ตอนนี้ออฟไลน์ มีเจ้าอยู่คนเดียว');
+  try{
+   if(MP.failed)return say(errMsg(MP.err));
+   if(!(await init()))return say(MP.failed?errMsg(MP.err):'ยังเชื่อมต่อเซิร์ฟเวอร์ไม่เสร็จ รอสักครู่แล้วลองใหม่');
+   const u=MP.auth.currentUser;
+   const others=(await fetchOnline()).filter(v=>v.id!==u.uid).sort((a,b)=>a.n.localeCompare(b.n,'th'));
+   const zid=(x,y)=>{const z=zoneAt(x,y);return z?z.id:''},me=zid(S.x,S.y);
+   const show=()=>{
+    const it=[{t:String(S.pname||'ผู้ฝึกตน')+' '+realmName(S.step)+(S.title?' ฉายา '+S.title:'')+' อยู่ที่ '+zn(S.x,S.y)+' (ตัวเจ้าเอง)',me:1}].concat(others.map(v=>({t:v.n+' '+lvTxt(v)+(v.ch?' ฉายา '+v.ch:'')+' อยู่ที่ '+zn(v.x,v.y)+(zid(v.x,v.y)===me?' '+rel(v.x-S.x,v.y-S.y):''),v})));
+    menu('ออนไลน์ '+it.length+' คน เลื่อนดูชื่อ ระดับ และที่อยู่ กด Enter ที่ชื่อเพื่อส่งข้อความส่วนตัว',it,{ent:x=>{if(x.me)return say('นี่คือตัวเจ้าเอง');playerMenu(x.v,show)}})};
+   show();
+  }catch(e){
+   if(isPermX(e)){MP.failed=true;MP.err=e}
+   try{console.warn('MP whoOn',e)}catch(x){}
+   say(errMsg(e));
+  }};
+ KEYS['S+F1']='whoOn';
+ {const b=document.createElement('button');b.tabIndex=-1;b.onmousedown=e=>e.preventDefault();b.textContent='ออนไลน์';b.setAttribute('aria-label','ปุ่ม ใครออนไลน์');b.onclick=()=>{if(mode==='input')return;handle({code:'F1',shiftKey:true});render()};$('pad').appendChild(b)}
+ try{TIPS.push('กด Shift F1 ดูรายชื่อคนที่ออนไลน์ เลือกชื่อแล้วส่งข้อความส่วนตัวหาได้')}catch(e){}
+ try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-10-28',c:[C_SYS],h:'รายชื่อคนออนไลน์ (Shift F1) ข้อความส่วนตัว และเอาปุ่ม K ออก',t:'กด Shift F1 ดูว่าใครออนไลน์ ระดับอะไร อยู่ตรงไหน และส่งข้อความส่วนตัวหาได้ เอาปุ่ม K ออก เพราะคุยกับร้านด้วย F ซื้อและสร้างของได้เลย',x:[
+   'กด Shift F1 เปิดรายชื่อคนที่ออนไลน์ เลื่อนด้วยลูกศร แต่ละบรรทัดบอกชื่อ ระดับขั้น ฉายา (ถ้ามี) และที่อยู่ ถ้าอยู่แมพเดียวกันจะบอกทิศทางด้วย บนมือถือใช้ปุ่มใครออนไลน์ในเมนูหลัก',
+   'กด Enter ที่ชื่อ แล้วเลือกส่งข้อความส่วนตัว พิมพ์แล้วกด Enter ได้ครั้งละไม่เกิน 120 ตัวอักษร ส่งได้ทุก 3 วินาที ผู้รับได้ยินทันทีในหมวดส่วนตัว',
+   'ตำแหน่งของคนอื่นอัพเดตทุกประมาณ 30 ถึง 90 วินาที จึงอาจเก่ากว่าตำแหน่งจริงเล็กน้อย',
+   'เอาปุ่ม K ออกแล้ว เดินไปที่ร้านแล้วกด F คุย จะมีรายการสร้างของอยู่บรรทัดแรกในร้านตีเหล็ก ร้านโอสถ และร้านช่างหนัง',
+   'ข้อความเรดาร์และรายชื่อ บอกแค่ชื่อและที่อยู่ ไม่มีคำนำหน้าชื่ออีกต่อไป']})}catch(e){}
 
  /* ===== แชทแมพ: ผู้เล่นในแมพเดียวกันเห็นข้อความของกันและกัน =====
     หนึ่งเอกสารต่อผู้เล่น (mapchat/{uid}) เขียนทับเมื่อพิมพ์ใหม่ จึงไม่มีข้อความสะสมบนเซิร์ฟเวอร์
@@ -2006,7 +2101,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
       const line='[แผนที่] '+String(v.n||'ผู้ฝึกตน').slice(0,20)+': '+v.m.slice(0,120);
       S.chat[2].push(line);S.chat[0].push(line);trimC();
       say(line,1)})},
-     e=>{CM.unsub=null;CM.z='';if(isPerm(e)){CM.failed=true;say(PERM_MSG,1)}try{console.warn('MP chat listen',e)}catch(x){}});
+     e=>{CM.unsub=null;CM.z='';if(isPerm(e)){CM.failed=true;say(DEVM(PERM_MSG),1)}try{console.warn('MP chat listen',e)}catch(x){}});
    }catch(e){CM.unsub=null;CM.z='';try{console.warn('MP chat attach',e)}catch(x){}}
   };
   /* ตรวจแมพทุก 2 วินาที เปลี่ยนตัวฟังเมื่ออยู่แมพใหม่นิ่งครบ 4 วินาที กันต่อใหม่ถี่ๆ ตอนเดินข้ามเขต หยุดฟังเมื่อซ่อนหน้าจอ */
@@ -2043,7 +2138,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
       const line='[โลก] '+String(v.n||'ผู้ฝึกตน').slice(0,20)+': '+v.m.slice(0,100);
       S.chat[1].push(line);S.chat[0].push(line);trimC();
       say(line,1)})},
-     e=>{W.unsub=null;if(isPerm(e)){W.failed=true;say(PERM_W,1)}try{console.warn('MP world listen',e)}catch(x){}});
+     e=>{W.unsub=null;if(isPerm(e)){W.failed=true;say(DEVM(PERM_W),1)}try{console.warn('MP world listen',e)}catch(x){}});
    }catch(e){W.unsub=null;try{console.warn('MP world attach',e)}catch(x){}}
    finally{W.busy=false}
   };
@@ -2054,7 +2149,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
     const fs=MP.fs;
     await fs.setDoc(fs.doc(MP.db,'worldchat',u.uid),{n:String(S.pname||'ผู้ฝึกตน').slice(0,20),m:text,t:fs.serverTimestamp()});
    }catch(e){
-    if(isPerm(e)){W.failed=true;say(PERM_W,1)}else say('ส่งแชทโลกไม่สำเร็จ ลองใหม่ภายหลัง',1);
+    if(isPerm(e)){W.failed=true;say(DEVM(PERM_W),1)}else say('ส่งแชทโลกไม่สำเร็จ ลองใหม่ภายหลัง',1);
     try{console.warn('MP world send',e)}catch(x){}
    }
   };
@@ -2065,7 +2160,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
     const fs=MP.fs,z=zoneAt(S.x,S.y);
     await fs.setDoc(fs.doc(MP.db,'mapchat',u.uid),{n:String(S.pname||'ผู้ฝึกตน').slice(0,20),z:z?z.id:'',m:text,t:fs.serverTimestamp()});
    }catch(e){
-    if(isPerm(e)){CM.failed=true;say(PERM_MSG,1)}else say('ส่งแชทแมพไม่สำเร็จ ลองใหม่ภายหลัง',1);
+    if(isPerm(e)){CM.failed=true;say(DEVM(PERM_MSG),1)}else say('ส่งแชทแมพไม่สำเร็จ ลองใหม่ภายหลัง',1);
     try{console.warn('MP chat send',e)}catch(x){}
    }
   };
@@ -2078,7 +2173,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
    if(on&&Date.now()-st.lastSend<gap)return say(w?'ส่งแชทโลกได้ทุก 10 วินาที รอสักครู่แล้วส่งใหม่':'ส่งแชทแมพถี่เกินไป รอสักครู่แล้วส่งใหม่');
    _msg(c,t);trimC();
    if(on){st.lastSend=Date.now();(w?sendW:send)(text)}
-   else if(st.failed)say(w?PERM_W:PERM_MSG,1);
+   else if(st.failed)say(DEVM(w?PERM_W:PERM_MSG),1);
    else say('ออฟไลน์ ข้อความ'+(w?'แชทโลก':'แชทแมพ')+'เห็นเฉพาะตัวเอง',1)
   };
   try{TIPS.push('กดเครื่องหมายทับ / พิมพ์แชทแมพ ผู้เล่นในแมพเดียวกันเห็นข้อความของเจ้า กดเครื่องหมาย \\ พิมพ์แชทโลก ทุกคนที่ออนไลน์เห็น กด P ดูว่ามีใครออนไลน์')}catch(e){}
