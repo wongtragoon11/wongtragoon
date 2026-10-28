@@ -1804,10 +1804,42 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
   return _move(f);
  };
 
+
+ const DESC={
+  god:'ผู้เล่นจะไม่ตาย เลือดไม่ลดเมื่อโดนตี ใช้ทดสอบต่อสู้โดยไม่ต้องกลัวตาย กดอีกครั้งเพื่อปิด',
+  all:'ได้ไอเทมทุกชนิด เรียนวิชาครบ ขั้นพลังสูงสุด และเงินจำนวนมากทันที ระวังข้อมูลเซฟจะเปลี่ยนมาก',
+  item:'เลือกไอเทมจากรายการ แล้วพิมพ์จำนวนที่ต้องการ',
+  skills:'เรียนวิชาต่อสู้ครบทุกวิชาโดยไม่ต้องซื้อหรือฝึก',
+  lv:'พิมพ์เลขขั้นพลังที่ต้องการ แต้มฝึกฝนจะถูกล้าง เลือดและปราณเต็ม',
+  cur:'พิมพ์จำนวน แล้วเพิ่มเงินทุกสกุลในเกมพร้อมกัน เช่น เหรียญทองและหินวิญญาณ',
+  warp:'เลือกจุดจากรายการเพื่อวาร์ปไปทันที รวมถึงจุดที่จดไว้ด้วยตัวเอง',
+  boss:'ทำให้บอสทุกตัวฟื้นกลับมาเต็มเลือดที่จุดเกิดทันที ไม่ต้องรอเวลาเกิดใหม่',
+  mon:'เลือกชนิดสัตว์อสูร แล้วเสก 3 ตัวไว้ข้างหน้าทางตะวันออก ถ้าตรงนั้นอยู่ในแมพเดียวกัน',
+  fill:'เลือด ปราณ และพลังบินเต็มทันที',
+  errs:'แสดงรายการข้อผิดพลาดล่าสุดที่เกมจับได้เอง ใช้ดูเมื่อเกมแปลกๆ',
+  selfcheck:'ให้เกมตรวจข้อมูลของตัวเองว่ามีอะไรผิดพลาดไหม เช่น ร้านค้าขายของที่ไม่มีอยู่จริง สูตรทำยาขาดวัตถุดิบ บอสดรอปของที่ไม่มี ผลดูได้ที่ Shift+F8',
+  watchdog:'ให้ระบบเฝ้าระวังตรวจและซ่อมค่าที่ผิดปกติในเซฟตอนนี้ เช่น ค่าเป็นลบหรือไม่ใช่ตัวเลข โดยไม่ต้องรอ',
+  viewS:'พิมพ์ข้อมูลตัวละครทั้งหมดลงหน้าต่างนักพัฒนา F12 ใช้ตอนต้องส่งให้ผู้พัฒนาดู',
+  addWarp:'จดตำแหน่งที่ยืนอยู่ลงในรายการเมนูวาร์ป ไม่มีอะไรปรากฏบนพื้น และรายการจะหายเมื่อโหลดเกมใหม่',
+  toggleSafe:'สลับแมพที่ยืนอยู่ระหว่างสถานะปลอดภัยกับอันตราย ตามที่เกมใช้กำหนดแมพ',
+  killAll:'สัตว์อสูรทุกตัวในแมพนี้ตายทันที และจะเกิดใหม่ตามเวลาปกติ',
+  respawnHerb:'สมุนไพรที่ถูกเก็บไปแล้วในแมพนี้งอกกลับมาทั้งหมดทันที',
+  clearGround:'ลบของที่ตกอยู่บนพื้นในแมพนี้ทั้งหมด',
+  toggleAI:'ปิดหรือเปิดการเคลื่อนไหวและโจมตีของสัตว์อสูร ใช้ได้เมื่อเกมอ่านตัวแปรนี้ ถ้าไม่มีผลแปลว่าเกมส่วนอื่นยังไม่ได้รองรับ',
+  warpXY:'พิมพ์พิกัดเอง ตัวแรกซ้ายขวา ตัวที่สองเหนือใต้ เช่น 27,46 แล้ววาร์ปไปทันที',
+  noclip:'เดินทะลุคนและขอบแผนที่ได้ทุกทิศ ใช้ตรวจสอบแมพ ระวังหลุดออกนอกโลก',
+  setExp:'พิมพ์ตัวเลขแต้มฝึกฝนที่ต้องการ ใช้ทดสอบการทะลุขั้น',
+  setProgress:'เปิดเมนูย่อย ตั้งจำนวนที่ฆ่า เลือกสำนัก หรือปลดตำราลับ',
+  skipTime:'ทำให้เช็กอินรายวัน วงล้อ และข่าวลือ ใช้ซ้ำได้อีกครั้งในวันเดียวกัน ไม่ต้องรอพรุ่งนี้',
+  breakSave:'จงใจทำให้ข้อมูลเซฟเสีย แล้วดูว่าระบบซ่อมเองทำงานไหม ใช้เพื่อทดสอบเท่านั้น ควรสำรองเซฟก่อน',
+  setSpd:'พิมพ์ตัวคูณความเร็วเดิน 1 คือปกติ 10 คือเร็วขึ้น 10 เท่า',
+  backup:'บันทึกเซฟตอนนี้เป็นเซฟสำรอง แล้วแสดงรายการเซฟสำรองให้เลือกกู้คืน'
+ };
+ const withDesc=a=>a.map(it=>(it.a&&DESC[it.a])?Object.assign({},it,{t:it.t+' — '+DESC[it.a]}):it);
  const _oldGM = A.gm;
  A.gm = function(){
   if(!isGMOk()){ mode='play'; return say('ไม่มีสิทธิ์'); }
-  menu('เมนูผู้พัฒนา FULL (ของเดิม+ใหม่)',[
+  menu('เมนูผู้พัฒนาแบบเต็ม (ของเดิมและของใหม่)',withDesc([
    {t:'--- ของเดิม ---'},
    {t:'อมตะ '+(S.god?'เปิด':'ปิด'), a:'god'},
    {t:'รับทุกอย่าง', a:'all'},
@@ -1819,29 +1851,29 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
    {t:'เรียกบอสเกิด', a:'boss'},
    {t:'เสกมอนข้างตัว', a:'mon'},
    {t:'เติมเลือด ปราณ เหาะ', a:'fill'},
-   {t:'--- ใหม่: ดีบั๊ก/ตรวจสอบ ---'},
-   {t:'ดู Error ล่าสุด __ERRS', a:'errs'},
-   {t:'รัน selfCheck() ตรวจร้านค้า สูตร บอส', a:'selfcheck'},
-   {t:'รัน watchdog ซ่อมเซฟทันที', a:'watchdog'},
-   {t:'ดู JSON ตัวละคร S', a:'viewS'},
-   {t:'--- ใหม่: โลก/Map ---'},
-   {t:'สร้างจุดวาร์ปตรงที่ยืนอยู่', a:'addWarp'},
-   {t:'สลับ safe แมพนี้ (ตอนนี้ '+(zAt()?.safe?'ปลอดภัย':'อันตราย')+')', a:'toggleSafe'},
-   {t:'ฆ่ามอนรอบตัวทั้งหมดในแมพนี้', a:'killAll'},
-   {t:'รีสมุนไพร ND ทั้งแมพเกิดใหม่', a:'respawnHerb'},
-   {t:'เคลียร์ของตกพื้น ground แมพนี้', a:'clearGround'},
-   {t:'ปิด/เปิด AI มอน MS แมพนี้', a:'toggleAI'},
-   {t:'--- ใหม่: ผู้เล่น/ทดสอบ ---'},
-   {t:'วาร์ปไปพิกัดพิมพ์ x,y', a:'warpXY'},
-   {t:'เปิด/ปิด NoClip เดินทะลุ', a:'noclip'},
-   {t:'ตั้งค่า S.x แบบพิมพ์เลข', a:'setExp'},
-   {t:'ตั้งค่า Kills / Sect / ตำราลับ', a:'setProgress'},
-   {t:'ข้ามเวลา daily/checkin/wheel/rumors', a:'skipTime'},
-   {t:'ทดสอบเซฟแตก (ใส่ NaN) ดู watchdog ซ่อมไหม', a:'breakSave'},
-   {t:'--- ใหม่: ความเร็ว/ควบคุม ---'},
-   {t:'ตั้ง spd พิมพ์เลข (ตอนนี้ '+spd+')', a:'setSpd'},
-   {t:'Backup/Restore เซฟในเกม', a:'backup'},
-  ],{ent:x=>{
+   {t:'--- ใหม่: ตรวจหาข้อผิดพลาด ---'},
+   {t:'ดูข้อผิดพลาดล่าสุดที่เกมจับได้', a:'errs'},
+   {t:'ตรวจความถูกต้องของร้านค้า สูตร และบอส', a:'selfcheck'},
+   {t:'ซ่อมข้อมูลเซฟทันที', a:'watchdog'},
+   {t:'ดูข้อมูลตัวละครทั้งหมด (ในหน้าต่างนักพัฒนา F12)', a:'viewS'},
+   {t:'--- ใหม่: โลกและแผนที่ ---'},
+   {t:'จดที่ยืนอยู่นี้เพิ่มลงรายการวาร์ป', a:'addWarp'},
+   {t:'สลับแมพนี้ ปลอดภัย/อันตราย (ตอนนี้ '+(zAt()?.safe?'ปลอดภัย':'อันตราย')+')', a:'toggleSafe'},
+   {t:'ฆ่าสัตว์อสูรทั้งหมดในแมพนี้', a:'killAll'},
+   {t:'ให้สมุนไพรในแมพนี้งอกใหม่ทั้งหมด', a:'respawnHerb'},
+   {t:'เก็บกวาดของที่ตกบนพื้นในแมพนี้', a:'clearGround'},
+   {t:'ปิด/เปิดการเคลื่อนไหวของสัตว์อสูร', a:'toggleAI'},
+   {t:'--- ใหม่: ผู้เล่นและการทดสอบ ---'},
+   {t:'วาร์ปไปตามพิกัด (พิมพ์ตัวเลขเอง)', a:'warpXY'},
+   {t:'เปิด/ปิดโหมดเดินทะลุทุกอย่าง', a:'noclip'},
+   {t:'ตั้งแต้มฝึกฝนด้วยการพิมพ์ตัวเลข', a:'setExp'},
+   {t:'ตั้งจำนวนที่ฆ่า / สำนัก / ตำราลับ', a:'setProgress'},
+   {t:'รีเซ็ตของรายวัน (เช็กอิน วงล้อ ข่าวลือ)', a:'skipTime'},
+   {t:'ทดสอบทำเซฟเสียเพื่อดูว่าระบบซ่อมเองได้ไหม', a:'breakSave'},
+   {t:'--- ใหม่: ความเร็วและการควบคุม ---'},
+   {t:'ตั้งความเร็วเดิน พิมพ์ตัวเลข (ตอนนี้ '+spd+')', a:'setSpd'},
+   {t:'สำรอง/กู้คืนเซฟในเกม', a:'backup'},
+  ]),{ent:x=>{
    try{
     if(!isGMOk()){mode='play';return}
     // ของเดิม
@@ -1856,31 +1888,92 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
     else if(x.a==='mon'){menu('เสกมอน',Object.keys(MD).map(k=>({t:MD[k].n+' พลัง '+mpw(k),k})),{ent:y=>{const z=zAt();let c=0;for(let i=0;i<3;i++){const nx=S.x+2+i,ny=S.y;if(zoneAt(nx,ny)===z){spawn(z,y.k,nx,ny);c++}}mode='play';say('เสก '+MD[y.k].n+' '+c+' ตัว')}})}
     else if(x.a==='warp'){menu('วาร์ป',W.map(w=>({t:Z.find(z=>z.id===w.z).n+' : '+w.n,w})),{ent:y=>{S.x=y.w.x;S.y=y.w.y;S.med=false;target=null;walk=false;PEND=null;mode='play';say('วาร์ปไป '+y.w.n);render()}})}
     // ใหม่
-    else if(x.a==='errs'){const L=window.__ERRS||[];if(!L.length)return say('ไม่มี Error');menu('Error '+L.length+' รายการ',L.slice(-20).map((e,i)=>({t:(e.msg||e).toString().slice(0,80)})))}
-    else if(x.a==='selfcheck'){if(typeof selfCheck==='function'){selfCheck();say('รัน selfCheck() แล้ว ดูใน console และ Shift+F8')}else say('ไม่มีฟังก์ชัน selfCheck ในเวอร์ชันนี้')}
-    else if(x.a==='watchdog'){if(typeof watchdog==='function'){watchdog();say('รัน watchdog() ซ่อม S แล้ว')}else say('ไม่มี watchdog()')}
-    else if(x.a==='viewS'){console.log('S =',JSON.stringify(S,null,2));say('ดู S ใน console F12 แล้ว - มี '+Object.keys(S).length+' คีย์')}
-    else if(x.a==='addWarp'){const z=zAt();const nm='จุดทดสอบ '+S.x+','+S.y;W.push({z:z.id,n:nm,x:S.x,y:S.y});say('สร้างจุดวาร์ป '+nm+' ในแมพ '+z.n+' แล้ว');save()}
+    else if(x.a==='errs'){const L=window.__ERRS||[];if(!L.length)return say('ยังไม่มีข้อผิดพลาด');menu('ข้อผิดพลาด '+L.length+' รายการ',L.slice(-20).map((e,i)=>({t:(e.msg||e).toString().slice(0,80)})))}
+    else if(x.a==='selfcheck'){if(typeof selfCheck==='function'){selfCheck();say('ตรวจเสร็จแล้ว ดูผลได้ที่ Shift+F8')}else say('เวอร์ชันนี้ไม่มีระบบตรวจความถูกต้อง')}
+    else if(x.a==='watchdog'){if(typeof watchdog==='function'){watchdog();say('ซ่อมข้อมูลเซฟแล้ว')}else say('เวอร์ชันนี้ไม่มีระบบซ่อมเซฟ')}
+    else if(x.a==='viewS'){console.log('S =',JSON.stringify(S,null,2));say('แสดงข้อมูลตัวละครในหน้าต่างนักพัฒนา F12 แล้ว มี '+Object.keys(S).length+' รายการ')}
+    else if(x.a==='addWarp'){const z=zAt();const nm='จุดทดสอบ ซ้ายขวา '+S.x+' เหนือใต้ '+S.y;W.push({z:z.id,n:nm,x:S.x,y:S.y});say('เพิ่ม '+nm+' ลงรายการวาร์ปแล้ว เปิดเมนูวาร์ปไปจุดต่างๆ จะเห็น ตรงนี้ไม่มีอะไรปรากฏบนพื้น และรายการจะหายเมื่อโหลดเกมใหม่');save()}
     else if(x.a==='toggleSafe'){const z=zAt();if(z){z.safe=z.safe?0:1;say('แมพ '+z.n+' ตอนนี้ '+(z.safe?'ปลอดภัย':'อันตราย'));save()} }
     else if(x.a==='killAll'){const z=zAt();let c=0;MS.forEach(m=>{if(!m.dead&&m.z===z.id){m.dead=Date.now();c++}});say('ฆ่ามอนในแมพนี้ '+c+' ตัว')}
     else if(x.a==='respawnHerb'){const z=zAt();let c=0;ND.forEach(n=>{if(n.z===z.id&&n.dead){n.dead=0;c++}});say('รีสมุนไพร '+c+' ต้น')}
     else if(x.a==='clearGround'){const z=zAt();const before=S.ground.length;S.ground=S.ground.filter(g=>zoneAt(g.x,g.y)!==z);say('เคลียร์ของตกพื้น '+(before-S.ground.length)+' ชิ้น')}
     else if(x.a==='toggleAI'){window.__AI_OFF=!window.__AI_OFF;say('AI มอน '+(window.__AI_OFF?'ปิด':'เปิด'))}
-    else if(x.a==='warpXY'){mode='play';ask('พิมพ์ x,y เช่น 27,46',v=>{const m=v.split(',').map(x=>parseInt(x.trim()));if(m.length===2&&!isNaN(m[0])&&!isNaN(m[1])){S.x=m[0];S.y=m[1];say('วาร์ปไป '+S.x+','+S.y);render()}else say('รูปแบบผิด')})}
-    else if(x.a==='noclip'){noclip.on=!noclip.on;mode='play';say('NoClip '+(noclip.on?'เปิด - เดินทะลุได้':'ปิด'))}
-    else if(x.a==='setExp'){mode='play';ask('พิมพ์แต้มฝึกฝน exp',v=>{const n=parseInt(v);if(n>=0){S.exp=n;say('ตั้ง exp = '+n)}})}
-    else if(x.a==='setProgress'){menu('ตั้งค่าความคืบหน้า',[{t:'ตั้ง Kills ข่าวลือ',a:'kills'},{t:'ตั้ง Sect สำนัก',a:'sect'},{t:'ปลดตำราลับทั้งหมด',a:'sec'}],{ent:y=>{
-      if(y.a==='kills'){mode='play';ask('ใส่จำนวน kill ที่จะเพิ่ม',v=>{const n=parseInt(v);if(n>0){try{rumAdv('kill',n)}catch(e){} say('เพิ่ม kill '+n)}})}
+    else if(x.a==='warpXY'){mode='play';ask('พิมพ์ตัวเลข 2 ตัวคั่นด้วยจุลภาค ตัวแรกคือซ้ายขวา (ตะวันออกเพิ่ม) ตัวที่สองคือเหนือใต้ (ใต้เพิ่ม) เช่น 27,46',v=>{const m=v.split(',').map(x=>parseInt(x.trim()));if(m.length===2&&!isNaN(m[0])&&!isNaN(m[1])){S.x=m[0];S.y=m[1];say('วาร์ปไปที่ ซ้ายขวา '+S.x+' เหนือใต้ '+S.y);render()}else say('รูปแบบผิด')})}
+    else if(x.a==='noclip'){noclip.on=!noclip.on;mode='play';say('โหมดเดินทะลุ '+(noclip.on?'เปิดแล้ว เดินทะลุได้ทุกอย่าง':'ปิดแล้ว'))}
+    else if(x.a==='setExp'){mode='play';ask('พิมพ์แต้มฝึกฝน',v=>{const n=parseInt(v);if(n>=0){S.exp=n;say('ตั้งแต้มฝึกฝนเป็น '+n)}})}
+    else if(x.a==='setProgress'){menu('ตั้งค่าความคืบหน้า',[{t:'เพิ่มจำนวนที่ฆ่า — พิมพ์จำนวนอสูรที่ถือว่าฆ่าแล้ว ทำให้ความคืบหน้าของข่าวลือนับเพิ่ม',a:'kills'},{t:'ตั้งสำนัก — เลือกสำนักที่จะเข้าร่วมทันทีโดยไม่ต้องไปสมัคร แต่ละสำนักให้โบนัสต่างกัน',a:'sect'},{t:'ปลดตำราลับทั้งหมด — ได้ตำราลับครบทั้ง 4 เล่มทันที',a:'sec'}],{ent:y=>{
+      if(y.a==='kills'){mode='play';ask('ใส่จำนวนที่ฆ่าที่จะเพิ่ม',v=>{const n=parseInt(v);if(n>0){try{rumAdv('kill',n)}catch(e){} say('เพิ่มจำนวนที่ฆ่า '+n)}})}
       else if(y.a==='sec'){S.sec=['dbl','sense','rec','deathres'];S.frag={dbl:5,sense:6,rec:10,deathres:12};mode='play';say('ปลดตำราลับครบ 4 อันแล้ว')}
-      else if(y.a==='sect'){mode='play';ask('ใส่ชื่อสำนัก k1/k2/k3 หรือเว้นว่างเพื่อออก',v=>{if(!v)return;S.sect=v;S.sectDone=1;say('ตั้งสำนักเป็น '+v)})}
+      else if(y.a==='sect'){menu('เลือกสำนัก',Object.keys(SECT).map(k=>({t:SECT[k].n+' — '+SECT[k].d,k})),{ent:q=>{S.sect=q.k;S.sectDone=1;mode='play';say('ตั้งสำนักเป็น '+SECT[q.k].n)}})}
     }})}
-    else if(x.a==='skipTime'){S.dly='';S.rumD='';S.checkinLast='';S.wheelLast='';mode='play';say('รีเซ็ต daily/checkin/wheel/rumors แล้ว กด J Y D G ใหม่ได้เลย')}
-    else if(x.a==='breakSave'){S.hp=NaN;S.x=-999;S.inv.push({id:'NO_SUCH_ITEM_XXX',q:1});mode='play';say('ทำเซฟแตกแล้ว - รอ 3 วิ watchdog จะซ่อมให้อัตโนมัติ ดู Shift+F8')}
-    else if(x.a==='setSpd'){mode='play';ask('ใส่ตัวคูณ spd เช่น 1, 10, 100, 1000',v=>{const n=parseFloat(v);if(n>0){spd=n;say('ตั้ง spd = '+n)}})}
-    else if(x.a==='backup'){const k='ipo_backup_'+Date.now();localStorage.setItem(k,JSON.stringify(S));menu('Backup',Object.keys(localStorage).filter(k=>k.startsWith('ipo_backup_')).map(k=>({t:k,k})),{ent:y=>{S=Object.assign(S,JSON.parse(localStorage.getItem(y.k)));say('Restore จาก '+y.k+' แล้ว');render();save()}})}
-   }catch(e){say('GM Error '+e.message)}}
+    else if(x.a==='skipTime'){S.dly='';S.rumD='';S.whd='';if(S.ck){S.ck.d=(typeof ydKey==='function'?ydKey():'')}mode='play';say('รีเซ็ตแล้ว กด J เช็กอินใหม่ได้ ต่อเนื่องจากเดิม กด Y หมุนวงล้อใหม่ได้ ข่าวลือจะสร้างใหม่เมื่อเปิดดู')}
+    else if(x.a==='breakSave'){S.hp=NaN;S.x=-999;S.inv.push({id:'NO_SUCH_ITEM_XXX',q:1});mode='play';say('ทำเซฟเสียแล้ว รอ 3 วินาทีระบบจะซ่อมให้เอง ดูผลที่ Shift+F8')}
+    else if(x.a==='setSpd'){mode='play';ask('ใส่ตัวคูณความเร็วเดิน เช่น 1, 10, 100, 1000',v=>{const n=parseFloat(v);if(n>0){spd=n;say('ตั้งความเร็วเดินเป็น '+n+' เท่า')}})}
+    else if(x.a==='backup'){const k='ipo_backup_'+Date.now();localStorage.setItem(k,JSON.stringify(S));menu('เลือกเซฟสำรองที่จะกู้คืน',Object.keys(localStorage).filter(k=>k.startsWith('ipo_backup_')).map(k=>({t:'สำรองเมื่อ '+new Date(parseInt(k.slice(11))).toLocaleString('th-TH'),k})),{ent:y=>{S=Object.assign(S,JSON.parse(localStorage.getItem(y.k)));say('กู้คืนเซฟสำรองแล้ว');render();save()}})}
+   }catch(e){say('เมนูผู้พัฒนาผิดพลาด '+e.message)}}
  })};
- say('โหลด PATCH GM FULL แล้ว กด F8',1);
+ say('โหลดเมนูผู้พัฒนาแบบเต็มแล้ว กด F8',1);
+}
+
+/* ===== PATCH MP1 เรดาร์ผู้เล่นอื่น (กด P) =====
+   ส่งตำแหน่งตัวเองขึ้น Firebase (คอลเลกชัน presence) เมื่อเดินแล้วทุก 30 วินาที หรือทุก 90 วินาทีถ้ายืนเฉยๆ
+   อ่านตำแหน่งคนอื่นเฉพาะตอนกด P เท่านั้น เพื่อประหยัดโควตาฟรี ปิดทั้งระบบได้ด้วย window.__MP_OFF=true */
+{
+ const MP={ready:false,failed:false,err:null,db:null,auth:null,fs:null,lastW:0,lx:null,ly:null,busy:false};
+ const FBU='https://www.gstatic.com/firebasejs/10.14.1/';
+ const online=()=>{try{return typeof GMV!=='undefined'&&!!GMV.online}catch(e){return false}};
+ const errMsg=e=>String((e&&e.code)||'').indexOf('permission')>=0
+  ?'เซิร์ฟเวอร์ยังไม่อนุญาตให้ใช้ระบบเห็นผู้เล่นอื่น ต้องเพิ่มกฎ presence ในหน้า Firestore Rules ของ Firebase ก่อน'
+  :'ระบบเห็นผู้เล่นอื่นเชื่อมต่อไม่ได้ในตอนนี้ ลองใหม่ภายหลัง';
+ const zn=(x,y)=>{const z=zoneAt(x,y);return z?z.n:'นอกแผนที่'};
+ const init=async()=>{
+  if(MP.ready)return true;
+  if(MP.failed||!online())return false;
+  try{
+   const a=await import(FBU+'firebase-app.js'),au=await import(FBU+'firebase-auth.js'),fs=await import(FBU+'firebase-firestore.js');
+   const app=a.getApp();MP.auth=au.getAuth(app);MP.db=fs.getFirestore(app);MP.fs=fs;
+   try{await MP.auth.authStateReady()}catch(e){}
+   if(!MP.auth.currentUser)return false;
+   MP.ready=true;return true;
+  }catch(e){return false}
+ };
+ const push=async()=>{
+  if(MP.busy||window.__MP_OFF||MP.failed||document.hidden||!online())return;
+  const now=Date.now(),moved=S.x!==MP.lx||S.y!==MP.ly;
+  if(!moved&&now-MP.lastW<90000)return;
+  MP.busy=true;
+  try{
+   if(!(await init()))return;
+   const u=MP.auth.currentUser;if(!u)return;
+   const z=zoneAt(S.x,S.y);
+   await MP.fs.setDoc(MP.fs.doc(MP.db,'presence',u.uid),{n:String(S.pname||'ผู้ฝึกตน').slice(0,20),x:S.x,y:S.y,z:z?z.id:'',t:now});
+   MP.lastW=now;MP.lx=S.x;MP.ly=S.y;
+  }catch(e){
+   if(String((e&&e.code)||'').indexOf('permission')>=0){MP.failed=true;MP.err=e}
+   try{console.warn('MP1 push',e)}catch(x){}
+  }finally{MP.busy=false}
+ };
+ setTimeout(push,5000);setInterval(push,30000);
+ A.pradar=async function(){
+  if(window.__MP_OFF)return say('ระบบเห็นผู้เล่นอื่นถูกปิดอยู่');
+  if(!online())return say('ไม่พบผู้เล่นอื่น เกมอยู่ในโหมดออฟไลน์ ระบบนี้ใช้ได้เฉพาะตอนออนไลน์');
+  try{
+   if(MP.failed)return say(errMsg(MP.err));
+   if(!(await init()))return say(MP.failed?errMsg(MP.err):'ยังเชื่อมต่อเซิร์ฟเวอร์ไม่เสร็จ รอสักครู่แล้วกด P ใหม่');
+   const u=MP.auth.currentUser,fs=MP.fs;
+   const sn=await fs.getDocs(fs.query(fs.collection(MP.db,'presence'),fs.where('t','>',Date.now()-180000)));
+   const L=[];sn.forEach(d=>{if(d.id===u.uid)return;const v=d.data();if(v&&typeof v.x==='number'&&typeof v.y==='number')L.push({n:String(v.n||'ผู้ฝึกตน').slice(0,20),x:v.x,y:v.y})});
+   if(!L.length)return say('ไม่พบผู้เล่นอื่นออนไลน์ในตอนนี้');
+   const zid=(x,y)=>{const z=zoneAt(x,y);return z?z.id:''},me=zid(S.x,S.y),same=L.filter(v=>zid(v.x,v.y)===me).sort((a,b)=>dist(S,a)-dist(S,b)),other=L.filter(v=>zid(v.x,v.y)!==me);
+   same.slice(0,5).forEach(v=>say('ผู้เล่น '+v.n+' '+rel(v.x-S.x,v.y-S.y)));
+   other.slice(0,3).forEach(v=>say('ผู้เล่น '+v.n+' อยู่ที่ '+zn(v.x,v.y)));
+   if(other.length>3)say('ยังมีผู้เล่นในแมพอื่นอีก '+(other.length-3)+' คน');
+  }catch(e){
+   if(String((e&&e.code)||'').indexOf('permission')>=0){MP.failed=true;MP.err=e}
+   try{console.warn('MP1 radar',e)}catch(x){}
+   say(errMsg(e));
+  }
+ };
 }
 </script>
 <script>
