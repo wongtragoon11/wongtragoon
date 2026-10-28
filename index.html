@@ -20,7 +20,7 @@ h1{font-size:18px;margin:0 0 6px}#stat{border:1px solid var(--bd);padding:6px;ma
 <div class="lb"><button id="l_in" type="button">เข้าสู่ระบบ</button><button id="l_new" type="button">สร้างบัญชีใหม่</button></div>
 <p class="sm">บัญชีเก็บในเบราว์เซอร์เครื่องนี้ ไม่ใช้รหัสผ่านเดียวกับที่อื่น</p></section>
 <main hidden role="application" aria-label="เกมมรรคาเซียนออนไลน์" tabindex="0" id="app">
-<h1>มรรคาเซียนออนไลน์ (ทดลองเล่นคนเดียว)</h1>
+<h1>มรรคาเซียนออนไลน์</h1>
 <div id="stat"></div>
 <div id="log" role="log" aria-live="assertive" aria-relevant="additions"></div>
 <input id="in" hidden aria-label="ช่องพิมพ์ข้อความ">
@@ -145,10 +145,10 @@ radar(){const r=S.step>=10?30:15,z=zoneAt(S.x,S.y);const l=MS.filter(m=>!m.dead&
  const n=W.filter(w=>w.npc&&w.z===z.id&&dist(S,w)<=r);const nd=ND.filter(a=>!a.dead&&a.z===z.id&&dist(S,a)<=r);nd.slice(0,4).forEach(a=>say('สมุนไพร '+I[a.id].n+' '+rel(a.x-S.x,a.y-S.y)));if(!l.length&&!n.length&&!nd.length)return say('ไม่พบเป้าหมายรอบตัว');
  n.forEach(w=>say(w.n+' '+rel(w.x-S.x,w.y-S.y)));l.slice(0,5).forEach(m=>say(MD[m.k].n+' ระดับพลัง '+mpw(m.k)+' '+rel(m.x-S.x,m.y-S.y)));
  rl=l;rlT=Date.now()+8000;if(l.length){target=l[0];say('ล็อกเป้า '+MD[l[0].k].n+' ลูกศรซ้ายขวาสลับเป้า')}},
-pradar(){say('ไม่พบผู้เล่นอื่น (โหมดทดลองเล่นคนเดียว)')},
+pradar(){say('ไม่พบผู้เล่นอื่น')},
 inv(){invMenu()},
 enter(){if(PEND){const p=PEND;PEND=null;PASS=1;try{move(p.f)}finally{PASS=0}return}const nd=ND.find(a=>!a.dead&&a.x===S.x&&a.y===S.y);if(nd){nd.dead=Date.now();add(nd.id,1);sfx('pick');return say('เก็บ '+I[nd.id].n)}const g=S.ground.filter(a=>a.x===S.x&&a.y===S.y);if(!g.length)return say('ไม่มีของให้เก็บตรงนี้');g.forEach(a=>{if(a.coin){S.coin+=a.coin;say('ได้เหรียญทอง '+a.coin)}else if(a.gold){S.gold+=a.gold;say('ได้เศษหินวิญญาณ '+a.gold)}else{add(a.id,a.q);say('เก็บ '+I[a.id].n)}S.ground.splice(S.ground.indexOf(a),1)});beep(800,.1)},
-give(){say('ไม่มีผู้เล่นอื่นอยู่ในรัศมี 3 ก้าว (โหมดทดลองเล่นคนเดียว)')},del(){say('ปุ่ม Delete ใช้ได้ตอนเปิดกระเป๋า (I)')},
+give(){say('ระบบส่งของให้ผู้เล่นอื่นยังไม่เปิดใช้งาน')},del(){say('ปุ่ม Delete ใช้ได้ตอนเปิดกระเป๋า (I)')},
 auto(){if(auto){auto=false;return say('ปิดการใช้ทักษะอัตโนมัติ')}if(lastSlot<0)return say('กดทักษะเลข 1 ถึง 0 ก่อน แล้วค่อยกด Space');auto=true;warned=0;say('เปิดการใช้ทักษะอัตโนมัติ ช่อง '+(lastSlot+1))},
 skills(){menu('ทักษะ',S.known.map(k=>({t:SK[k].n+(S.slots.includes(k)?' ติดตั้งช่อง '+(S.slots.indexOf(k)+1):''),k})),{ent:x=>{mode='slot';mn.pick=x.k;say('ติดตั้ง '+SK[x.k].n+' ที่ปุ่มหมายเลขใด 1 ถึง 0')}})},
 hp(){say('พลังชีวิต '+Math.floor(S.hp)+' จาก '+mhp()+' พลังปราณ '+Math.floor(S.qi)+' จาก '+mqi())},
@@ -163,9 +163,9 @@ talk(){const z=zoneAt(S.x,S.y),n=W.find(w=>w.npc&&w.z===z.id&&dist(S,w)<=2.5);if
  menu('ร้าน '+n.n+' (มีหินวิญญาณ '+Math.floor(S.gold/100)+' ก้อน)',SHOP[n.npc].map(id=>({t:I[id].n+' ราคา '+I[id].p+' หินวิญญาณระดับต่ำ'+reqTxt(id),id})),{ent:x=>(lvOk(x.id,1)?ask:()=>0)('ซื้อ '+I[x.id].n+' กี่ชิ้น',v=>{const q=parseInt(v);if(!(q>0)){mode='menu';return say('ยกเลิก')}const c=q*I[x.id].p*100;if(S.gold<c)say('หินวิญญาณไม่พอ ต้องใช้ '+c/100+' ก้อน มี '+Math.floor(S.gold/100));else{S.gold-=c;add(x.id,q);sfx('buy');say('ซื้อแล้ว '+q+' ชิ้น')}})})},
 fly(){if(!S.known.includes('fly')||S.step<10)return say('ต้องเรียนวิชาขี่กระบี่และถึงระดับสร้างรากฐาน');say('ขี่กระบี่เหาะ (ระบบบินเต็มรูปแบบรอแพตช์ถัดไป)')},
 quest(){say('เควสต์: ล่ากระต่ายเขาเดียวที่ทุ่งกระต่าย '+Math.min(3,S.q.k)+' จาก 3 ตัว'+(S.q.got?' รับรางวัลแล้ว':S.q.k>=3?' กลับไปคุยผู้ใหญ่บ้านหลี่ (F)':''))},
-party(){say('ระบบปาร์ตี้ต้องมีผู้เล่นอื่น ยังไม่เปิดในโหมดทดลอง')},craft(){say('วิชาชีพเสริมยังไม่เปิดในแพตช์ทดลองนี้')},
+party(){say('ระบบปาร์ตี้ยังไม่เปิดใช้งาน')},craft(){say('วิชาชีพเสริมยังไม่เปิดในแพตช์ทดลองนี้')},
 equip(){menu('อุปกรณ์',[{t:'อาวุธ: '+(S.wpn?I[S.wpn].n:'ไม่มี')}],{ent:()=>{if(S.wpn){add(S.wpn,1);S.wpn=null;say('ถอดอาวุธแล้ว');mode='play'}}})},
-help(){const L=['ลูกศรเดิน Q E หัน W รีเซ็ตทิศ','M เมนูแผนที่ N เช็กระยะ A เช็คคนรอบตัว P เช็คคนออนไลน์ใกล้ตัว Shift F1 รายชื่อคนออนไลน์','I กระเป๋า Enter เก็บหรือใช้ของ Delete ทิ้ง','S จัดทักษะ เลข 1 ถึง 0 ใช้ทักษะ Space ออโต้','H เลือดปราณ L ข้อมูลตัวละคร Z สมาธิ B ทะลวง F คุยหรือซื้อของ','C อุปกรณ์ G เควสต์ X ขี่กระบี่','ข้ามเขตแผนที่ ต้องกด Enter ที่ทางเข้าเพื่อยืนยัน','ซื้อของและสร้างของที่ร้าน กด F คุยกับเจ้าของร้าน X ขี่กระบี่เหาะ (ไม่ต้องติดตั้งทักษะ)','A เช็คคนรอบตัว ไกล 39 ก้าว O เช็คอสูรและสมุนไพร ไกล 29 ก้าว U คู่มือเกม F4 ประกาศล่าสุดและข้อความประจำวัน F5 บันทึกการอัพเดท F10 ออกจากระบบ เดินชนคนได้ และแต่ละคนมีเสียงประจำตัว','แชท: ทับ \\ โลก / แผนที่ จุด คอมมา เปลี่ยนหมวด วงเล็บเหลี่ยม อ่านข้อความ','F2 เปิดปิดเสียงพูดของเกม','F3 เปิดปิดเสียงบรรยากาศ Shift N เดินอัตโนมัติไปเป้าหมายที่ล็อกไว้ใน M ถึงสมุนไพรกด Enter เก็บ'];menu('คู่มือปุ่ม',L.map(t=>({t})))},
+help(){const L=['ลูกศรเดิน Q E หัน W รีเซ็ตทิศ','M เมนูแผนที่ N เช็กระยะ A เช็คคนรอบตัว P เช็คคนออนไลน์ใกล้ตัว K เช็กจำนวนคนออนไลน์ Shift F1 รายชื่อคนออนไลน์','I กระเป๋า Enter เก็บหรือใช้ของ Delete ทิ้ง','S จัดทักษะ เลข 1 ถึง 0 ใช้ทักษะ Space ออโต้','H เลือดปราณ L ข้อมูลตัวละคร Z สมาธิ B ทะลวง F คุยหรือซื้อของ','C อุปกรณ์ G เควสต์ X ขี่กระบี่','ข้ามเขตแผนที่ ต้องกด Enter ที่ทางเข้าเพื่อยืนยัน','ซื้อของและสร้างของที่ร้าน กด F คุยกับเจ้าของร้าน X ขี่กระบี่เหาะ (ไม่ต้องติดตั้งทักษะ)','A เช็คคนรอบตัว ไกล 39 ก้าว O เช็คอสูรและสมุนไพร ไกล 29 ก้าว U คู่มือเกม F4 ประกาศล่าสุดและข้อความประจำวัน F5 บันทึกการอัพเดท F10 ออกจากระบบ เดินชนคนได้ และแต่ละคนมีเสียงประจำตัว','แชท: ทับ \\ โลก / แผนที่ จุด คอมมา เปลี่ยนหมวด วงเล็บเหลี่ยม อ่านข้อความ','F2 เปิดปิดเสียงพูดของเกม','F3 เปิดปิดเสียงบรรยากาศ Shift N เดินอัตโนมัติไปเป้าหมายที่ล็อกไว้ใน M ถึงสมุนไพรกด Enter เก็บ'];menu('คู่มือปุ่ม',L.map(t=>({t})))},
 go(){if(!goal)return say('ยังไม่ได้เลือกเป้าหมาย กด M');walk=true;say('เริ่มเดินอัตโนมัติไป '+goal.n+' กดปุ่มใดก็ได้เพื่อหยุด')},ambT(){ambOn=!ambOn;say('เสียงบรรยากาศ '+(ambOn?'เปิด':'ปิด'))},tts(){tts=!tts;say('เสียงพูดของเกม '+(tts?'เปิด':'ปิด'))},spd(){if(!isGM())return;spd=spd===1?60:1;say('ตัวคูณแต้มสมาธิทดสอบ '+spd+' เท่า')},esc(){},
 chatW(){ask('พิมพ์แชทโลก',v=>{endAsk();if(v)msg(1,'[โลก] คุณ: '+v)})},chatM(){ask('พิมพ์แชทแผนที่',v=>{endAsk();if(v)msg(2,'[แผนที่] คุณ: '+v)})},
 catN(){cat(1)},catP(){cat(-1)},catF(){ci=0;cat(0)},catL(){ci=5;cat(0)},
@@ -273,7 +273,7 @@ COIN.fox=[3,8];
 W.push({z:'v',n:'ทางไปป่าชายหมู่บ้าน',x:27,y:49},{z:'f',n:'ทางกลับหมู่บ้าน',x:27,y:50},{z:'f',n:'ถิ่นหมูป่าเขี้ยวทองคำ (บอส)',x:54,y:57},);
 setInterval(()=>{if(godOn()&&S.hp<mhp())S.hp=mhp()},500);
 KEYS.F8='gm';
-A.gm=function(){if(!isGM())return say('บัญชีนี้ไม่มีสิทธิ์ใช้เมนูผู้ทดสอบ');
+A.gm=function(){if(!isGM())return;
 menu('เมนูผู้ทดสอบ',[{t:'อมตะ '+(S.god?'เปิดอยู่':'ปิดอยู่')+' กด Enter เพื่อสลับ',a:'god'},{t:'ตั้งระดับขั้น (ตอนนี้ '+realmName(S.step)+')',a:'lv'},{t:'วาร์ปไปจุดต่างๆ ทุกแผนที่',a:'warp'},{t:'เติมเลือด ปราณ และเงินทดสอบ',a:'fill'}],{ent:x=>{
  if(x.a==='god'){S.god=!S.god;mode='play';say('อมตะ '+(S.god?'เปิด':'ปิด'))}
  else if(x.a==='fill'){S.hp=mhp();S.qi=mqi();S.gold+=1000000;S.coin+=100000;mode='play';say('เติมเต็มและเพิ่มเงินทดสอบแล้ว')}
@@ -334,7 +334,7 @@ const _rn=render;render=function(){_rn();if(S.known.includes('fly'))$('stat').te
 // boss lairs: clear normal monsters from boss area, restore boss death timers across reloads
 Z.forEach(z=>{if(!z.boss)return;const bx=z.boss[1],by=z.boss[2];MS.forEach(m=>{if(m.z!==z.id||BOSSES.includes(m.k))return;let t=0;while(Math.hypot(m.x-bx,m.y-by)<12&&t++<60){m.x=z.r[0]+1+Math.floor(Math.random()*(z.r[2]-z.r[0]-1));m.y=z.r[1]+1+Math.floor(Math.random()*(z.r[3]-z.r[1]-1))}m.home=[m.x,m.y]})});
 MS.forEach(m=>{if(BOSSES.includes(m.k)&&S.bd[m.k]&&Date.now()-S.bd[m.k]<BOSS_MS)m.dead=S.bd[m.k]});
-MAIN.push(['ใครออนไลน์ (Shift+F1)','S+F1'],['ขี่กระบี่เหาะ / ลง','KeyX']);renderMob();
+MAIN.push(['จำนวนคนออนไลน์ (K)','KeyK'],['ใครออนไลน์ (Shift+F1)','S+F1'],['ขี่กระบี่เหาะ / ลง','KeyX']);renderMob();
 /* ===== PATCH 4 (เพิ่มต่อท้าย) เมนูผู้พัฒนาแบบเต็ม ===== */
 A.gm=function(){if(!isGM())return;/*PATCH14b ผู้เล่นทั่วไปกดแล้วไม่เกิดอะไรขึ้น*/
  const full=()=>{S.hp=mhp();S.qi=mqi();S.fp=100};
@@ -509,7 +509,7 @@ setInterval(()=>{if(!S.med||!S.sect)return;const h=W.find(w=>w.hall&&w.hall===S.
 
 /* ===== [รวมจากไฟล์แพตช์ 12] PATCH 9 (เพิ่มต่อท้าย ไม่ลบโค้ดเดิม) ระบบตรวจสอบบักอัตโนมัติตลอดเวลา + ซ่อมแซมข้อมูลเสียอัตโนมัติ (กด Shift+F8 ดูรายงาน) ===== */
 {const ER=window.__ERRS=window.__ERRS||[];let lastE=0,nE=0,nF=0;const lastFix={};let SELF=[];
- const rec=m=>{ER.push(new Date().toTimeString().slice(0,8)+' '+m);if(ER.length>50)ER.shift();nE++;if(Date.now()-lastE>20000){lastE=Date.now();(isGM()&&say('ระบบตรวจพบข้อผิดพลาดเล็กน้อย เกมยังเล่นต่อได้ กด Shift+F8 ดูรายงาน',1))}};
+ const rec=m=>{ER.push(new Date().toTimeString().slice(0,8)+' '+m);if(ER.length>50)ER.shift();nE++;if(Date.now()-lastE>20000){lastE=Date.now();(isGM()&&say('[ผู้พัฒนา] ข้อผิดพลาด: '+String(m).slice(0,160)+' (เกมยังเล่นต่อได้ กด Shift+F8 ดูรายงาน)',1))}};
  if(window.addEventListener){window.addEventListener('error',e=>rec('error: '+(e&&e.message)));window.addEventListener('unhandledrejection',e=>rec('promise: '+((e&&e.reason&&e.reason.message)||(e&&e.reason))))}
  const fx=(k,m)=>{nF++;if(!lastFix[k]||Date.now()-lastFix[k]>60000){lastFix[k]=Date.now();(isGM()&&say('ตรวจระบบ: '+m+' (แก้ไขอัตโนมัติแล้ว)',1))}};
  const fin=v=>typeof v==='number'&&isFinite(v);
@@ -1257,21 +1257,6 @@ const playSkill=()=>{const id=curId,k=curSk;if(!k)return false;const r=skRole(id
   setLayer('bgm',bgmRole());
   const z=zoneAt(S.x,S.y),id=z&&z.id;setLayer('amb',ambRole());
   if(S.med&&!live('qi').length&&ROLE.qi.vars.length)play('qi',.6,{loop:0})}catch(e){}},1500);
- /* ---------- 9) F7 ตรวจสอบเสียง: บอกว่าหน้าที่ไหนมีไฟล์ที่ใช้ได้กี่ไฟล์ กด Enter ที่รายการเพื่อลองเล่น ---------- */
- const NM={button:'กดปุ่ม',open:'เปิดเมนู',bump:'ชนสิ่งกีดขวาง',pick:'หยิบไอเทม',buy:'ซื้อของ',notify:'แจ้งเตือน',potion:'ใช้โอสถ',swoosh:'ฟันกระบี่',punch:'หมัดฝ่ามือ',clash:'กระบี่ปะทะ',hurt:'ถูกโจมตี',whoosh:'พุ่งตัว ขี่กระบี่',steps:'ฝีเท้า',spell:'รวมลมปราณ',heal:'วิชารักษา',buff:'เกราะปราณ',fire:'วิชาไฟ',thunder:'วิชาสายฟ้า',ice:'วิชาน้ำแข็ง',earth:'วิชาศิลา',explosion:'วิชารุนแรง',levelup:'เลื่อนขั้น',roar:'อสูรคำราม',howl:'หมาป่าหอน',bossSpawn:'บอสปรากฏ',gong:'ระฆัง ฆ้อง',die:'ตาย',revive:'ฟื้นคืนชีพ',qi:'นั่งสมาธิ',bird:'นก',owl:'นกฮูก',cricket:'จิ้งหรีดแมลง',wind:'ลม',water:'น้ำ',rain:'ฝน',rustle:'พุ่มไม้ไหว',critter:'สัตว์เล็ก',town:'บรรยากาศเมือง',festival:'เทศกาล',bgm:'เพลงประกอบ',bgmCalm:'เพลงพักผ่อน'};
- const nameOf=u=>{try{return decodeURIComponent(u.split('?')[0].split('/').pop())}catch(e){return u}};
- const allUrls=()=>[...new Set(Object.keys(ROLE).flatMap(r=>ROLE[r].urls))];
- let LT=null;
- const probeOne=u=>new Promise(res=>{let a=new Audio(),fin=0,t;const f=c=>{if(fin)return;fin=1;clearTimeout(t);try{a.pause();a.removeAttribute('src');a.load()}catch(x){}res(c)};t=setTimeout(()=>f(2),10000);a.muted=true;a.preload='auto';a.addEventListener('canplay',()=>f(1));a.addEventListener('loadeddata',()=>f(1));a.addEventListener('error',()=>f(0));a.src=u;try{const p=a.play();if(p&&p.catch)p.catch(()=>{})}catch(x){}});
- const linkTest=(q)=>{const qs=(t,f)=>{if(!q)say(t,f)};if(LT&&!LT.done)return qs('กำลังทดสอบอยู่ '+LT.i+' จาก '+LT.n,1);const U=allUrls();LT={n:U.length,i:0,ok:[],bad:[],slow:[],done:0};let k=0;
-  qs('เริ่มทดสอบลิงก์เสียง '+U.length+' ลิงก์ รอประมาณครึ่งนาที เครื่องรองรับ ogg: '+(OGG?'ใช่':'ไม่ (ลิงก์ ogg ถูกข้าม ใช้เฉพาะ mp3 และเสียงสังเคราะห์)'),1);
-  const w=async()=>{while(k<U.length){const u=U[k++],c=await probeOne(u);LT.i++;if(c===1){LT.ok.push(u);DEAD.delete(u)}else if(c===0){LT.bad.push(u);DEAD.set(u,Date.now()+1800000)}else LT.slow.push(u)}};
-  Promise.all([w(),w(),w(),w()]).then(()=>{LT.done=1;qs('ทดสอบเสร็จ ใช้ได้ '+LT.ok.length+' เสีย '+LT.bad.length+' ช้าเกินไป '+LT.slow.length+' จากทั้งหมด '+LT.n+' ลิงก์ ลิงก์เสียระบบข้ามเองและใช้เสียงสำรอง กด F7 เปิดดูรายการลิงก์เสีย',1)})};
- const stat=r=>{const R=ROLE[r],n=R.vars.length,d=R.vars.filter(v=>dead(v.u)).length;return n?('ลิงก์ '+n+' เสียชั่วคราว '+d+' เล่นไม่ได้จะใช้เสียงสังเคราะห์สำรอง'):'ไม่มีลิงก์ที่เครื่องนี้รองรับ ใช้เสียงสังเคราะห์สำรอง'};
- A.sndtest=function(){const it=[{t:'ทดสอบลิงก์เสียงทั้งหมดตอนนี้ (ใช้เวลาประมาณครึ่งนาที)',a:'t'},{t:'ดูรายชื่อลิงก์ที่เสีย'+(LT?' '+LT.bad.length+' ลิงก์':' (ต้องทดสอบก่อน)'),a:'b'}].concat(Object.keys(ROLE).map(r=>({t:(NM[r]||r)+' ['+ROLE[r].bus+'] : '+stat(r)+' กด Enter ลองเล่น',r})));
-  menu('ตรวจสอบเสียง',it,{ent:x=>{if(x.a==='t')return linkTest();if(x.a==='b'){if(!LT||!LT.done)return say('ยังไม่ได้ทดสอบ หรือทดสอบยังไม่เสร็จ',1);const L=LT.bad.map(u=>({t:nameOf(u)+' ('+u.split('/')[2]+')'}));if(!L.length)return say('ไม่มีลิงก์เสีย',1);return menu('ลิงก์เสีย '+L.length,L)}
-   const e=play(x.r,1,{loop:0});say((NM[x.r]||x.r)+' : '+stat(x.r)+(e?'':' (ตอนนี้เล่นด้วยเสียงสังเคราะห์สำรอง)'),1)}})};
- KEYS.F7='sndtest';setTimeout(()=>{try{if(navigator.onLine!==false)linkTest(1)}catch(e){}},7000);setInterval(()=>{try{if(navigator.onLine!==false&&LT&&LT.done)linkTest(1)}catch(e){}},1800000);
  window.__AUDIO={ROLE,LIVE,play,stopRole,setLayer,skRole,dbg:()=>({duckCur,duckUntil,now:Date.now(),tick:!!tick})};
  TIPS.push('เสียงทั้งหมดเป็นไฟล์จริง กด F3 เปิดปิดดนตรีและเสียงบรรยากาศ ถ้าไม่ได้ยินให้กดปุ่มใดก็ได้หนึ่งครั้งก่อน');
  NEWS.push({id:18,d:'2026-10-26',c:[C_SYS],h:'ระบบเสียงใหม่ จากไฟล์เสียงจริงทั้งหมด',t:'เปลี่ยนเสียงปี๊บเป็นไฟล์เสียงจริง มีคลังเสียงกลาง ดนตรีประกอบ เสียงบรรยากาศ และเสียงวิชาแยกตามธาตุ',x:[
@@ -1294,7 +1279,6 @@ const playSkill=()=>{const id=curId,k=curSk;if(!k)return false;const r=skRole(id
   }catch(e){}
   /* ===== PATCH 16 AUDIO: เสียงใหม่ทั้งหมดจาก audio_links.txt ===== */
   try{
-   Object.assign(NM,{"button": "เสียงคลิกปุ่มเมนูคมชัด", "slotset": "เสียงสลับช่องทักษะและเมนู", "open": "เสียงรูดเปิดกระเป๋าสัมภาระ", "close": "เสียงรูดปิดกระเป๋าสัมภาระ", "bump": "เสียงของแข็งทุบกระแทกพื้นดิน", "pick": "เสียงหยิบโลหะเก็บเข้ากระเป๋า", "buy": "โยนเหรียญ/ซื้อของ", "sell": "เสียงนับเหรียญทองหลายเหรียญ", "coinpour": "เสียงเทเหรียญเงินลงหีบไม้", "notify": "เตือนข้อความเข้า/ระบบตอบรับ", "chat": "เสียงแจ้งเตือนป๊อปอัป", "login": "เสียงเข้าสู่ระบบสำเร็จ", "register": "เสียงสร้างบัญชีใหม่สำเร็จ", "online": "เสียงแจ้งเตือนผู้เล่นอื่นออนไลน์", "offline": "เสียงแจ้งเตือนผู้เล่นอื่นออฟไลน์", "logout": "เสียงปิดหีบและล็อกระบบ", "purge": "เสียงเซิร์ฟเวอร์เคลียร์ขยะและรีเซ็ตข้อมูล", "drop": "เสียงกวาดล้างขยะบนพื้นแผนที่", "page": "เสียงเปิดหน้าคัมภีร์ตำราโบราณ", "scroll": "เสียงเปิดม้วนคัมภีร์โบราณ", "learn": "เสียงสายพิณสะบัด", "rare": "เสียงได้รับไอเทมพิเศษ", "gavel": "เสียงค้อนเคาะปิดการประมูล", "potion": "เสียงดื่มน้ำอมฤตและโอสถเหลว", "equip": "เสียงชักกระบี่ออกจากฝักเหล็ก", "unequip": "โลหะเสียดสี/ชักกระบี่ออกจากฝัก", "wear": "เสียงเสียดสีของเกราะเหล็กขณะเคลื่อนไหว", "absorb": "เสียงดูดซับพลังวิญญาณเข้าสู่ตันเถียน", "shielddown": "เสียงม่านพลังป้องกันสลายตัว", "brkfail": "เสียงทะลวงจุดชีพจรล้มเหลว", "sigh": "เสียงถอนหายใจโล่งอกเมื่อรอดชีวิต", "horn": "เสียงแตรเขาสัตว์เป่าประกาศศักดา", "toggle": "เสียงดีดสวิตช์ระบบกลไก", "situp": "เสียงสะบัดชายเสื้อคลุมผู้ฝึกตน", "door": "เสียงเปิดประตูอาคารและร้านค้า", "craft": "เสียงตีเหล็กบนทั่งหลอมศาสตรา", "fishget": "เสียงฟองอากาศปะทุในตาน้ำ", "rod": "เสียงน้ำกระเซ็นเมื่อเหวี่ยงเบ็ด", "tankput": "เสียงตักน้ำใส่ตู้ปลา", "teleport": "เสียงเปิดหน้าต่างระบบและวาร์ป", "land": "เสียงกระโดดลงสู่พื้นหินแข็ง", "steps": "เสียงฝีเท้าวิ่งบนดินลูกรัง", "steps_v": "เสียงฝีเท้าวิ่งบนดินลูกรัง", "steps_f": "เสียงวิ่งบนใบไม้แห้ง", "steps_b": "เสียงวิ่งบนโคลน/พื้นเปียก", "steps_w": "เสียงเดินบนหินกรวดละเอียด", "steps_m": "เสียงก้าวเดินเหยียบหิมะและพื้นน้ำแข็ง", "steps_c": "เสียงก้าวเดินส้นเท้ากระทบพื้นหิน", "steps_k": "เสียงก้าวเดินในห้องโถงหินกว้าง", "steps_in": "เสียงเดินบนพื้นไม้", "swoosh": "เสียงฟันกระบี่เฉือนอากาศแหลมคม", "punch": "หมัดกระแทกหนัก", "clash": "เสียงโลหะฟาดปะทะดาบสะท้อนกังวาน", "hurt": "เสียงถูกแทงทะลุเกราะและร้องเจ็บปวด", "hurt2": "เสียงร้องครวญครางเมื่อถูกโจมตีสาหัส", "whoosh": "ลมวูบแหวกอากาศขนาดกลาง", "fly": "เสียงลมพายุพัดกระหน่ำ", "die": "เสียงกรีดร้องสิ้นใจเมื่อตัวละครตาย", "revive": "เสียงถอนหายใจโล่งอกเมื่อรอดชีวิต", "levelup": "เสียงสายฟ้าฟาดเปรี้ยงสนั่น", "qi": "เสียงประจุพลังงานเวทหมุนวน", "mdie": "เสียงอสูรร้องโหยหวนก่อนตาย", "bosskill": "เสียงระเบิดพลังปราณทำลายล้าง", "bossSpawn": "เสียงกลองศึกคำราม", "bossnear": "เสียงฟ้าร้องคำรามก่อนฝนตก", "arena": "เสียงตีฆ้องใหญ่เปิดศึก", "heartbeat": "เสียงหัวใจเต้นรัวเมื่อเลือดเหลือน้อย", "sectenter": "เสียงระฆังสำนักเซียนกังวาน", "spell": "เสียงยิงลำแสงปราณยุทธ์", "fire": "เตาหลอมยา/ไฟปะทุต่อเนื่อง", "thunder": "เสียงสายฟ้าคำรามไกลต่อเนื่อง", "ice": "น้ำแข็งแตกสลาย/ตรึงร่าง", "earth": "แผ่นดินไหว/หินถล่ม", "heal": "เสียงน้ำหยดกระทบหินในถ้ำ", "buff": "เสียงคลื่นปราณสั่นพ้องในอากาศ", "explosion": "เสียงการพังทลายของสิ่งก่อสร้างและหน้าผา", "sk_fist": "หมัดกระแทกหนัก", "sk_finger": "การปลดปล่อยระเบิดพลังงานเซียน", "sk_sword": "เสียงฟันกระบี่เฉือนอากาศแหลมคม", "sk_shield": "เสียงคลื่นปราณสั่นพ้องในอากาศ", "sk_flysword": "เสียงกระบี่บินแหวกม่านอากาศความเร็วสูง", "sk_firetal": "ไฟลุกท่วม/ระเบิดเพลิง", "sk_trap": "เสียงฟาดแส้และเชือกอาคม", "sk_wshield": "เสียงน้ำตกขนาดเล็ก/ตาน้ำ", "sk_qpalm": "หมัดสวิงชกเข้าเป้า", "sk_windslash": "เสียงปลดปล่อยคลื่นพลังทำลาย", "sk_heal1": "เสียงน้ำหยดกระทบหินในถ้ำ", "sk_qbarrier": "คลื่นพลังงานแม่เหล็ก/ปราณเวท", "sk_thpalm": "สายฟ้าฟาดระยะประชิด", "sk_rockfall": "เสียงเศษหินกระแทกพื้นแตกรวดเร็ว", "sk_heal2": "เสียงกระดิ่งเวทแจ้งเตือนสั้น", "sk_swordrain1": "เสียงธนูและอาวุธลับแหวกอากาศ", "sk_diamond": "เสียงการสะท้อนพลังโจมตีกายภาพ", "sk_groupheal": "เสียงระฆังสำนักเซียนกังวาน", "sk_firestorm": "เสียงประกายเพลิงพวยพุ่งระเบิด", "sk_heal3": "เสียงระฆังลมไม้ไผ่กระทบกัน", "sk_thunderfall": "เสียงสายฟ้าคำรามไกลต่อเนื่อง", "sk_swordstorm": "ระเบิดสั่นสะเทือนไกล", "sk_heal4": "เสียงบรรเลงกู่ฉินโบราณ", "sk_sw_wave": "เสียงพายุหมุนวายุคราม", "sk_sw_thrust": "เสียงกระบี่ยักษ์ฟาดพสุธา", "sk_heal_s": "เสียงก้าวเดินย่ำน้ำตื้นริมตลิ่ง", "sk_mist": "เสียงพิษงูมรกตกัดกร่อน", "sk_iron_body": "การปะทะกระแทกของเกราะหนัก", "sk_vajra": "เสียงหมัดกระทบเนื้อเป้าหมาย", "m_rab": "เสียงกระต่ายเขาเดียวส่งเสียงร้อง", "m_fox": "เสียงจิ้งจอกป่าเจ้าเล่ห์เห่าหอน", "m_boar": "เสียงหมูป่าเขี้ยวเหล็กคำรามฟึดฟัด", "m_pboar": "เสียงหมูป่าเขี้ยวทองคำพุ่งชน", "m_snake": "เสียงงูเขียวหางไหม้ขู่ฟ่อ", "m_bsnake": "เสียงงูมรกตราชินีพ่นพิษคำราม", "m_wolf": "สุนัขป่าเห่าหอนเป็นฝูง", "m_bear": "เสียงหมีเกราะศิลาคำรามทุ้มต่ำ", "m_king": "เสียงคำรามหนักของสัตว์ร้ายขนาดใหญ่", "m_leo": "เสียงเสือดาวสายฟ้าคำรามก้อง", "m_ape": "เสียงวานรแขนเหล็กทุบอกคำราม", "m_phx": "เสียงวิหคเพลิงปีกแดงกู่ร้องบนเวหา", "m_lion": "เสียงราชสีห์เพลิงสวรรค์คำรามสะท้านฟ้า", "n_chief": "เสียงระฆังลมไม้ไผ่กระทบกัน", "n_elder": "เสียงระฆังสำนักเซียนกังวาน", "n_smith": "เสียงกองไฟและเปลวเพลิงลุกไหม้", "n_herb": "เสียงบดสมุนไพรในครกหิน", "n_armor": "โล่เหล็กรับแรงกระแทก", "n_tailor": "เสียงกรรไกรตัดผ้าและหนังสัตว์", "n_exch": "เสียงเหรียญทองและเงินตรา", "n_auction": "เสียงค้อนเคาะปิดการประมูล", "n_fisher": "เสียงลากเส้นเบ็ดและหมุนรอกตกปลา", "n_tank": "เสียงตักน้ำใส่ตู้ปลา", "n_arena": "เสียงตีฆ้องใหญ่เปิดศึก", "n_guide": "เสียงเปิดหน้าคัมภีร์ตำราโบราณ", "n_healer": "เสียงถอนหายใจโล่งอกเมื่อรอดชีวิต", "n_warp": "เสียงเปิดหน้าต่างระบบและวาร์ป", "n_gen": "เสียงหยิบโลหะเก็บเข้ากระเป๋า", "n_talman": "เสียงเปิดม้วนคัมภีร์โบราณ", "n_tsword": "เสียงชักกระบี่ออกจากฝักเหล็ก", "n_tdef": "เสียงคลื่นปราณสั่นพ้องในอากาศ", "n_tgroup": "เสียงปลดปล่อยคลื่นพลังทำลาย", "amb_v": "เสียงบรรยากาศหมู่บ้านลำธารใส", "amb_f": "เสียงบรรยากาศป่าชายหมู่บ้าน", "amb_b": "เสียงบรรยากาศป่าไผ่เขียวขจี", "amb_w": "เสียงบรรยากาศหุบเขาหมาป่าวายุ", "amb_m": "เสียงบรรยากาศเทือกเขาอสูรบรรพกาล", "amb_c": "เสียงบรรยากาศเมืองหลวงเมฆาคราม", "amb_k1": "เสียงบรรยากาศสำนักกระบี่ชิงหยุน", "amb_k2": "เสียงบรรยากาศหุบเขาโอสถพฤกษา", "amb_k3": "เสียงบรรยากาศอารามวัชระกายา", "amb_in": "เสียงบรรยากาศภายในหอการค้าและโรงประมูล", "amb_fly": "เสียงนกกระเรียนร้องก้องฟ้า", "bird": "เสียงนกร้องก้องในหุบเขาลึก", "owl": "เสียงนกฮูกและสัตว์กลางคืน", "cricket": "เสียงจิ้งหรีดเรไรร้องยามค่ำ", "cicada": "เสียงแมลงปีกแข็งและจักจั่นป่าไผ่", "wind": "ลมพายุพัดหวีดหวิวบนยอดเขา", "windh": "เสียงลมพัดผ่านช่องเขาหิน", "water": "เสียงคลื่นน้ำและลำธารไหลริน", "frog": "เสียงกบและเขียดร้องริมน้ำ", "bat": "เสียงค้างคาวและอสูรรัตติกาลกระพือปีก", "rain": "เสียงฝนตกโปรยปรายกระทบใบไม้", "bgm": "เพลงพิณกู่เจิงบรรเลงท่วงทำนองเมฆา", "bgm_town": "เพลงขลุ่ยไม้ไผ่เคล้าเสียงพิณโบราณ", "bgm_forest": "เพลงซอเอ้อร์หูท่วงทำนองท่องยุทธจักร", "bgm_bamboo": "เสียงขลุ่ยไม้ไผ่จีนสะท้อนหุบเขา", "bgm_city": "เสียงซอเอ้อร์หูบรรเลง", "bgm_sect": "เพลงขลุ่ยเซียวบรรเลงยามค่ำคืน", "bgm_battle": "เพลงผีผาจังหวะศึกยุทธภพ", "bgm_arena": "เพลงมโหรีจีนโบราณต้อนรับผู้กล้า", "bgmCalm": "เพลงพิณเจ็ดสายกู่ฉินบำเพ็ญเพียร"});
    const lastW={};const once=(k,ms)=>{const n=Date.now();if(n-(lastW[k]||0)<ms)return false;lastW[k]=n;return true};
    setInterval(()=>{try{if(mode==='input')return;
     if(S.hp>0&&S.hp<mhp()*.3&&once('hb',6000))play('heartbeat',.8);
@@ -1322,11 +1306,11 @@ const GM_SALT='mxg-28cb56df5d2f',GM_HASH='b49462a40bfdd17410c9cc1a2cb187564769cf
 async function gmHash(v){let h=await GMV.hs(v,GM_SALT);for(let i=0;i<10000;i++)h=await GMV.hs(h,GM_SALT);return h}
 const gmBtn=()=>Array.from($('pad').children).find(b=>b.textContent==='GM');
 function gmGrant(){gmOn=true;gmT=0;gmV=false;
- if(!MAIN.some(x=>x[1]==='F8'))MAIN.push(['เมนูผู้ทดสอบ (GM)','F8']);[['เร่งแต้มทดสอบ x60','F9'],['ตรวจสอบระบบ (Shift+F8)','S+F8'],['ตรวจสอบเสียง (F7)','F7']].forEach(e=>{if(!MAIN.some(x=>x[1]===e[1]))MAIN.push(e)});
+ if(!MAIN.some(x=>x[1]==='F8'))MAIN.push(['เมนูผู้ทดสอบ (GM)','F8']);[['เร่งแต้มทดสอบ x60','F9'],['ตรวจสอบระบบ (Shift+F8)','S+F8']].forEach(e=>{if(!MAIN.some(x=>x[1]===e[1]))MAIN.push(e)});
  if(!gmBtn()){const b=document.createElement('button');b.tabIndex=-1;b.onmousedown=e=>e.preventDefault();b.textContent='GM';b.setAttribute('aria-label','ปุ่ม เมนูผู้ทดสอบ');b.onclick=()=>{if(mode==='input')return;handle({code:'F8',shiftKey:false});render()};$('pad').appendChild(b)}
  mobSig='';renderMob()}
 function gmRevoke(){gmOn=false;gmT=0;gmV=false;spd=1;
- for(let i=MAIN.length-1;i>=0;i--)if(['F8','F9','S+F8','F7'].includes(MAIN[i][1]))MAIN.splice(i,1);
+ for(let i=MAIN.length-1;i>=0;i--)if(['F8','F9','S+F8'].includes(MAIN[i][1]))MAIN.splice(i,1);
  {const b=gmBtn();if(b)b.remove()}
  mobSig='';renderMob();say('ล็อกสิทธิ์ผู้พัฒนากลับแล้ว',1)}
 let gmFail=0,gmLock=0;
@@ -1790,7 +1774,7 @@ try{
  window.__BGRUN=()=>{const r={};CHK.forEach((f,i)=>{try{r[i]=f()}catch(e){r[i]=['พัง '+e.message]}});return r};
 }catch(e){console.error('PATCH26',e)}
 /* ===== PATCH 27 (เพิ่มต่อท้าย) กฎเหล็ก: ของฝั่งผู้พัฒนา (ตรวจสอบระบบ ตรวจสอบเสียง เร่งแต้มทดสอบ) ใช้ได้เฉพาะแอดมิน ผู้เล่นทั่วไปกดแล้วไม่เกิดอะไรขึ้น ===== */
-['diag','sndtest','spd'].forEach(k=>{const f=A[k];if(typeof f==='function')A[k]=function(){if(!isGM())return;return f.apply(this,arguments)}});
+['diag','spd'].forEach(k=>{const f=A[k];if(typeof f==='function')A[k]=function(){if(!isGM())return;return f.apply(this,arguments)}});
 /* ===== boot ===== */
 if(S.med){const el=Math.min(28800,(Date.now()-S.t)/1000),z=zoneAt(S.x,S.y)||Z[0];if(el>5){const g=el*medBase()*.5*(1+z.b);S.exp+=g;say('ระหว่างออฟไลน์ นั่งสมาธิได้แต้ม '+Math.floor(g))}}
 if(!zoneAt(S.x,S.y)){S.x=SP0[0];S.y=SP0[1]}
@@ -1930,6 +1914,14 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
  const MP={ready:false,failed:false,err:null,auth:null,rt:null,rdb:null,lastW:0,lx:null,ly:null,lz:null,busy:false,rcell:null,off:0,offT:0,fastUntil:0};
  const RTU='https://wongtragoon-6123-default-rtdb.firebaseio.com';
  const isPerm=e=>/permission/i.test(String((e&&(e.code||''))||'')+' '+String((e&&e.message)||''));
+ const DE={};
+ const devErr=(tag,e)=>{try{
+  const m=tag+': '+String((e&&(e.code||e.message))||e).slice(0,160);
+  try{const L=(window.__ERRS=window.__ERRS||[]);L.push(new Date().toTimeString().slice(0,8)+' '+m);if(L.length>50)L.shift()}catch(x){}
+  try{console.warn(tag,e)}catch(x){}
+  const n=Date.now();if(n-(DE[tag]||0)<60000)return;DE[tag]=n;
+  if(isGM())say('[ผู้พัฒนา] '+m,1)
+ }catch(x){}};
  const cellOf=(x,y)=>Math.floor(x/40)+'_'+Math.floor(y/40);
  const safeK=s=>String(s||'').replace(/[.#$\[\]\/]/g,'_').slice(0,40);
  const FBU='https://www.gstatic.com/firebasejs/10.14.1/';
@@ -1950,9 +1942,9 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
    try{await MP.auth.authStateReady()}catch(e){}
    if(!MP.auth.currentUser)return false;
    MP.rt=rd;MP.rdb=rd.getDatabase(app,RTU);
-   try{rd.onValue(rd.ref(MP.rdb,'.info/serverTimeOffset'),s=>{const v=s.val();if(typeof v==='number'){MP.off=v;MP.offT=Date.now()}})}catch(e){}
+   await new Promise(res=>{let d=0;const f=()=>{if(!d){d=1;res()}};try{rd.onValue(rd.ref(MP.rdb,'.info/serverTimeOffset'),s=>{const v=s.val();if(typeof v==='number'){MP.off=v;MP.offT=Date.now()}f()},f)}catch(e){f()}setTimeout(f,3000)});
    MP.ready=true;return true;
-  }catch(e){try{console.warn('MP init',e)}catch(x){}return false}
+  }catch(e){devErr('MP init',e);return false}
  };
  const push=async()=>{
   if(MP.busy||window.__MP_OFF||MP.failed||document.hidden||!online())return;
@@ -1964,14 +1956,14 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
    const u=MP.auth.currentUser;if(!u)return;
    const z=zoneAt(S.x,S.y),rd=MP.rt;
    const nm=String(S.pname||'ผู้ฝึกตน').slice(0,20),ch0=String(S.title||'').slice(0,20);
-   const pl={n:nm,lv:S.step|0,ch:ch0,x:S.x,y:S.y,z:z?String(z.id).slice(0,20):'',t:now},cell=cellOf(S.x,S.y),rf=rd.ref(MP.rdb,'presence/'+cell+'/'+u.uid);
+   const pl={n:nm,lv:S.step|0,ch:ch0,x:S.x,y:S.y,z:z?String(z.id).slice(0,20):'',t:srvNow()},cell=cellOf(S.x,S.y),rf=rd.ref(MP.rdb,'presence/'+cell+'/'+u.uid);
    if(MP.rcell&&MP.rcell!==cell)rd.remove(rd.ref(MP.rdb,'presence/'+MP.rcell+'/'+u.uid)).catch(()=>{});
    await rd.set(rf,pl);
    rd.onDisconnect(rf).remove().catch(()=>{});
    MP.rcell=cell;MP.lastW=now;MP.lx=S.x;MP.ly=S.y;MP.lz=z?z.id:'';
   }catch(e){
    if(isPerm(e)){MP.failed=true;MP.err=e}
-   try{console.warn('MP1 push',e)}catch(x){}
+   devErr('MP1 push',e);
   }finally{MP.busy=false}
  };
  setTimeout(push,5000);setInterval(push,10000);
@@ -1979,11 +1971,11 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
  addEventListener('pagehide',()=>{try{if(MP.ready&&!MP.failed&&!window.__MP_OFF&&MP.auth.currentUser&&MP.rcell)MP.rt.remove(MP.rt.ref(MP.rdb,'presence/'+MP.rcell+'/'+MP.auth.currentUser.uid)).catch(()=>{})}catch(e){}});
  /* รายชื่อและจำนวนคนออนไลน์ทั้งหมด: อ่านทั้งโหนด presence ครั้งเดียว เก็บไว้ 10 วินาที ถ้าเวลาล่าสุดเกิน 3 นาทีถือว่าหลุดแล้ว */
  const ON={t:0,L:[],busy:null};
- const fetchOnline=()=>{
-  if(Date.now()-ON.t<10000)return Promise.resolve(ON.L);
+ const fetchOnline=maxAge=>{
+  if(Date.now()-ON.t<(maxAge==null?10000:maxAge))return Promise.resolve(ON.L);
   if(ON.busy)return ON.busy;
   ON.busy=(async()=>{try{
-   const snap=await MP.rt.get(MP.rt.ref(MP.rdb,'presence')),L=[],n0=Date.now();
+   const snap=await MP.rt.get(MP.rt.ref(MP.rdb,'presence')),L=[],n0=srvNow();
    snap.forEach(cs=>{cs.forEach(us=>{const v=us.val();if(v&&typeof v.x==='number'&&typeof v.y==='number'&&typeof v.t==='number'&&v.t>n0-180000)L.push({id:us.key,n:String(v.n||'ผู้ฝึกตน').slice(0,20),x:v.x,y:v.y,lv:(typeof v.lv==='number'?v.lv:null),ch:String(v.ch||'').slice(0,20)})})});
    ON.L=L;ON.t=Date.now();return L
   }finally{ON.busy=null}})();
@@ -1996,7 +1988,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
   if(Date.now()-NR.t<(maxAge==null?3000:maxAge)&&NR.k===k)return Promise.resolve(NR.L);
   if(NR.busy)return NR.busy;
   NR.busy=(async()=>{try{
-   const rd=MP.rt,n0=Date.now(),L=[];
+   const rd=MP.rt,n0=srvNow(),L=[];
    const snaps=await Promise.all(cells.map(c=>rd.get(rd.ref(MP.rdb,'presence/'+c))));
    snaps.forEach(sn=>{sn.forEach(us=>{const v=us.val();if(v&&typeof v.x==='number'&&typeof v.y==='number'&&typeof v.t==='number'&&v.t>n0-180000)L.push({id:us.key,n:String(v.n||'ผู้ฝึกตน').slice(0,20),x:v.x,y:v.y})})});
    NR.L=L;NR.t=Date.now();NR.k=k;return L
@@ -2026,7 +2018,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
    if(other.length>3)say('ยังมีคนในแมพอื่นอีก '+(other.length-3)+' คน');
   }catch(e){
    if(isPerm(e)){MP.failed=true;MP.err=e}
-   try{console.warn('MP1 radar',e)}catch(x){}
+   devErr('MP1 radar',e);
    say(errMsg(e));
   }
  };
@@ -2050,7 +2042,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
    PM.lastSend=Date.now();pushPriv('[ส่วนตัว] ถึง '+to.n+': '+text);say('ส่งข้อความส่วนตัวถึง '+to.n+' แล้ว',1);
   }catch(e){
    if(isPerm(e)){PM.failed=true;say(DEVM(PERM_PM),1)}else say('ส่งข้อความส่วนตัวไม่สำเร็จ ลองใหม่ภายหลัง',1);
-   try{console.warn('MP pm send',e)}catch(x){}
+   devErr('MP pm send',e);
   }};
  const detachPM=()=>{try{PM.unsubs.forEach(f=>f())}catch(e){}PM.unsubs=[];PM.on=false};
  const attachPM=async()=>{
@@ -2069,9 +2061,9 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
     if((PM.seen[id]||0)>=v.t)return;PM.seen[id]=v.t;
     const line='[ส่วนตัว] '+String(v.n||'ผู้ฝึกตน').slice(0,20)+': '+v.m.slice(0,120);
     pushPriv(line);say(line,1)};
-   const er=e=>{detachPM();if(isPerm(e)){PM.failed=true;say(DEVM(PERM_PM),1)}try{console.warn('MP pm listen',e)}catch(x){}};
+   const er=e=>{detachPM();if(isPerm(e)){PM.failed=true;say(DEVM(PERM_PM),1)}devErr('MP pm listen',e);};
    PM.unsubs=[rd.onChildAdded(r,h,er),rd.onChildChanged(r,h,er)];PM.on=true;
-  }catch(e){detachPM();try{console.warn('MP pm attach',e)}catch(x){}}
+  }catch(e){detachPM();devErr('MP pm attach',e);}
   finally{PM.busy=false}
  };
  setInterval(()=>{try{
@@ -2100,12 +2092,28 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
    show();
   }catch(e){
    if(isPermX(e)){MP.failed=true;MP.err=e}
-   try{console.warn('MP whoOn',e)}catch(x){}
+   devErr('MP whoOn',e);
    say(errMsg(e));
   }};
+ A.onCount=async function(){
+  if(window.__MP_OFF||!online())return say('ตอนนี้ออฟไลน์ มีเจ้าอยู่คนเดียว');
+  try{
+   if(MP.failed)return say(errMsg(MP.err));
+   if(!(await init()))return say(MP.failed?errMsg(MP.err):'ยังเชื่อมต่อเซิร์ฟเวอร์ไม่เสร็จ รอสักครู่แล้วกด K ใหม่');
+   const u=MP.auth.currentUser;
+   const others=(await fetchOnline(3000)).filter(v=>v.id!==u.uid);
+   const zid=(x,y)=>{const z=zoneAt(x,y);return z?z.id:''},me=zid(S.x,S.y);
+   const same=others.filter(v=>zid(v.x,v.y)===me).length;
+   say('ตอนนี้มีผู้เล่นออนไลน์ '+(others.length+1)+' คน รวมเจ้า'+(others.length?' อยู่แมพเดียวกับเจ้า '+same+' คน':' ตอนนี้มีเจ้าอยู่คนเดียว'));
+  }catch(e){
+   if(isPerm(e)){MP.failed=true;MP.err=e}
+   devErr('MP onCount',e);
+   say(errMsg(e));
+  }};
+ KEYS['k']='onCount';
  KEYS['S+F1']='whoOn';
  {const b=document.createElement('button');b.tabIndex=-1;b.onmousedown=e=>e.preventDefault();b.textContent='ออนไลน์';b.setAttribute('aria-label','ปุ่ม ใครออนไลน์');b.onclick=()=>{if(mode==='input')return;handle({code:'F1',shiftKey:true});render()};$('pad').appendChild(b)}
- try{TIPS.push('กด Shift F1 ดูรายชื่อคนที่ออนไลน์ เลือกชื่อแล้วส่งข้อความส่วนตัวหาได้')}catch(e){}
+ try{TIPS.push('กด Shift F1 ดูรายชื่อคนที่ออนไลน์ เลือกชื่อแล้วส่งข้อความส่วนตัวหาได้','กด K เช็กว่าตอนนี้มีผู้เล่นออนไลน์กี่คน และอยู่แมพเดียวกับเจ้ากี่คน')}catch(e){}
  try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-10-28',c:[C_SYS],h:'รายชื่อคนออนไลน์ (Shift F1) ข้อความส่วนตัว และเอาปุ่ม K ออก',t:'กด Shift F1 ดูว่าใครออนไลน์ ระดับอะไร อยู่ตรงไหน และส่งข้อความส่วนตัวหาได้ เอาปุ่ม K ออก เพราะคุยกับร้านด้วย F ซื้อและสร้างของได้เลย',x:[
    'กด Shift F1 เปิดรายชื่อคนที่ออนไลน์ เลื่อนด้วยลูกศร แต่ละบรรทัดบอกชื่อ ระดับขั้น ฉายา (ถ้ามี) และที่อยู่ ถ้าอยู่แมพเดียวกันจะบอกทิศทางด้วย บนมือถือใช้ปุ่มใครออนไลน์ในเมนูหลัก',
    'กด Enter ที่ชื่อ แล้วเลือกส่งข้อความส่วนตัว พิมพ์แล้วกด Enter ได้ครั้งละไม่เกิน 120 ตัวอักษร ส่งได้ทุก 3 วินาที ผู้รับได้ยินทันทีในหมวดส่วนตัว',
@@ -2139,9 +2147,9 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
      const line='[แผนที่] '+String(v.n||'ผู้ฝึกตน').slice(0,20)+': '+v.m.slice(0,120);
      S.chat[2].push(line);S.chat[0].push(line);trimC();
      say(line,1)};
-    const er=e=>{detach();if(isPerm(e)){CM.failed=true;say(DEVM(PERM_MSG),1)}try{console.warn('MP chat listen',e)}catch(x){}};
+    const er=e=>{detach();if(isPerm(e)){CM.failed=true;say(DEVM(PERM_MSG),1)}devErr('MP chat listen',e);};
     CM.unsubs=[rd.onChildAdded(r,h,er),rd.onChildChanged(r,h,er)];
-   }catch(e){detach();try{console.warn('MP chat attach',e)}catch(x){}}
+   }catch(e){detach();devErr('MP chat attach',e);}
   };
   /* ตรวจแมพทุก 2 วินาที เปลี่ยนตัวฟังเมื่ออยู่แมพใหม่นิ่งครบ 4 วินาที กันต่อใหม่ถี่ๆ ตอนเดินข้ามเขต หยุดฟังเมื่อซ่อนหน้าจอ */
   setInterval(()=>{try{
@@ -2175,9 +2183,9 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
      const line='[โลก] '+String(v.n||'ผู้ฝึกตน').slice(0,20)+': '+v.m.slice(0,100);
      S.chat[1].push(line);S.chat[0].push(line);trimC();
      say(line,1)};
-    const er=e=>{detachW();if(isPerm(e)){W.failed=true;say(DEVM(PERM_W),1)}try{console.warn('MP world listen',e)}catch(x){}};
+    const er=e=>{detachW();if(isPerm(e)){W.failed=true;say(DEVM(PERM_W),1)}devErr('MP world listen',e);};
     W.unsubs=[rd.onChildAdded(q,h,er),rd.onChildChanged(q,h,er)];W.on=true;
-   }catch(e){detachW();try{console.warn('MP world attach',e)}catch(x){}}
+   }catch(e){detachW();devErr('MP world attach',e);}
    finally{W.busy=false}
   };
   const sendW=async text=>{
@@ -2189,7 +2197,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
     rd.onDisconnect(rf).remove().catch(()=>{});
    }catch(e){
     if(isPerm(e)){W.failed=true;say(DEVM(PERM_W),1)}else say('ส่งแชทโลกไม่สำเร็จ ลองใหม่ภายหลัง',1);
-    try{console.warn('MP world send',e)}catch(x){}
+    devErr('MP world send',e);
    }
   };
   const send=async text=>{
@@ -2205,9 +2213,10 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
     CM.sentZ=zk;
    }catch(e){
     if(isPerm(e)){CM.failed=true;say(DEVM(PERM_MSG),1)}else say('ส่งแชทแมพไม่สำเร็จ ลองใหม่ภายหลัง',1);
-    try{console.warn('MP chat send',e)}catch(x){}
+    devErr('MP chat send',e);
    }
   };
+  setInterval(()=>{try{[MP,PM,CM,W].forEach(o=>{if(!o.failed){o.fT=0;return}if(!o.fT){o.fT=Date.now();return}if(Date.now()-o.fT>300000){o.failed=false;o.fT=0;if(o===MP)o.err=null}})}catch(e){}},30000);
   const _msg=msg;
   msg=function(c,t){
    if(c!==1&&c!==2)return _msg(c,t);
@@ -2234,9 +2243,9 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
 /* ===== PATCH QUOTA แจ้งผู้เล่นเมื่อโควตาเซิร์ฟเวอร์ฟรีเต็ม (ตั้งโดยโค้ดล็อกอินหรือระบบเรดาร์) ===== */
 {
  let told=0;
- try{if(window.__OFFLINE_SAVE)say('เซิร์ฟเวอร์ฟรีเต็มชั่วคราว คุณเข้าเล่นด้วยเซฟในเครื่อง รอบนี้เซฟจะยังไม่ขึ้นเซิร์ฟเวอร์ ปิดแล้วเปิดใหม่หลังโควตารีเซ็ตตอนบ่าย 2 หรือ 3 โมงเวลาไทยเพื่อซิงก์')}catch(e){}
+ try{if(window.__OFFLINE_SAVE)say(isGM()?'[ผู้พัฒนา] โควตา Firestore ฟรีเต็มชั่วคราว เข้าเล่นด้วยเซฟในเครื่อง รอบนี้เซฟจะยังไม่ขึ้นเซิร์ฟเวอร์ ปิดแล้วเปิดใหม่หลังโควตารีเซ็ตตอนบ่าย 2 หรือ 3 โมงเวลาไทยเพื่อซิงก์':'รอบนี้เซฟเก็บในเครื่องนี้ก่อน ยังไม่ขึ้นเซิร์ฟเวอร์ ปิดแล้วเปิดใหม่ภายหลังเพื่อซิงก์')}catch(e){}
  setInterval(()=>{try{const q=window.__QUOTA_FULL,on=!!(q&&Date.now()-q<1800000);
-  if(on&&!told){told=1;say('โควตาเซฟตัวละครบนเซิร์ฟเวอร์ฟรีเต็มชั่วคราว เซฟอยู่ในเครื่องก่อน ส่วนแชทและรายชื่อคนออนไลน์ยังใช้ได้ตามปกติ')}
+  if(on&&!told){told=1;if(isGM())say('[ผู้พัฒนา] โควตา Firestore เซฟตัวละครเต็มชั่วคราว เซฟอยู่ในเครื่องก่อน ส่วนแชทและรายชื่อคนออนไลน์ใช้ Realtime Database ยังใช้ได้ตามปกติ',1)}
   else if(!on&&told){told=0}}catch(e){}},10000);
 }
 </script>
