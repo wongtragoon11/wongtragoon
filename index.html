@@ -1122,11 +1122,26 @@ NEWS.push({id:17,d:'2026-10-25',c:[C_MAP,C_SYS],h:'วงเวทย์เค�
  };
  const GB='https://actions.google.com/sounds/v1/';
  const OGG=!!(document.createElement('audio').canPlayType('audio/ogg; codecs="vorbis"'));
+/* ===== PATCH 30 เสียงชุดในโฟลเดอร์ sounds (ไฟล์ ogg พร้อม mp3 สำรองสำหรับเครื่องที่เล่น ogg ไม่ได้ เช่น iPhone รุ่นเก่า) =====
+   join  เข้าเกม/กลับมาออนไลน์   leave ออกจากเกม/หลุดออฟไลน์   start สร้างบัญชีใหม่ เริ่มเส้นทางเซียน
+   lose  ตาย   win ปราบบอส   leaderboard_achievement ได้ใจยุทธ์/ปลดล็อกตำราลับ   starting เริ่มนั่งสมาธิ
+   ค่า vol ปรับตามความดังจริงของแต่ละไฟล์ (วัดเป็น LUFS) ให้ทุกไฟล์ดังใกล้กัน ถ้าไฟล์หายหรือโหลดไม่ได้ ระบบใช้เสียงสำรองเดิมเอง */
+{const LOC=n=>'sounds/'+n+(OGG?'.ogg':'.mp3');
+ const setR=(r,n,v)=>{if(ROLE[r]){ROLE[r].urls=[LOC(n)];ROLE[r].vol=v}};
+ setR('login','join',1);setR('online','join',1);
+ setR('logout','leave',1);setR('offline','leave',1);
+ setR('register','start',.26);
+ setR('bosskill','win',.73);
+ setR('die','lose',.89);
+ ROLE.achv={bus:'sfx',mode:'long',vol:.32,duck:1,alt:['levelup'],urls:[LOC('leaderboard_achievement')]};
+ ROLE.starting={bus:'sfx',mode:'long',vol:.84,urls:[LOC('starting')]}}
  const VER={button:['cartoon/wood_plank_flicks.ogg','cartoon/pop.ogg'],open:['doors/wood_door_open.ogg'],bump:['cartoon/clang_and_wobble.ogg'],notify:['alarms/beep_short.ogg'],clash:['impacts/metal_crash.ogg','cartoon/metal_twang.ogg'],hurt:['impacts/small_glass_pane_shatter.ogg'],spell:['science_fiction/sci_fi_vortex.ogg','science_fiction/alien_beam.ogg','cartoon/magic_chime.ogg'],heal:['water/water_lapping_wind.ogg'],thunder:['weather/thunder_crack.ogg','weather/distant_thunder.ogg'],ice:['weather/strong_wind.ogg'],earth:['impacts/crash.ogg'],explosion:['weapons/big_explosion_cut_off.ogg'],gong:['alarms/dinner_bell_triangle.ogg'],cricket:['animals/cicada_chirp.ogg'],water:['water/small_stream_flowing.ogg'],rain:['weather/rain_heavy_loud.ogg','weather/light_rain.ogg'],town:['ambiences/coffee_shop.ogg']};
  const VFM=[[/^(button|slotset|toggle|chat|page|scroll|close|drop|sell|buy|coinpour|pick|equip|unequip|wear|rare|learn|absorb|potion|craft|gavel|login|register|logout|online|offline|purge|situp|land|sigh)$/,'button'],[/^(notify)$/,'notify'],[/^(open|door)$/,'open'],[/^bump$/,'bump'],[/^(clash|swoosh|punch|whoosh|fly|sk_fist|sk_sword|sk_qpalm|sk_vajra|sk_sw_thrust|sk_trap|sk_swordrain1|equip)$/,'clash'],[/^hurt/,'hurt'],[/^(spell|sk_finger|sk_flysword|sk_qbarrier|sk_windslash|sk_sw_wave|teleport|n_warp|qi|buff|sk_shield|sk_diamond|sk_iron_body|sk_wshield|n_tdef|n_tgroup)$/,'spell'],[/^(heal|sk_heal|sk_groupheal|revive|n_healer)/,'heal'],[/^(thunder|sk_thunderfall|sk_thpalm|levelup|bossnear)$/,'thunder'],[/^(ice)$/,'ice'],[/^(earth|sk_rockfall)$/,'earth'],[/^(explosion|bosskill|sk_swordstorm|sk_firestorm|sk_firetal|fire|sk_mist|mdie)$/,'explosion'],[/^(gong|arena|n_arena|n_elder|sectenter|bossSpawn|horn)$/,'gong'],[/^(cricket|cicada|bat)$/,'cricket'],[/^(water|n_fisher|n_tank|sk_heal_s|fishget|rod|tankput|frog)$/,'water'],[/^rain$/,'rain'],[/^amb_(c|in)$/,'town'],[/^amb_(v|k2)$/,'water']];
  const vfFor=r=>{const m=VFM.find(x=>x[0].test(r));return m?(VER[m[1]]||[]).map(f=>GB+f):[]};
  const DEAD=new Map();
  Object.keys(ROLE).forEach(r=>{const R=ROLE[r];let U=R.urls.slice();vfFor(r).forEach(u=>{if(!U.includes(u))U.push(u)});if(!OGG)U=U.filter(u=>!/\.ogg(\?|$)/i.test(u));R.urls=U;R.vars=U.map(u=>({u,d:2}))});
+/* PATCH 30: เสียงตาย/ปราบบอสใช้ไฟล์ใหม่ไฟล์เดียว (กันสุ่มไปเล่นเสียงสำรองของเดิมปนกัน) ถ้าไฟล์โหลดไม่ได้ ระบบใช้เสียงสังเคราะห์สำรองเอง */
+['bosskill','die'].forEach(r=>{const R=ROLE[r];if(R&&R.urls.length>1){R.urls=R.urls.slice(0,1);R.vars=R.vars.slice(0,1)}});
 
  /* ---------- 4) ตรวจไฟล์ทีละลิงก์ (จำกัดพร้อมกัน) เก็บไฟล์ที่โหลดได้สูงสุด 3 ไฟล์ต่อหน้าที่ไว้สุ่มใช้ ---------- */
  const PROBE=new Map();let busyN=0;const WAITQ=[];
@@ -1246,6 +1261,10 @@ const playSkill=()=>{const id=curId,k=curSk;if(!k)return false;const r=skRole(id
   [/^ส่งแล้ว/,'chat'],[/^(เปิด|ปิด)การใช้ทักษะอัตโนมัติ|^โหมดข้อความเงียบ|^เสียงบรรยากาศ|^เสียงพูดของเกม/,'toggle'],[/^ลุกขึ้นจากการนั่งสมาธิ/,'situp'],
   [/^ได้รับ: .*(แก่นวิญญาณ|กระบี่|เกราะ|แผงคอ|เขี้ยวราชา|ดีงู|เขี้ยวทองคำ)/,'rare'],[/ยินดีต้อนรับสู่มรรคาเซียนออนไลน์/,'login'],[/แก้ไขอัตโนมัติแล้ว/,'purge']];
  let sayT={};sayCue=function(t,sys){try{if(typeof t!=='string')return;for(const x of SAYR){if(x[0].test(t)){const n=Date.now();if(x[1]==='rod')rodT=n;if(n-(sayT[x[1]]||0)>(x[3]||800)){sayT[x[1]]=n;if(x[2])LIVE.forEach(e=>{if(x[2].includes(e.role)&&!e.fade)fadeOut(e,20)});play(x[1]==='login'&&window.__NEWACC?'register':x[1],.9)}break}}}catch(e){}};
+ /* PATCH 30: เสียงเหตุการณ์เพิ่ม (ไม่แตะตารางเดิม) */
+ {const _sc30=sayCue,_sfx30=sfx,XR=[[/^ฝึกฝนจากการต่อสู้ ได้ใจยุทธ์/,'achv'],[/^ปลดล็อกตำราลับ/,'achv'],[/^นั่งสมาธิโคจรลมปราณ/,'starting']];let achvT=0;
+  sayCue=function(t,sys){try{if(typeof t==='string'){for(const x of XR){if(x[0].test(t)){const n=Date.now();if(n-(sayT[x[1]]||0)>1500){sayT[x[1]]=n;if(x[1]==='achv')achvT=n;play(x[1],.9)}break}}}}catch(e){}return _sc30.apply(this,arguments)};
+  sfx=function(k){if(k==='levelup'&&Date.now()-achvT<300)return;return _sfx30.apply(this,arguments)}}
  if(NPC7.arena){const _ar=NPC7.arena;NPC7.arena=function(n){play('arena',.9);return _ar(n)}}
  /* ---------- 8) ดนตรีและบรรยากาศฉาก: วนลูป นุ่มนวล เริ่มหลังผู้เล่นกดอะไรสักอย่าง ปิดได้ด้วย F3 ---------- */
  const bgmRole=()=>{const z=zoneAt(S.x,S.y),id=z?z.id:'';if(S.med)return 'bgmCalm';if(typeof auto!=='undefined'&&auto)return 'bgm_battle';if(id==='bd_arena')return 'bgm_arena';if(/^k\d$/.test(id))return 'bgm_sect';if(id==='c'||/^bd_/.test(id))return 'bgm_city';if(id==='v'||id==='re'||id==='rw'||id==='rn'||id==='rs')return 'bgm_town';if(id==='b')return 'bgm_bamboo';if(id==='f'||id==='w')return 'bgm_forest';return 'bgm'};
@@ -2235,6 +2254,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
    const e=mn.ent;mn.ent=x=>{if(x&&x.a==='gift')return giftStart();return e(x)}}}catch(ex){}
   return r}}
  /*T29*/
+try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-10-29',c:[C_SYS],h:'เพิ่มเสียงชุดใหม่ เข้าเกม ออกจากเกม ตาย ปราบบอส ได้ใจยุทธ์',t:'เพิ่มเสียงใหม่ให้เหตุการณ์สำคัญ เข้าเกม ออกจากเกม สร้างบัญชีใหม่ เริ่มนั่งสมาธิ ตาย ปราบบอส และได้ใจยุทธ์หรือปลดล็อกตำราลับ',x:['เข้าเกมและกลับมาออนไลน์ มีเสียงต้อนรับ ออกจากเกมหรือหลุดการเชื่อมต่อ มีเสียงลา','ปราบบอสได้ มีเสียงชัยชนะ ตายมีเสียงพ่ายแพ้','ได้ใจยุทธ์หรือปลดล็อกตำราลับ มีเสียงแสดงความสำเร็จ เริ่มนั่งสมาธิมีเสียงเริ่มต้น']})}catch(e){}
  try{TIPS.push('ข้อความแชทที่เข้ามา มีเสียงเตือนและกล่องข้อความเด้งขึ้นบนหน้าจอ ทั้งแชทโลก แชทแมพ และข้อความส่วนตัว')}catch(e){}
  try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-10-28',c:[C_SYS],h:'เสียงแชทดังขึ้น ข้อความเด้งแจ้งเตือน และของขวัญจากผู้ดูแลเกม',t:'ข้อความแชทโลก แชทแมพ และข้อความส่วนตัวที่เข้ามา มีเสียงเตือนที่ดังขึ้นและกล่องข้อความเด้งขึ้นมา และผู้ดูแลเกมแจกของขวัญให้ผู้เล่นได้',x:[
    'เมื่อมีข้อความเข้าจากแชทโลก แชทแมพ หรือข้อความส่วนตัว จะมีเสียงเตือนชัดเจน กล่องข้อความเด้งขึ้นบนหน้าจอ และอ่านข้อความทันที ไม่ต้องรอ แม้เปิดโหมดข้อความเงียบอยู่ก็ตาม',
