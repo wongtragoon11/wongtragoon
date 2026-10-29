@@ -2039,7 +2039,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
    if(!(await init()))return say('ส่งไม่สำเร็จ ยังเชื่อมต่อเซิร์ฟเวอร์ไม่เสร็จ',1);
    const u=MP.auth.currentUser;if(!u)return;const rd=MP.rt;
    await rd.set(rd.ref(MP.rdb,'pm/'+to.id+'/'+u.uid),{n:String(S.pname||'ผู้ฝึกตน').slice(0,20),m:text,t:rd.serverTimestamp()});
-   PM.lastSend=Date.now();pushPriv('[ส่วนตัว] ถึง '+to.n+': '+text);say('ส่งข้อความส่วนตัวถึง '+to.n+' แล้ว',1);
+   PM.lastSend=Date.now();sendBlip();pushPriv('[ส่วนตัว] ถึง '+to.n+': '+text);say('ส่งข้อความส่วนตัวถึง '+to.n+' แล้ว',1);
   }catch(e){
    if(isPerm(e)){PM.failed=true;say(DEVM(PERM_PM),1)}else say('ส่งข้อความส่วนตัวไม่สำเร็จ ลองใหม่ภายหลัง',1);
    devErr('MP pm send',e);
@@ -2060,7 +2060,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
     if(v.t<srvNow()-600000)return;
     if((PM.seen[id]||0)>=v.t)return;PM.seen[id]=v.t;
     const line='[ส่วนตัว] '+String(v.n||'ผู้ฝึกตน').slice(0,20)+': '+v.m.slice(0,120);
-    pushPriv(line);say(line,1)};
+    pushPriv(line);alertIn('pm',line)};
    const er=e=>{detachPM();if(isPerm(e)){PM.failed=true;say(DEVM(PERM_PM),1)}devErr('MP pm listen',e);};
    PM.unsubs=[rd.onChildAdded(r,h,er),rd.onChildChanged(r,h,er)];PM.on=true;
   }catch(e){detachPM();devErr('MP pm attach',e);}
@@ -2121,6 +2121,126 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
    'เอาปุ่ม K ออกแล้ว เดินไปที่ร้านแล้วกด F คุย จะมีรายการสร้างของอยู่บรรทัดแรกในร้านตีเหล็ก ร้านโอสถ และร้านช่างหนัง',
    'ข้อความเรดาร์และรายชื่อ บอกแค่ชื่อและที่อยู่ ไม่มีคำนำหน้าชื่ออีกต่อไป']})}catch(e){}
 
+ /* ===== PATCH 29: แจ้งเตือนข้อความแชท (เสียงดัง + ข้อความเด้ง) และระบบแจกของโดยผู้ดูแลเกม =====
+    ข้อความเข้า (แชทโลก แชทแมพ ข้อความส่วนตัว) และของขวัญ จะมีเสียงเตือนชัด กล่องข้อความเด้งบนหน้าจอ และอ่านทันที
+    ของขวัญ: gift/{uid}/{id} รายบุคคล (ผู้รับลบเองหลังรับ)  giftall/{id} ทั้งเกม (ผู้เล่นแต่ละคนจำเวลาที่รับล่าสุดไว้ในเซฟ)
+    การส่งต้องมี gm/{uid}=true ใน Realtime Database (ตั้งในหน้า Console เท่านั้น) */
+ const sendBlip=()=>{try{tn(660,990,.12,.22,0,'triangle')}catch(e){}try{window.__AUDIO&&window.__AUDIO.play('chat',1)}catch(e){}};
+ try{const AU=window.__AUDIO;if(AU&&AU.ROLE){const RO=AU.ROLE;RO.chat.vol=1;RO.chat.cap=2.5;if(RO.rare)RO.rare.vol=1;const us=((RO.rare&&RO.rare.urls)||[]).concat(RO.chat.urls||[]);RO.chatin={bus:'ui',mode:'short',cap:2.4,vol:1,duck:1,urls:us,vars:us.map(x=>({u:x,d:2}))}}}catch(e){}
+ const TOAST=(()=>{const st=document.createElement('style');st.textContent='#toast{position:fixed;left:8px;right:8px;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:60;padding:12px;border-radius:8px;border:2px solid var(--fg);background:var(--bg);color:var(--fg);font-size:17px;font-weight:bold;box-shadow:0 2px 10px rgba(0,0,0,.4)}#toast[hidden]{display:none}';document.head.appendChild(st);const d=document.createElement('div');d.id='toast';d.hidden=true;document.body.appendChild(d);return d})();
+ let toastT=null;
+ const alertIn=(kind,line)=>{
+  try{TOAST.textContent=line;TOAST.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{TOAST.hidden=true},kind==='gift'?9000:7000)}catch(e){}
+  try{const d=document.createElement('div');d.textContent=line;const L=$('log');Node.prototype.appendChild.call(L,d);while(L.children.length>60)L.removeChild(L.firstChild);L.scrollTop=L.scrollHeight}catch(e){}
+  try{const Rg=window.__SR&&window.__SR.RA;if(Rg){while(Rg.firstChild)Rg.removeChild(Rg.firstChild);const d=document.createElement('div');d.textContent=line;Rg.appendChild(d)}}catch(e){}
+  try{window.__AUDIO&&window.__AUDIO.play(kind==='gift'?'rare':'chatin',1)}catch(e){}
+  try{tn(kind==='pm'?1175:880,kind==='pm'?1568:1320,.18,.3,0,'triangle');later(()=>tn(1320,1760,.16,.25,0,'triangle'),170)}catch(e){}
+ };
+ const GIFT_CUR=[['c','เหรียญทอง'],['l','หินวิญญาณต่ำ'],['m','หินวิญญาณกลาง'],['h','หินวิญญาณสูง'],['x','หินวิญญาณสุดยอด']];
+ const GF={on:false,busy:false,failed:false,fT:0,unsubs:[]};
+ const claimGift=(gid,v)=>{
+  if(!v||typeof v!=='object')return false;
+  S.giftSeen=S.giftSeen||{};if(S.giftSeen[gid])return false;
+  S.giftSeen[gid]=1;{const ks=Object.keys(S.giftSeen);if(ks.length>300)ks.slice(0,ks.length-300).forEach(k=>delete S.giftSeen[k])}
+  const parts=[];
+  Object.keys(v.it||{}).forEach(id=>{const q=Math.floor(+v.it[id]);if(I[id]&&q>0&&q<=9999){add(id,q);parts.push(I[id].n+' '+q+' ชิ้น')}});
+  const cv=k=>{const n=Math.floor(+v[k]);return n>0&&n<=1e9?n:0};
+  const c=cv('c'),l=cv('l'),m=cv('m'),h=cv('h'),x=cv('x');
+  if(c){S.coin+=c;parts.push('เหรียญทอง '+fmt9(c))}
+  if(l){S.gold+=l*100;parts.push('หินวิญญาณต่ำ '+fmt9(l)+' ก้อน')}
+  if(m){S.sm+=m;parts.push('หินวิญญาณกลาง '+fmt9(m)+' ก้อน')}
+  if(h){S.sh+=h;parts.push('หินวิญญาณสูง '+fmt9(h)+' ก้อน')}
+  if(x){S.sx+=x;parts.push('หินวิญญาณสุดยอด '+fmt9(x)+' ก้อน')}
+  if(!parts.length)return false;
+  const line='ได้รับของขวัญจาก'+String(v.f||'ผู้ดูแลเกม').slice(0,30)+': '+parts.join(', ')+(v.msg?' ข้อความ: '+String(v.msg).slice(0,100):'');
+  S.chat[5].push(line);S.chat[0].push(line);if(S.chat[5].length>100)S.chat[5].shift();if(S.chat[0].length>100)S.chat[0].shift();
+  alertIn('gift',line);try{save()}catch(e){}return true};
+ const detachG=()=>{try{GF.unsubs.forEach(f=>f())}catch(e){}GF.unsubs=[];GF.on=false};
+ const attachG=async()=>{
+  if(GF.on||GF.busy||GF.failed||window.__MP_OFF)return;
+  GF.busy=true;
+  try{
+   if(!(await init()))return;
+   if(GF.on||document.hidden)return;
+   const rd=MP.rt,u=MP.auth.currentUser;if(!u)return;
+   if(typeof S.giftAllT!=='number')S.giftAllT=srvNow();
+   const h1=snap=>{claimGift('i_'+snap.key,snap.val());rd.remove(rd.ref(MP.rdb,'gift/'+u.uid+'/'+snap.key)).catch(()=>{})};
+   const q2=rd.query(rd.ref(MP.rdb,'giftall'),rd.orderByChild('t'),rd.startAt(S.giftAllT+1));
+   const h2=snap=>{const v=snap.val();if(!v||typeof v.t!=='number'||v.t<=S.giftAllT)return;S.giftAllT=Math.max(S.giftAllT,v.t);if(v.by===u.uid)return;claimGift('a_'+snap.key,v)};
+   const er=e=>{detachG();if(isPerm(e))GF.failed=true;devErr('MP gift listen',e)};
+   GF.unsubs=[rd.onChildAdded(rd.ref(MP.rdb,'gift/'+u.uid),h1,er),rd.onChildAdded(q2,h2,er)];GF.on=true;
+  }catch(e){detachG();devErr('MP gift attach',e)}
+  finally{GF.busy=false}
+ };
+ setInterval(()=>{try{
+  if(window.__MP_OFF||!online())return;
+  if(document.hidden){detachG();return}
+  if(GF.failed){if(!GF.fT)GF.fT=Date.now();else if(Date.now()-GF.fT>300000){GF.failed=false;GF.fT=0}return}
+  if(!GF.on&&!GF.busy)attachG()
+ }catch(e){}},3000);
+ /* เมนูแจกของ (เฉพาะแอดมิน เข้าจากเมนูผู้พัฒนา F8) */
+ const draftNew=()=>({it:{},cur:{c:0,l:0,m:0,h:0,x:0},msg:''});
+ const draftTxt=d=>{const p=Object.keys(d.it).map(id=>I[id].n+' x'+d.it[id]);GIFT_CUR.forEach(([k,n])=>{if(d.cur[k])p.push(n+' '+fmt9(d.cur[k]))});return p.length?p.join(', '):'ยังไม่มีของ'};
+ const giftStart=()=>{
+  if(!gmValid(true))return;
+  menu('แจกของ เลือกผู้รับ',[{t:'ทั้งเกม ทุกคนรวมคนที่ออฟไลน์ (คนที่ออฟไลน์ได้ตอนเข้าเกมครั้งถัดไป)',a:'all'},{t:'รายบุคคล เลือกจากคนที่ออนไลน์ตอนนี้',a:'one'}],{ent:x=>{
+   if(x.a==='all')return giftCompose({all:1},draftNew());
+   giftPick()}})};
+ const giftPick=async()=>{
+  try{
+   if(!(await init()))return say('[ผู้พัฒนา] ยังเชื่อมต่อเซิร์ฟเวอร์ไม่เสร็จ ลองใหม่',1);
+   const u=MP.auth.currentUser,L=(await fetchOnline(0)).filter(v=>v.id!==u.uid).sort((a,b)=>a.n.localeCompare(b.n,'th'));
+   if(!L.length)return say('[ผู้พัฒนา] ตอนนี้ไม่มีใครออนไลน์ ถ้าจะให้คนที่ออฟไลน์ ใช้แจกทั้งเกม',1);
+   menu('เลือกผู้รับ',L.map(v=>({t:v.n+' '+lvTxt(v)+' อยู่ที่ '+zn(v.x,v.y),v})).concat([{t:'ยกเลิก',cancel:1}]),{ent:x=>{if(x.cancel){mode='play';return say('ยกเลิก')}giftCompose({to:x.v},draftNew())}})
+  }catch(e){devErr('gift pick',e);say(errMsg(e))}};
+ const giftCompose=(tg,d)=>{
+  const who=tg.all?'ทั้งเกม':tg.to.n;
+  menu('แจกของให้'+who,[{t:'ชุดของขวัญ: '+draftTxt(d)+(d.msg?' ข้อความแนบ: '+d.msg:''),info:1},
+   {t:'เพิ่มไอเทม เลือกจากรายการทั้งหมดแล้วระบุจำนวน',a:'item'},
+   {t:'เพิ่มเงิน เหรียญทอง และหินวิญญาณทุกระดับ',a:'cur'},
+   {t:'ตั้งข้อความแนบ ผู้รับเห็นพร้อมของขวัญ',a:'msg'},
+   {t:'ล้างของในชุดนี้ทั้งหมด',a:'clear'},
+   {t:'ส่งของขวัญนี้ให้'+who,a:'send'}],{ent:x=>{
+   if(x.a==='item')return giftItem(tg,d);
+   if(x.a==='cur')return giftCur(tg,d);
+   if(x.a==='msg')return ask('พิมพ์ข้อความแนบ ไม่เกิน 100 ตัวอักษร เว้นว่างคือไม่แนบ',v=>{d.msg=String(v||'').slice(0,100);giftCompose(tg,d)});
+   if(x.a==='clear'){d.it={};d.cur={c:0,l:0,m:0,h:0,x:0};say('ล้างแล้ว');return giftCompose(tg,d)}
+   if(x.a==='send')return giftSend(tg,d);
+   say(x.t,1)}})};
+ const giftItem=(tg,d)=>menu('เลือกไอเทมที่จะแจก',Object.keys(I).map(id=>({t:I[id].n,id})),{ent:y=>ask('แจก '+I[y.id].n+' กี่ชิ้น 1 ถึง 9999',v=>{
+  const n=Math.floor(+v);if(!(n>=1&&n<=9999)){say('ยกเลิก จำนวนต้องอยู่ระหว่าง 1 ถึง 9999');return giftCompose(tg,d)}
+  if(!d.it[y.id]&&Object.keys(d.it).length>=30){say('ใส่ได้ไม่เกิน 30 ชนิดต่อชุด');return giftCompose(tg,d)}
+  d.it[y.id]=Math.min(9999,(d.it[y.id]||0)+n);say('เพิ่ม '+I[y.id].n+' x'+n);giftCompose(tg,d)})});
+ const giftCur=(tg,d)=>menu('เลือกชนิดเงิน',GIFT_CUR.map(([k,n])=>({t:n+' ในชุดตอนนี้ '+fmt9(d.cur[k]),k,n})),{ent:y=>ask('แจก'+y.n+' กี่หน่วย 1 ถึง 1,000,000,000',v=>{
+  const n=Math.floor(+v);if(!(n>=1&&n<=1e9)){say('ยกเลิก จำนวนต้องอยู่ระหว่าง 1 ถึง 1,000,000,000');return giftCompose(tg,d)}
+  d.cur[y.k]=Math.min(1e9,d.cur[y.k]+n);say('เพิ่ม'+y.n+' '+fmt9(n));giftCompose(tg,d)})});
+ const giftSend=(tg,d)=>{
+  if(!Object.keys(d.it).length&&!GIFT_CUR.some(([k])=>d.cur[k]))return say('ยังไม่มีของในชุดนี้');
+  conf('ยืนยันส่ง '+draftTxt(d)+' ให้'+(tg.all?'ทุกคนในเกม':tg.to.n),async()=>{
+   if(!gmValid(true))return;
+   try{
+    if(!(await init()))return say('[ผู้พัฒนา] ยังเชื่อมต่อเซิร์ฟเวอร์ไม่เสร็จ ลองใหม่',1);
+    const rd=MP.rt,u=MP.auth.currentUser,pl={it:d.it,f:'ผู้ดูแลเกม',by:u.uid,t:rd.serverTimestamp()};
+    GIFT_CUR.forEach(([k])=>{if(d.cur[k])pl[k]=d.cur[k]});if(d.msg)pl.msg=d.msg;
+    const rf=rd.push(rd.ref(MP.rdb,tg.all?'giftall':'gift/'+tg.to.id));
+    await rd.set(rf,pl);
+    sfx('buy');say('[ผู้พัฒนา] ส่งของขวัญให้'+(tg.all?'ทั้งเกม':tg.to.n)+' แล้ว: '+draftTxt(d),1);
+   }catch(e){
+    if(isPerm(e))say('[ผู้พัฒนา] Realtime Database ยังไม่อนุญาตให้ส่งของขวัญ ต้องเพิ่มกฎ gift และ giftall และตั้ง gm/UIDของคุณ เป็น true ก่อน',1);
+    else say('[ผู้พัฒนา] ส่งไม่สำเร็จ '+String((e&&e.message)||e).slice(0,100),1);
+    devErr('gift send',e)}})};
+ {const _g=A.gm;A.gm=function(){const r=_g.apply(this,arguments);
+  try{if(mode==='menu'&&mn&&/^เมนูผู้พัฒนา/.test(mn.t)&&isGM()&&!mn.__gift){mn.__gift=1;
+   mn.items.splice(1,0,{t:'แจกของให้ผู้เล่น รายบุคคลหรือทั้งเกม เลือกผู้รับ เลือกไอเทมและเงิน แล้วส่ง ผู้รับได้ทันทีถ้าออนไลน์',a:'gift'});
+   const e=mn.ent;mn.ent=x=>{if(x&&x.a==='gift')return giftStart();return e(x)}}}catch(ex){}
+  return r}}
+ /*T29*/
+ try{TIPS.push('ข้อความแชทที่เข้ามา มีเสียงเตือนและกล่องข้อความเด้งขึ้นบนหน้าจอ ทั้งแชทโลก แชทแมพ และข้อความส่วนตัว')}catch(e){}
+ try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-10-28',c:[C_SYS],h:'เสียงแชทดังขึ้น ข้อความเด้งแจ้งเตือน และของขวัญจากผู้ดูแลเกม',t:'ข้อความแชทโลก แชทแมพ และข้อความส่วนตัวที่เข้ามา มีเสียงเตือนที่ดังขึ้นและกล่องข้อความเด้งขึ้นมา และผู้ดูแลเกมแจกของขวัญให้ผู้เล่นได้',x:[
+   'เมื่อมีข้อความเข้าจากแชทโลก แชทแมพ หรือข้อความส่วนตัว จะมีเสียงเตือนชัดเจน กล่องข้อความเด้งขึ้นบนหน้าจอ และอ่านข้อความทันที ไม่ต้องรอ แม้เปิดโหมดข้อความเงียบอยู่ก็ตาม',
+   'เสียงตอนส่งข้อความดังขึ้นกว่าเดิม',
+   'ผู้ดูแลเกมแจกของขวัญได้ทั้งรายบุคคลและทั้งเกม ของขวัญเข้ากระเป๋าอัตโนมัติ และมีเสียงกับกล่องข้อความแจ้งว่าได้อะไรบ้าง ถ้าแจกทั้งเกมคนที่ออฟไลน์จะได้เมื่อเข้าเกมครั้งถัดไป']})}catch(e){}
+
  /* ===== แชทแมพ: ผู้เล่นในแมพเดียวกันเห็นข้อความของกันและกัน =====
     ใช้ Realtime Database (mapchat/{แมพ}/{uid}) เขียนทับเมื่อพิมพ์ใหม่ และลบเองเมื่อหลุด จึงไม่มีข้อความสะสมบนเซิร์ฟเวอร์
     ฟังเฉพาะแมพที่ยืนอยู่ ใช้ตัวฟังแบบเรียลไทม์ ได้อ่านเฉพาะข้อความที่เปลี่ยน ไม่วนถามซ้ำ
@@ -2146,7 +2266,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
      if((CM.seen[snap.key]||0)>=v.t)return;CM.seen[snap.key]=v.t;
      const line='[แผนที่] '+String(v.n||'ผู้ฝึกตน').slice(0,20)+': '+v.m.slice(0,120);
      S.chat[2].push(line);S.chat[0].push(line);trimC();
-     say(line,1)};
+     alertIn('map',line)};
     const er=e=>{detach();if(isPerm(e)){CM.failed=true;say(DEVM(PERM_MSG),1)}devErr('MP chat listen',e);};
     CM.unsubs=[rd.onChildAdded(r,h,er),rd.onChildChanged(r,h,er)];
    }catch(e){detach();devErr('MP chat attach',e);}
@@ -2182,7 +2302,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
      if((W.seen[snap.key]||0)>=v.t)return;W.seen[snap.key]=v.t;
      const line='[โลก] '+String(v.n||'ผู้ฝึกตน').slice(0,20)+': '+v.m.slice(0,100);
      S.chat[1].push(line);S.chat[0].push(line);trimC();
-     say(line,1)};
+     alertIn('world',line)};
     const er=e=>{detachW();if(isPerm(e)){W.failed=true;say(DEVM(PERM_W),1)}devErr('MP world listen',e);};
     W.unsubs=[rd.onChildAdded(q,h,er),rd.onChildChanged(q,h,er)];W.on=true;
    }catch(e){detachW();devErr('MP world attach',e);}
@@ -2224,7 +2344,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
    const text=String(t).replace(w?/^\[โลก\] คุณ: /:/^\[แผนที่\] คุณ: /,'').slice(0,max);
    const on=online()&&!window.__MP_OFF&&!st.failed;
    if(on&&Date.now()-st.lastSend<gap)return say(w?'ส่งแชทโลกได้ทุก 10 วินาที รอสักครู่แล้วส่งใหม่':'ส่งแชทแมพถี่เกินไป รอสักครู่แล้วส่งใหม่');
-   _msg(c,t);trimC();
+   _msg(c,t);trimC();sendBlip();
    if(on){st.lastSend=Date.now();(w?sendW:send)(text)}
    else if(st.failed)say(DEVM(w?PERM_W:PERM_MSG),1);
    else say('ออฟไลน์ ข้อความ'+(w?'แชทโลก':'แชทแมพ')+'เห็นเฉพาะตัวเอง',1)
