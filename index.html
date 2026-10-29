@@ -1126,7 +1126,29 @@ NEWS.push({id:17,d:'2026-10-25',c:[C_MAP,C_SYS],h:'วงเวทย์เค�
    join  เข้าเกม/กลับมาออนไลน์   leave ออกจากเกม/หลุดออฟไลน์   start สร้างบัญชีใหม่ เริ่มเส้นทางเซียน
    lose  ตาย   win ปราบบอส   leaderboard_achievement ได้ใจยุทธ์/ปลดล็อกตำราลับ   starting เริ่มนั่งสมาธิ
    ค่า vol ปรับตามความดังจริงของแต่ละไฟล์ (วัดเป็น LUFS) ให้ทุกไฟล์ดังใกล้กัน ถ้าไฟล์หายหรือโหลดไม่ได้ ระบบใช้เสียงสำรองเดิมเอง */
-{const LOC=n=>'sounds/'+n+(OGG?'.ogg':'.mp3');
+const SLOC=n=>'sounds/'+n+(OGG?'.ogg':'.mp3');
+const SNDN=['join','leave','start','starting','win','lose','leaderboard_achievement'];
+const SNDSEEN={};
+const localSndFail=u=>{try{
+ if(!/^sounds\//.test(u)||SNDSEEN[u])return;SNDSEEN[u]=1;
+ const m='โหลดไฟล์เสียง '+u+' ไม่ได้ ตรวจว่าโฟลเดอร์ sounds อยู่ข้างไฟล์ index.html บนเว็บและอัปโหลดครบ';
+ try{(window.__ERRS=window.__ERRS||[]).push(new Date().toTimeString().slice(0,8)+' '+m)}catch(x){}
+ if(isGM())say('[ผู้พัฒนา] '+m,1)
+}catch(e){}};
+/* ตรวจครั้งเดียวหลังเข้าเกม (เฉพาะผู้พัฒนา) ว่าไฟล์เสียงใหม่ครบและเซิร์ฟเวอร์ส่งเป็นไฟล์เสียงจริง */
+const sndCheck=async force=>{try{
+ if(!force&&!isGM())return;
+ const bad=[];let html=0,netErr=0;
+ for(const n of SNDN){const u=SLOC(n);
+  try{const r=await fetch(u,{method:'HEAD',cache:'no-store'});const ct=(r.headers.get('content-type')||'').toLowerCase();
+   if(!r.ok)bad.push(u+' (HTTP '+r.status+')');else if(/text\/html/.test(ct)){bad.push(u+' (ได้หน้าเว็บแทนไฟล์เสียง)');html=1}}
+  catch(e){bad.push(u+' (เข้าถึงไม่ได้)');netErr=1}}
+ if(!bad.length)return say('[ผู้พัฒนา] ตรวจโฟลเดอร์ sounds แล้ว ไฟล์เสียงใหม่ครบทั้ง '+SNDN.length+' ไฟล์ พร้อมใช้งาน',1);
+ say('[ผู้พัฒนา] ไฟล์เสียงใหม่มีปัญหา '+bad.length+' ไฟล์: '+bad.slice(0,3).join(', ')+(bad.length>3?' และอื่นๆ':'')+'. '+(html?'เซิร์ฟเวอร์ส่งหน้าเว็บกลับมาแทนไฟล์เสียง ตรวจการตั้ง rewrite ของเว็บ. ':'')+(netErr?'ถ้าเปิดเกมจากไฟล์ในเครื่องโดยตรงจะตรวจไม่ได้ ให้เปิดผ่านเว็บ. ':'')+'โฟลเดอร์ sounds ต้องอยู่ข้างไฟล์ index.html และเปิดลิงก์ '+SLOC('join')+' ในเบราว์เซอร์ได้',1);
+}catch(e){}};
+setTimeout(()=>{try{if(window.__AUDIO)window.__AUDIO.sndCheck=sndCheck}catch(e){}},0);
+setTimeout(()=>{sndCheck()},9000);
+{const LOC=SLOC;
  const setR=(r,n,v)=>{if(ROLE[r]){ROLE[r].urls=[LOC(n)];ROLE[r].vol=v}};
  setR('login','join',1);setR('online','join',1);
  setR('logout','leave',1);setR('offline','leave',1);
@@ -1170,6 +1192,52 @@ NEWS.push({id:17,d:'2026-10-25',c:[C_MAP,C_SYS],h:'วงเวทย์เค�
  const SYNM=[[/^steps/,'step'],[/^bump$/,'bump'],[/^(open|close|door|page|button|slotset|toggle|chat|scroll|notify)$/,'open'],[/^(pick|equip|unequip|wear|rare|fishget|absorb|drop|rod)$/,'pick'],[/^(buy|sell|coinpour|craft|gavel|tankput|potion)$/,'buy'],[/^hurt/,'hurt'],[/^die$/,'die'],[/^(levelup|bosskill|horn|learn|sectenter|login|register)$/,'levelup'],[/^(qi|bgmCalm)$/,'med'],[/^(swoosh|punch|clash|whoosh|fly|sk_fist|sk_sword|sk_qpalm|sk_vajra|sk_thpalm|sk_sw_thrust|sk_sw_wave|sk_windslash|sk_swordrain1|sk_diamond|sk_iron_body|sk_trap|sk_mist|sk_rockfall|mdie)$/,'hit'],[/^(spell|heal|buff|fire|thunder|ice|earth|explosion|sk_|teleport|bossSpawn|bossnear|arena|gong|revive|heartbeat)/,'cast'],[/^m_(rab|fox)$/,'rab'],[/^m_(boar|pboar)$/,'boar'],[/^m_(snake|bsnake)$/,'snake'],[/^m_wolf$/,'wolf'],[/^m_bear$/,'bear'],[/^m_(king|lion|leo|ape)$/,'king'],[/^(m_phx|bird)$/,'bird'],[/^cricket$/,'cricket'],[/^cicada$/,'cicada'],[/^owl$/,'owl']];
  const synT={};
  const synthFB=(role,g)=>{try{const x=SYNM.find(m=>m[0].test(role));if(!x||!SFX[x[1]])return;if(/^(bird|cricket|cicada|owl)$/.test(role)&&!ambOn)return;const t=Date.now();if(t-(synT[x[1]]||0)<250)return;synT[x[1]]=t;SFX[x[1]](0,Math.max(.3,g==null?1:g))}catch(e){}};
+  /* ===== PATCH 31 เสียงสั้นเล่นทันทีด้วย Web Audio =====
+     เดิมทุกครั้งที่กดปุ่ม เกมสร้างตัวเล่นเสียงใหม่แล้วโหลดไฟล์ใหม่ พอกดรัวคำขอโหลดต่อคิวกัน เสียงเลยมาช้าแล้วดังรวดเดียวหลายที
+     ตอนนี้ไฟล์เสียงสั้นถูกโหลดและถอดรหัสเก็บไว้ในหน่วยความจำครั้งเดียว ครั้งถัดไปเล่นได้ทันทีไม่ต้องรอเครือข่าย
+     ครั้งแรกที่ยังไม่พร้อม ใช้ตัวเล่นเดิมไปก่อน และโหลดเก็บไว้เบื้องหลัง ถ้าไฟล์โหลดแบบนี้ไม่ได้ (เช่นเว็บต้นทางไม่อนุญาต) ก็ใช้ตัวเล่นเดิมต่อ
+     เสียงยาวและเสียงวนซ้ำ (เพลง เสียงบรรยากาศ) ใช้ตัวเล่นเดิมเหมือนเดิม */
+  const WAB=new Map();let WAMEM=0,GST=false;
+  const getAC=()=>{AC=AC||new (window.AudioContext||window.webkitAudioContext)();return AC};
+  const waCtx=()=>{try{return AC&&AC.state==='running'?AC:null}catch(e){return null}};
+  const waLoad=u=>{
+   let r=WAB.get(u);if(r)return r.p;
+   r={s:'load',b:null};
+   r.p=(async()=>{try{
+    const c=getAC(),res=await fetch(u);if(!res.ok)throw 0;
+    const ab=await res.arrayBuffer();if(ab.byteLength>2500000)throw 0;
+    const b=await new Promise((ok,no)=>{const p=c.decodeAudioData(ab,ok,no);if(p&&p.catch)p.catch(no)});
+    const sz=b.length*b.numberOfChannels*4;if(b.duration>25||WAMEM+sz>80000000)throw 0;
+    WAMEM+=sz;r.b=b;r.s='ok'
+   }catch(e){r.s='no'}return r})();
+   WAB.set(u,r);return r.p};
+  const waWarm=u=>{if(GST&&!WAB.has(u))waLoad(u)};
+  const waResume=()=>{GST=true;try{const c=getAC();if(c.state!=='running'&&c.resume){const p=c.resume();if(p&&p.catch)p.catch(()=>{})}}catch(e){}};
+  ['pointerdown','touchend','keydown','click'].forEach(ev=>addEventListener(ev,waResume,{passive:true,capture:true}));
+  try{if(navigator.userActivation&&navigator.userActivation.hasBeenActive)waResume()}catch(e){}
+  /* ตัวห่อให้หน้าตาเหมือน Audio เดิม เพื่อให้โค้ดตัวคุมความดัง ตัดเสียง และ fade ทำงานต่อได้โดยไม่ต้องแก้ */
+  const mkWA=(c,buf)=>{
+   const o={_wa:1,_g:null,_s:null,_t0:0,_started:false,_stopped:false,_vol:1,_rate:1,_L:{},loop:false,preload:'auto',
+    get volume(){return this._vol},
+    set volume(v){this._vol=v;if(this._g){try{this._g.gain.setTargetAtTime(v,c.currentTime,.012)}catch(x){try{this._g.gain.value=v}catch(y){}}}},
+    get currentTime(){return this._started?Math.max(0,(c.currentTime-this._t0)*this._rate):0},
+    get playbackRate(){return this._rate},set playbackRate(v){this._rate=v>0?v:1},
+    get src(){return this._u||''},set src(v){this._u=v},
+    addEventListener(n,f){this._L[n]=f},removeAttribute(){},load(){},
+    play(){
+     if(this._stopped||this._started)return Promise.resolve();
+     const s=c.createBufferSource(),g=c.createGain();
+     s.buffer=buf;s.playbackRate.value=this._rate;g.gain.value=this._vol;
+     s.connect(g);g.connect(c.destination);
+     this._s=s;this._g=g;this._t0=c.currentTime;this._started=true;
+     s.onended=()=>{try{g.disconnect()}catch(x){}const f=this._L.ended;if(f)f()};
+     s.start(0);return Promise.resolve()},
+    pause(){this._stopped=true;if(this._s){try{this._s.onended=null;this._s.stop()}catch(x){}}try{this._g&&this._g.disconnect()}catch(x){}}};
+   return o};
+  /* อุ่นเครื่อง: โหลดเสียงที่ใช้บ่อยไว้ล่วงหน้า (กดปุ่ม เดิน ต่อสู้) */
+  const WARM=['button','open','close','bump','pick','buy','swoosh','clash','punch','hurt','hurt2','whoosh','spell','chat','toggle','slotset','page','scroll','levelup','die','steps','steps_v'];
+  const waWarmAll=()=>{if(!GST){setTimeout(waWarmAll,2000);return}WARM.forEach(r=>{try{const R=ROLE[r];if(R&&R.vars&&R.vars[0])waWarm(R.vars[0].u)}catch(e){}})};
+  setTimeout(waWarmAll,2500);
  const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return null;const g=gain==null?1:gain;
   if(R.bus!=='ui'&&R.bus!=='bgm'&&g<=.02)return null;
   const L=cands(role);if(!L.length){synthFB(role,g);return null}
@@ -1178,16 +1246,18 @@ NEWS.push({id:17,d:'2026-10-25',c:[C_MAP,C_SYS],h:'วงเวทย์เค�
   if(R.bus==='ui')LIVE.forEach(x=>{if(x.bus==='ui'&&!x.fade)fadeOut(x,30)});
   if(/^steps/.test(role))LIVE.forEach(x=>{if(/^steps/.test(x.role)&&!x.fade)fadeOut(x,40)});
   const same=live(role);if(same.length>=3)fadeOut(same.sort((x,y)=>x.t0-y.t0)[0],120);
-  const a=new Audio();a.preload='auto';a.loop=!!(opt.loop&&R.loop);
+  const lp=!!(opt.loop&&R.loop),wr=(!lp&&R.bus!=='bgm')?WAB.get(v.u):null,wc=(wr&&wr.s==='ok')?waCtx():null;
+  const a=wc?mkWA(wc,wr.b):new Audio();a.preload='auto';a.loop=lp;
   if(R.bus!=='bgm'&&R.bus!=='ui'&&!a.loop){try{a.preservesPitch=false;a.mozPreservesPitch=false;a.webkitPreservesPitch=false;a.playbackRate=.95+Math.random()*.1}catch(x){}}
   const e={a,role,bus:R.bus,base:clamp(g*R.vol),t0:Date.now(),fade:null,fin:opt.fadeIn||0};
   a.volume=vol(e);LIVE.add(e);
   const tried=new Set([v.u]),failed=new Set();let cur=v.u;
-  const fail=()=>{if(!LIVE.has(e)||failed.has(cur))return;failed.add(cur);DEAD.set(cur,Date.now()+300000);
+  const fail=()=>{if(!LIVE.has(e)||failed.has(cur))return;failed.add(cur);DEAD.set(cur,Date.now()+300000);localSndFail(cur);
    const nx=cands(role).find(x=>!tried.has(x.u));if(!nx||tried.size>=6){drop(e);if(!opt.loop)synthFB(role,g);return}
    tried.add(nx.u);cur=nx.u;try{a.src=cur;a.load();const p2=a.play();if(p2&&p2.catch)p2.catch(pe=>{if(pe&&pe.name==='NotAllowedError')drop(e);else if(!pe||pe.name!=='AbortError')fail()})}catch(x){drop(e)}};
   a.addEventListener('ended',()=>drop(e));a.addEventListener('error',fail);
   a.src=v.u;const p=a.play();if(p&&p.catch)p.catch(pe=>{if(pe&&pe.name==='NotAllowedError')drop(e);else if(!pe||pe.name!=='AbortError')fail()});
+  if(!wc&&!lp&&R.bus!=='bgm')waWarm(v.u);
   if(R.duck){const d=Math.min(8000,(v.d||2)*1000/(a.playbackRate||1));duckUntil=Math.max(duckUntil,Date.now()+d)}
   wake();return e}catch(x){return null}};
  window.addEventListener('online',()=>DEAD.clear());
@@ -1218,7 +1288,7 @@ const playSkill=()=>{const id=curId,k=curSk;if(!k)return false;const r=skRole(id
  const WG={npc:0,mon:0};
  const sfxPlayer=(k,dv)=>{const t=Date.now();if(MI[k]){if(t-(lastT[k]||0)<MI[k])return;lastT[k]=t}
   switch(k){
-   case'step':{const z=zoneAt(S.x,S.y),zid=z?z.id:'';const sr=/^bd_/.test(zid)?'steps_in':/^k\d$/.test(zid)?'steps_k':ROLE['steps_'+((window.__FZ||{})[zid]||zid)]?'steps_'+((window.__FZ||{})[zid]||zid):'steps';if(live(sr).some(e=>!e.fade&&e.a.currentTime<.35))return;return play(sr,.9)}/*ฝีเท้าไม่ซ้อนกัน*/
+   case'step':{const z=zoneAt(S.x,S.y),zid=z?z.id:'';const sr=/^bd_/.test(zid)?'steps_in':/^k\d$/.test(zid)?'steps_k':ROLE['steps_'+((window.__FZ||{})[zid]||zid)]?'steps_'+((window.__FZ||{})[zid]||zid):'steps';if(live(sr).some(e=>!e.fade&&e.a.currentTime<.2))return;return play(sr,.9)}/*ฝีเท้าไม่ซ้อนกัน*/
    case'bump':return play('bump',.8);
    case'open':return play('open',.9);
    case'pick':return play('pick',1);
