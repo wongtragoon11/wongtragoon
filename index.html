@@ -1611,10 +1611,10 @@ setTimeout(()=>{sndCheck()},9000);
  const ORDER=['steps','button','swoosh','clash','hurt','spell','explosion','levelup','pick','buy','open','bump','whoosh','roar','howl','gong','die','bird','water','wind','cricket','owl','rustle','critter','town','fire','thunder','ice','earth','heal','buff','punch','potion','notify','bossSpawn','revive','qi','rain','festival'];
  const EARLY=['steps','steps_v','steps_f','steps_b','steps_w','steps_m','steps_c','steps_k','steps_in','button','open','close','bump','pick','buy','swoosh','clash','hurt','hurt2','die','levelup','whoosh','sk_fist','sk_finger','sk_sword','amb_v'];EARLY.forEach(r=>{if(ROLE[r]){ROLE[r].busy=1;resolveRole(r)}});const lazyRole=r=>{if(ROLE[r]&&!resolved[r]&&!ROLE[r].busy){ROLE[r].busy=1;resolveRole(r)}};
  /* ---------- 5) เครื่องเล่น: 4 แชนแนล, เพดานความดัง, ducking, จำกัดเสียงซ้อน 3, เปลี่ยนโทน ±5% ---------- */
- const BUS={ui:{cap:1},sfx:{cap:.9},amb:{cap:.35},bgm:{cap:.3}};
+ const BUS={ui:{cap:1},sfx:{cap:.9},amb:{cap:.35},bgm:{cap:.3}};/* UV = ความดังเอฟเฟกต์และบรรยากาศที่ผู้เล่นปรับเอง 0 ถึง 2 (1 = 100%) ปุ่ม Home เพิ่ม End ลด ไม่รวมดนตรี */let UV=(()=>{try{const v=parseFloat(localStorage.getItem('mdz_sfxuv'));return v>=0&&v<=2?v:1}catch(e){return 1}})();
  const LIVE=new Set(),LAST={};let duckUntil=0,duckCur=1,tick=null,ux=0,medCur=1;/* medCur = ความดังเสียงรอบตัว 1 = ปกติ ค่อยๆ ลดถึง 0 ตอนนั่งสมาธิ */
  const clamp=v=>Math.max(0,Math.min(1,v));
- const vol=e=>{const now=Date.now();let m=1;if(e.fade){m=clamp(1-(now-e.fade.t)/e.fade.ms)}else if(e.fin){m=clamp((now-e.t0)/e.fin)}return clamp(e.base*(e.hb||1)*BUS[e.bus].cap*((e.bus==='amb'||e.bus==='bgm')?duckCur*(e.bus==='amb'?medCur:1):1)*m)};
+ const vol=e=>{const now=Date.now();let m=1;if(e.fade){m=clamp(1-(now-e.fade.t)/e.fade.ms)}else if(e.fin){m=clamp((now-e.t0)/e.fin)}return clamp(e.base*(e.hb||1)*(e.bus==='bgm'?1:UV)*BUS[e.bus].cap*((e.bus==='amb'||e.bus==='bgm')?duckCur*(e.bus==='amb'?medCur:1):1)*m)};
  const drop=e=>{if(!LIVE.has(e))return;LIVE.delete(e);try{e.a.pause();e.a.removeAttribute('src');e.a.load()}catch(x){}};
  const fadeOut=(e,ms)=>{if(!e.fade)e.fade={t:Date.now(),ms:ms||300}};
  const ticker=()=>{const now=Date.now();const dTgt=now<duckUntil?.6:1;duckCur+=(dTgt-duckCur)*.3;const mT=S.med?0:1;medCur+=(mT-medCur)*(mT<medCur?.035:.05);if(Math.abs(mT-medCur)<.003)medCur=mT;/* นั่งสมาธิ: เสียงรอบตัวจางหายนุ่มๆ ราว 4 วินาที ลุกขึ้นค่อยๆ กลับมาราว 3 วินาที *//* กฎเหล็กหมวด 2: เปิดเมนู กระเป๋า หรือหน้าต่างใดๆ ไม่หรี่ดนตรีและบรรยากาศ หรี่ชั่วครู่ (เหลือ 60%) เฉพาะเหตุการณ์ใหญ่ที่ตั้ง duck เช่น เลื่อนขั้น ตาย ปราบบอส แชทเข้า */LIVE.forEach(e=>{try{const R=ROLE[e.role];if(e.fade&&now-e.fade.t>=e.fade.ms){drop(e);return}if(!e.fade&&R.mode==='short'&&e.a.currentTime>R.cap)fadeOut(e,250);e.a.volume=vol(e)}catch(x){drop(e)}});if(!LIVE.size&&now>=duckUntil&&Math.abs(duckCur-1)<.01&&medCur===(S.med?0:1)){clearInterval(tick);tick=null}};
@@ -1640,7 +1640,7 @@ setTimeout(()=>{sndCheck()},9000);
      ทุกช่องรวมที่ master แล้วผ่านตัวคุมยอดเสียง (limiter) กันเสียงแตกเวลาหลายเสียงดังพร้อมกัน
      ห้องก้อง (Freeverb: หวีกรองป้อนกลับ 8 ชุดต่อด้วยตัวกรองผ่านทั้งหมด 4 ชุด) สะท้อนเสียงจริงที่เข้ามา ไม่มีเสียงสร้างขึ้นเอง แบบเดียวกับ RoomVerb ของ Wwise
       แต่ละช่องส่งเสียงเข้าห้องก้องตามสัดส่วน ความก้องเปลี่ยนตามสถานที่ (ส่วน ENVRV) หมู่บ้านและทุ่งโล่งไม่ก้อง ป่าไผ่ก้องนิดๆ หุบเขาก้องไกล เมืองหลวงพื้นหินก้อง ในอาคารห้องเล็ก */
-  const BUSG={amb:.7,skill:.6,mon:.35,foot:.85,pl:.6,world:.6,ui:.8,bgm:1};
+  const BUSG={amb:.9,skill:1.35,mon:.6,foot:1,pl:.95,world:.8,ui:1,bgm:1};/* ปรับให้ดังขึ้น: ทักษะและการต่อสู้ .6 เป็น 1.35 */
   const BUSRV={amb:.45,skill:1,mon:.8,foot:.7,pl:.8,world:.7,ui:.2,bgm:0};
   const MIX={c:null,master:null,lim:null,bus:{},rv:null,n:0,err:0,env:'none'};
   const FVC=[1557,1617,1491,1422,1277,1356,1188,1116],FVA=[556,441,341,225],RVL=[];/* RVL = ห้องก้องทุกชุดที่สร้าง ให้ตัวตรวจเบื้องหลังเช็กว่าวงป้อนกลับไม่เสี่ยงหอน */
@@ -1656,15 +1656,19 @@ setTimeout(()=>{sndCheck()},9000);
    const flush=()=>{const T=c.currentTime;combs.forEach(x=>{x.fb.gain.cancelScheduledValues(T);x.fb.gain.setValueAtTime(0,T);x.lp.Q.value=-3.0103});out.gain.cancelScheduledValues(T);out.gain.setValueAtTime(0,T);const p=last;setTimeout(()=>{try{if(p)set(p,.3)}catch(e){}},500)};
    const R={in:inp,out,set,flush,combs};RVL.push(R);return R};
   const mixInit=c=>{if(MIX.c===c&&MIX.master)return MIX;try{
-    const lim=c.createDynamicsCompressor();lim.threshold.value=-3;lim.knee.value=2;lim.ratio.value=12;lim.attack.value=.002;lim.release.value=.2;
-    const master=c.createGain();master.gain.value=1;master.connect(lim);lim.connect(c.destination);
+    const lim=c.createDynamicsCompressor();lim.threshold.value=-6;lim.knee.value=3;lim.ratio.value=18;lim.attack.value=.001;lim.release.value=.18;
+    const master=c.createGain();master.gain.value=1;master.connect(lim);const sc=c.createWaveShaper(),cv=new Float32Array(2049);for(let i=0;i<2049;i++){const x=i/1024-1,a=Math.abs(x);cv[i]=a<=.8?x:Math.sign(x)*(.8+.2*Math.tanh((a-.8)/.2))}sc.curve=cv;sc.oversample='2x';lim.connect(sc);sc.connect(c.destination);/* ตัวกันเสียงแตกชั้นสุดท้าย ยอดเสียงที่เกินถูกโค้งลงนุ่มๆ ไม่ตัดแข็ง */
     const an=c.createAnalyser();an.fftSize=2048;master.connect(an);MIX.an=an;/* ตัวเฝ้าระดับเสียงรวม (ก่อนตัวจำกัดความดัง) */
     const rv=rvMake(c);rv.out.connect(master);
-    const bus={};Object.keys(BUSG).forEach(k=>{const g=c.createGain();g.gain.value=BUSG[k];let o=g;
+    const bus={};Object.keys(BUSG).forEach(k=>{const g=c.createGain();g.gain.value=BUSG[k]*(k==='bgm'?1:UV);let o=g;
      if(k==='mon'){const hp=c.createBiquadFilter(),lp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=300;hp.Q.value=-3.0103;lp.type='lowpass';lp.frequency.value=3000;lp.Q.value=-3.0103;g.connect(hp);hp.connect(lp);o=lp;bus[k]={g,hp,lp}}else bus[k]={g};
      o.connect(master);if(BUSRV[k]>0){const sd=c.createGain();sd.gain.value=BUSRV[k];o.connect(sd);sd.connect(rv.in);bus[k].sd=sd}});
     MIX.c=c;MIX.master=master;MIX.lim=lim;MIX.bus=bus;MIX.rv=rv;MIX.n++;MIX.env='';}catch(e){MIX.err++}return MIX};
   const busIn=(c,name)=>{const M=mixInit(c);const b=M.bus[name]||M.bus.skill;return b?b.g:c.destination};
+/* Home เพิ่ม / End ลด ความดังเอฟเฟกต์และบรรยากาศ ทีละ 10% (0 ถึง 200%) จำค่าไว้ในเครื่อง */
+const applyUV=()=>{try{const c=MIX.c;if(!c||!MIX.bus)return;const T=c.currentTime;Object.keys(BUSG).forEach(k=>{if(k==='bgm')return;const b=MIX.bus[k];if(b&&b.g)b.g.gain.setTargetAtTime(BUSG[k]*UV,T,.02)})}catch(e){}};
+let SVT=0;const uvStep=d=>{const lv=Math.max(0,Math.min(20,Math.round(UV*10)+d));UV=lv/10;try{localStorage.setItem('mdz_sfxuv',String(UV))}catch(e){}applyUV();try{wake()}catch(e){}try{say('เสียงเอฟเฟกต์และบรรยากาศ '+lv*10+' เปอร์เซ็นต์'+(lv===20?' สูงสุดแล้ว':lv===0?' ปิดเสียง':''))}catch(e){}if(lv>0){try{play('button',1)}catch(e){}}};
+addEventListener('keydown',e=>{if(e.code!=='Home'&&e.code!=='End')return;if(e.ctrlKey||e.metaKey||e.altKey)return;const tg=e.target;if(tg&&(/^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName)||tg.isContentEditable))return;e.preventDefault();e.stopPropagation();const n=Date.now();if(e.repeat&&n-SVT<120)return;SVT=n;uvStep(e.code==='Home'?1:-1)},true);
   const mixBusOf=(role,R)=>/^m_/.test(role)?'mon':/^(n_|npc)/.test(role)?'world':/^steps/.test(role)?'foot':R.bus==='amb'?'amb':R.bus==='bgm'?'bgm':R.bus==='ui'?'ui':'skill';
 
   const waLoad=u=>{
@@ -1705,7 +1709,9 @@ setTimeout(()=>{sndCheck()},9000);
   const WARM=['button','open','close','bump','pick','buy','swoosh','clash','punch','hurt','hurt2','whoosh','spell','chat','toggle','slotset','page','scroll','levelup','die'];/* เสียงเดินใช้ชุดเสียงที่ฝังในไฟล์ ไม่ต้องอุ่นลิงก์ภายนอก */
   const waWarmAll=()=>{if(!GST){setTimeout(waWarmAll,2000);return}WARM.forEach(r=>{try{const R=ROLE[r];if(R&&R.vars&&R.vars[0])waWarm(R.vars[0].u)}catch(e){}})};
   setTimeout(waWarmAll,2500);
- const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return null;const g=(gain==null?1:gain)*((opt.world&&R.bus!=='amb')?medCur:1);/* opt.world = เสียงรอบตัว ค่อยๆ จางตอนนั่งสมาธิ (ช่องบรรยากาศจางในตัวคุมความดังอยู่แล้ว) */
+ const SWL={t:0,r:0,l:0,s:0,o:null,h:null};const shing=()=>Math.random()<.5?one('unsheathe'):'DrawKnife'+(1+Math.floor(Math.random()*3));/* เสียงชักกระบี่ ชึ้ง *//* เสียงกระบี่ก้องยาว: ตอนกระบี่ปะทะ มีเสียงโลหะก้องตามหลังราว 3 วินาที (ห่างกันอย่างน้อย 0.9 วินาที ไม่ให้ซ้อนจนอื้อ) */
+const swTail=(role,opt)=>{try{if(role==='swoosh'){const R=ROLE.swoosh;if(R&&R.kn){if(!SWL.o){SWL.o=R.kn.slice();const Lh=[];['unsheathe','DrawKnife1','DrawKnife2','DrawKnife3'].forEach(k=>knExp(k).forEach(n=>Lh.push(knEnt(n,1))));SWL.h=Lh.length?Lh:SWL.o}R.kn=S.wpn?SWL.h:SWL.o;/* ถือกระบี่: ฟันทุกครั้งเป็นเสียงชักกระบี่ ชึ้ง ตามด้วยเสียงโลหะก้องสั้นๆ */if(S.wpn&&!(opt&&(opt.world||opt.pan||opt.lp))){const n=Date.now();if(n-SWL.s>130){SWL.s=n;envPlay(one('ring'),{g:.22,at:.025,dur:.6,att:.008,rel:.45})}}}return}if(!/^(clash|sk_sword|sk_sw_thrust|sk_windslash|sk_sw_wave)$/.test(role)||(opt&&(opt.world||opt.pan||opt.lp)))return;const n=Date.now();if(n-SWL.r<900)return;SWL.r=n;envPlay(one('ring'),{g:.26,at:.02,att:.01,rel:1.5})}catch(e){}};
+const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return null;swTail(role,opt);const g=(gain==null?1:gain)*((opt.world&&R.bus!=='amb')?medCur:1);/* opt.world = เสียงรอบตัว ค่อยๆ จางตอนนั่งสมาธิ (ช่องบรรยากาศจางในตัวคุมความดังอยู่แล้ว) */
   if(R.bus!=='ui'&&R.bus!=='bgm'&&g<=.02)return null;
   if(R.ins&&insPlay(R.ins,g)){if(R.duck)duckUntil=Math.max(duckUntil,Date.now()+1800);wake();return{ins:R.ins}}/* หน้าที่เสียงที่ผูกกับเครื่องดนตรีจีน (ส่วน MUS) เล่นจากเครื่องดนตรีก่อน ถ้ายังไม่พร้อมใช้ทางเดิม */
   /* เสียงชุดที่ฝังในไฟล์ (R.kn) มาก่อนเสมอ ถ้าใช้ไม่ได้ค่อยใช้ลิงก์เดิม หน้าที่เดียวมีหลายไฟล์จะสุ่มสลับ ไม่ซ้ำกับครั้งก่อน */
@@ -1790,7 +1796,7 @@ setTimeout(()=>{sndCheck()},9000);
  const KNR={};Object.keys(KN.url).forEach(n=>{const m=/^r_(.+)_\d+$/.exec(n);if(m)(KNR[m[1]]=KNR[m[1]]||[]).push(n)});
  const knExp=k=>KN.url[k]?[k]:(KNR[k]||[]);/* ชื่อไฟล์ หรือชื่อชุด -> รายชื่อไฟล์ */
  if(KN.pack){
-  Object.keys(KNB).forEach(r=>{const R=ROLE[r];if(!R){KN.bad.push('ไม่มีหน้าที่เสียง '+r);return}const L=[];KNB[r].forEach(k=>{const E=knExp(k);if(!E.length)KN.bad.push('ไม่มีไฟล์ '+k+' สำหรับ '+r);E.forEach(n=>L.push(knEnt(n)))});if(!L.length)return;
+  Object.keys(KNB).forEach(r=>{const R=ROLE[r];if(!R){KN.bad.push('ไม่มีหน้าที่เสียง '+r);return}const L=[];KNB[r].forEach(k=>{const E=knExp(k);if(!E.length)KN.bad.push('ไม่มีไฟล์ '+k+' สำหรับ '+r);E.forEach(n=>L.push(knEnt(n,/^(swoosh|clash|punch|hurt|hurt2|spell|fire|thunder|ice|earth|explosion|whoosh)$/.test(r)?1:0)))});if(!L.length)return;
    const loc=KN_LOCAL[r]?(R.urls||[]).filter(u=>/^sounds\//.test(u)):[];if(loc.length){R.urls=loc.slice(0,1);R.vars=R.urls.map(u=>({u,d:2}));R.knf=L}else{R.kn=L;R.urls=[];R.vars=[]}});
   Object.keys(ROLE).forEach(r=>{const R=ROLE[r];if(R.kn||R.knf)return;R.urls=[];R.vars=[];if(!KN_SILENT[r])KN.bad.push('หน้าที่เสียง '+r+' ไม่มีเสียงจริง')})}
  /* หาจุดที่เสียงเริ่มจริงในบัฟเฟอร์ (ข้ามช่วงเงียบหน้าไฟล์ที่ตัวถอดรหัส MP3 ใส่มา) ไม่เกิน 0.08 วินาที */
@@ -2536,7 +2542,7 @@ setTimeout(()=>{sndCheck()},9000);
  const R5={env:0,chg:0,rel:0,imp:0,air:0,cancel:0,draw:0,gust:0,leaves:0,tree:0,ins:0,boss:0,map:0,miss:0,err:0},LV={hot:0,fix:0,rms:0,buf:null};
  /* เล่นเสียงจริง 1 เสียงพร้อมซอง ADSR: o = {bus ช่องเสียง, g ความดังสูงสุด, at หน่วงก่อนเริ่ม (วินาที), dur ความยาว, att เวลาค่อยดังขึ้น, dec sus ลดลงสู่ระดับค้าง, rel เวลาค่อยจาง, off จุดเริ่มในไฟล์, loop, pan panTo ซ้ายขวา, lp ตัดเสียงแหลม, tag} */
  const envPlay=(name,o)=>{try{o=o||{};const c=waCtx();if(!c||!name)return null;const b=KN.buf[name];if(!b){knWant(name,1);R5.miss++;return null}KN.use[name]=Date.now();
-   vmCount(c);if(VM.n>=30){VM.drop++;return null}
+   vmCount(c);if(VM.n>=48){VM.drop++;return null}/* เพิ่มจาก 30 ให้ฝนกระบี่ซ้อนหลายเล่มได้ */
    const off=Math.min(Math.max(0,o.off||0),Math.max(0,b.duration-.05)),left=b.duration-off,dur=Math.max(.05,o.dur||left),loop=!!o.loop||dur>left+.01;
    const T=c.currentTime+Math.max(0,o.at||0),s=c.createBufferSource(),g=c.createGain();s.buffer=b;if(loop){s.loop=true;const lr=KN.lp[name];if(lr&&lr[1]>lr[0]&&lr[1]<=b.duration){s.loopStart=lr[0];s.loopEnd=lr[1]}}
    const pk=Math.max(0,Math.min(1.2,Number(o.g)||0)),A=Math.min(dur*.9,Math.max(.004,o.att||.006)),Rl=Math.min(dur-A,Math.max(.02,o.rel||.04)),sl=o.sus!=null?pk*o.sus:pk;
@@ -2551,16 +2557,16 @@ setTimeout(()=>{sndCheck()},9000);
  const elOf=(id,k)=>{const s=String(id||'');if(k&&k.heal)return 'heal';if(k&&k.buff)return 'buff';if(/thpalm|thunder|light/.test(s))return 'thunder';if(/blizzard|frost|snow|ice/.test(s))return 'ice';
   if(/fire|flame|pyre|blaze/.test(s))return 'fire';if(/rock|earth|stone/.test(s))return 'earth';if(/sword|^sw_|flysword|windslash/.test(s))return 'sword';if(/fist|palm|vajra|diamond|iron|trap|qiblast/.test(s))return 'fist';return 'qi'};
  const EL2PL={thunder:'kair',ice:'kwater',fire:'kfire',earth:'kearth',sword:'ksword',fist:'kfist',qi:'kqi',heal:'kheal',buff:'kbuff'};
- const SKW={thunder:['throll','swell','shockbolt','cast_air','imp_air2','thunder'],fire:['firechg','cast_fire','fireball','imp_fire2','imp_fire','crackle'],ice:['coldwind','swell','iceshat','imp_water2','cast_air2','st_snow'],
-  sword:['unsheathe','ring','whistle','sw_sword','sheathe','hit_slash','hit_clash'],fist:['sw_punch','hit_punch','hit_crush'],qi:['qibolt','hit_pierce','swish'],earth:['cast_earth','stoneshot','imp_earth','imp_earth2'],heal:['cast_heal','imp_heal'],buff:['ward','buff']};
+ const SKW={thunder:['throll','swell','shockbolt','cast_air','imp_air2','thunder','hit_crush','imp_earth2'],fire:['firechg','cast_fire','fireball','imp_fire2','imp_fire','crackle'],ice:['coldwind','swell','iceshat','imp_water2','cast_air2','st_snow'],
+  sword:['unsheathe','ring','whistle','sw_sword','sheathe','hit_slash','hit_clash','swish','DrawKnife1','DrawKnife2','DrawKnife3'],fist:['sw_punch','hit_punch','hit_crush'],qi:['qibolt','hit_pierce','swish'],earth:['cast_earth','stoneshot','imp_earth','imp_earth2'],heal:['cast_heal','imp_heal'],buff:['ward','buff']};
  const skWant5=(id,k)=>{(SKW[elOf(id,k)]||[]).forEach(x=>knWant(rs(x).length?rs(x):x));knWant('r_lp_windhigh_1')};
  const SKS={chg:[],sw:{out:false,t:0}};
  const chgStop=sec=>{SKS.chg.forEach(r=>{if(r)fadeRec(r,sec)});SKS.chg=[]};
  /* รวมพลัง dur วินาที: เสียงค่อยๆ ดังขึ้นจนถึงตอนปล่อยพลัง */
  const chgStart=(el,D)=>{chgStop(.05);const L=[];D=Math.max(.6,D||1);
   const swell=a=>{const nm=one('swell');if(nm){const pkT=nm==='r_swell_1'?3.42:1.24;L.push(envPlay(nm,{g:a,dur:D+.12,att:Math.min(D*.9,pkT),rel:.12,off:Math.max(0,pkT-D),tag:'chg'}))}};
-  if(el==='thunder'){L.push(envPlay(one('throll'),{g:.6,dur:D+.25,att:D*.9,rel:.25,tag:'chg'}));swell(.3);
-   const n=Math.max(3,Math.round(D*5));for(let i=0;i<n;i++){const t=D*(1-Math.pow(1-(i+1)/(n+1),1.7));L.push(envPlay(one(i%2?'shockbolt':'cast_air'),{g:.07+.32*(i+1)/n,at:t,att:.004,rel:.06,pan:(Math.random()-.5)*.5,tag:'chg'}))}}
+  if(el==='thunder'){L.push(envPlay(one('throll'),{g:.95,dur:D+.25,att:D*.9,rel:.25,tag:'chg'}));swell(.45);
+   const n=Math.max(3,Math.round(D*5));for(let i=0;i<n;i++){const t=D*(1-Math.pow(1-(i+1)/(n+1),1.7));L.push(envPlay(one(i%2?'shockbolt':'cast_air'),{g:.1+.5*(i+1)/n,at:t,att:.004,rel:.06,pan:(Math.random()-.5)*.5,tag:'chg'}))}}
   else if(el==='fire'){L.push(envPlay(one('firechg'),{g:.65,dur:D+.25,att:D*.9,rel:.25,off:Math.random()*2,tag:'chg'}));
    const n=Math.max(2,Math.round(D*2.5));for(let i=0;i<n;i++){const t=D*(1-Math.pow(1-(i+1)/(n+1),1.5));L.push(envPlay(one('cast_fire'),{g:.12+.35*(i+1)/n,at:t,att:.01,rel:.12,pan:(Math.random()-.5)*.4,tag:'chg'}))}}
   else if(el==='ice'){const w=KN.buf['r_lp_windhigh_1']?'r_lp_windhigh_1':null;if(w)L.push(envPlay(w,{g:.55,dur:D+.25,att:D*.9,rel:.25,off:Math.random()*5,loop:true,tag:'chg'}));
@@ -2569,16 +2575,21 @@ setTimeout(()=>{sndCheck()},9000);
   else{swell(.3);L.push(envPlay(one('cast_'+(el==='earth'?'earth':'air')),{g:.4,at:Math.max(0,D-.55),tag:'chg'}))}
   SKS.chg=L.filter(Boolean);R5.chg++};
  /* ปล่อยพลัง: tp = ตำแหน่งเป้า (ซ้ายขวา ระยะ) คืนเวลาที่เสียงโดนเป้าควรดัง (วินาที) */
- const relPlay=(el,id,k,tp,air)=>{const pan=tp?tp.pan*.7:0,d=tp?tp.d:0,trv=Math.min(.45,.05+.035*d);R5.rel++;
-  if(el==='thunder'){envPlay(one('shockbolt'),{g:.9,pan,att:.002,rel:.05});envPlay(one('imp_air2'),{g:.85,at:.03,pan,att:.003,rel:.15});
-   envPlay(one(Math.random()<.5?'thunder':'throll'),{g:.55,at:.08,dur:2,att:.04,rel:1.1,pan:pan*.8,panTo:pan*.4});return .03}/* เปรี้ยง แสบแหลม + ระเบิดหนัก + ฟ้าร้องก้องยาวตามหลัง */
-  if(el==='fire'){envPlay(one('fireball'),{g:.85,pan:0,panTo:pan,att:.01,rel:.15});if(air)envPlay(one('crackle'),{g:.35,at:trv,pan,att:.02,rel:.3});return trv}
-  if(el==='ice'){envPlay(one('cast_air2'),{g:.8,pan:0,panTo:pan,att:.01,rel:.2});envPlay(one('coldwind'),{g:.35,dur:1.4,att:.05,rel:.9,pan:0,panTo:pan});return trv}
-  if(el==='sword'){const w=k&&effRng(k)>1.5;envPlay(one('sw_sword'),{g:.9,pan:pan*.4,att:.003,rel:.08});if(w)envPlay(one('whistle'),{g:.45,at:.04,pan:0,panTo:pan,att:.01,rel:.25});return w?trv:.07}
-  if(el==='fist'){envPlay(one('sw_punch'),{g:.85,pan:pan*.3});if(k&&effRng(k)>2)envPlay(one('swish'),{g:.35,at:.03,pan:0,panTo:pan});return effRng(k)>2?trv:.07}
-  if(el==='earth'){envPlay(one('cast_earth'),{g:.5});envPlay(one('stoneshot'),{g:.8,at:.12,pan:0,panTo:pan});return .12+trv}
-  if(el==='heal'||el==='buff'){envPlay(one(el==='heal'?'cast_heal':'ward'),{g:.8,rel:.3});envPlay(one(el==='heal'?'imp_heal':'buff'),{g:.5,at:.28,rel:.4});return 0}
-  envPlay(one('qibolt'),{g:.85,pan:0,panTo:pan,att:.004,rel:.1});return trv};
+ /* หลายกระบี่ (ฝนกระบี่ พายุกระบี่ กระบี่บิน): ฟันถี่รัวซ้อนกันหลายสิบเสียง กระจายซ้ายขวา เสียงไล่ดังขึ้นแล้วปิดท้ายด้วยเสียงกระบี่ก้อง
+   ทยอยเล่นตามเวลาจริง ไม่จองเสียงล่วงหน้า เพื่อไม่ชนเพดานจำนวนเสียงพร้อมกัน */
+const swarm=(id,pan)=>{const now=Date.now(),full=now-SWL.t>900;if(!full&&now-SWL.l<140)return;SWL.l=now;if(full)SWL.t=now;const st=/storm/.test(id),fl=/fly/.test(id),N=full?(st?44:fl?16:30):3,span=(full?(st?2.6:fl?1.3:1.8):.2)*1000,G=st?1.2:1.1,at=(ms,f)=>{if(ms>0)setTimeout(()=>{try{f()}catch(e){}},ms);else{try{f()}catch(e){}}};
+at(0,()=>envPlay(one('whistle'),{g:.55*G,pan:0,panTo:pan,att:.01,rel:.4}));
+for(let i=0;i<N;i++){const u=N>1?i/(N-1):0,ms=Math.max(0,span*u+(Math.random()-.5)*span/N),pn=(Math.random()*2-1)*.9,g=Math.min(1.2,(.55+.4*Math.random())*G*(full?.75+.45*u:1));at(ms,()=>{envPlay(shing(),{g,pan:pn,att:.002,rel:.15});if(i%3===2)envPlay(one('ring'),{g:g*.3,pan:pn*.6,dur:.6,att:.008,rel:.45});if(i%3===0)envPlay(one('hit_clash'),{g:g*.8,at:.012,pan:-pn*.6,att:.002,rel:.1});if(i%4===2)envPlay(one('swish'),{g:g*.6,pan:pn*.5,att:.004,rel:.15})})}
+if(full)at(span*.5,()=>envPlay(one('ring'),{g:.36*G,att:.01,rel:1.6}))};
+const relPlay=(el,id,k,tp,air)=>{const pan=tp?tp.pan*.7:0,d=tp?tp.d:0,trv=Math.min(.45,.05+.035*d);R5.rel++;const gx=(k&&(k.aoe>=3||k.c>=150)||/storm|fall|rain|burst|fire|blizzard|thunder|rock|quake|meteor|dragon|vajra|sw_thrust/.test(String(id)))?1.25:1,ep=(n,o)=>{o=o||{};return envPlay(n,Object.assign({},o,{g:(Number(o.g)||0)*gx}))};/* วิชาใหญ่ดังขึ้น 25% */
+  if(el==='thunder'){const T3=/thunderfall/.test(String(id));ep(one('shockbolt'),{g:1.1,pan,att:.002,rel:.12});ep(one('imp_air2'),{g:1,at:.03,pan,att:.003,rel:.3});ep(one('hit_crush'),{g:.9,at:.05,pan,att:.003,rel:.3});ep(one(Math.random()<.5?'thunder':'throll'),{g:.8,at:.08,dur:T3?3:2.6,att:.04,rel:T3?2.2:1.6,pan:pan*.8,panTo:pan*.4});if(T3){ep(one('shockbolt'),{g:.9,at:.12,pan:-pan,att:.002,rel:.2});ep(one('imp_earth2'),{g:.85,at:.1,pan,att:.004,rel:.5});ep(one('throll'),{g:.7,at:.35,dur:3,att:.1,rel:2.2,pan:-pan*.6})}return .03}/* ฟ้าผ่าและทัณฑ์สวรรค์: แสบแหลม กระแทกหนัก ฟ้าร้องก้องยาว (ทัณฑ์สวรรค์ซ้อนหลายชั้น) *//* เปรี้ยง แสบแหลม + ระเบิดหนัก + ฟ้าร้องก้องยาวตามหลัง */
+  if(el==='fire'){ep(one('fireball'),{g:.85,pan:0,panTo:pan,att:.01,rel:.15});if(air)ep(one('crackle'),{g:.35,at:trv,pan,att:.02,rel:.3});return trv}
+  if(el==='ice'){ep(one('cast_air2'),{g:.8,pan:0,panTo:pan,att:.01,rel:.2});ep(one('coldwind'),{g:.35,dur:1.4,att:.05,rel:.9,pan:0,panTo:pan});return trv}
+  if(el==='sword'){const w=k&&effRng(k)>1.5;if(/swordrain|swordstorm|flysword/.test(String(id))){swarm(String(id),pan);return w?trv:.07}ep(shing(),{g:1,pan:pan*.4,att:.003,rel:.15});ep(one('hit_clash'),{g:.5,at:.015,pan:pan*.4,att:.002,rel:.1});{const nr=Date.now();if(nr-SWL.r>700){SWL.r=nr;ep(one('ring'),{g:.3,at:.03,att:.01,rel:1.4,pan:pan*.4})}}if(w)ep(one('whistle'),{g:.5,at:.04,pan:0,panTo:pan,att:.01,rel:.35});return w?trv:.07}
+  if(el==='fist'){ep(one('sw_punch'),{g:.85,pan:pan*.3});if(k&&effRng(k)>2)ep(one('swish'),{g:.35,at:.03,pan:0,panTo:pan});return effRng(k)>2?trv:.07}
+  if(el==='earth'){ep(one('cast_earth'),{g:.5});ep(one('stoneshot'),{g:.8,at:.12,pan:0,panTo:pan});return .12+trv}
+  if(el==='heal'||el==='buff'){ep(one(el==='heal'?'cast_heal':'ward'),{g:.8,rel:.3});ep(one(el==='heal'?'imp_heal':'buff'),{g:.5,at:.28,rel:.4});return 0}
+  ep(one('qibolt'),{g:.85,pan:0,panTo:pan,att:.004,rel:.1});return trv};
  /* โดนเป้า: ชั้นเสียงกระแทกตามธาตุ (ฟ้าผ่า ไฟระเบิด น้ำแข็งแตก) แล้วให้อสูรร้องเจ็บ (posCue) */
  const impPlay=(el,m,dl)=>{const p=spOf(m.x,m.y,60)||{d:0,g:1,pan:0,lp:0};R5.imp++;
   if(el==='fire'){envPlay(one('imp_fire2'),{g:.9*Math.max(.4,p.g),at:dl,pan:p.pan,att:.003,rel:.2});envPlay(one('crackle'),{g:.4*Math.max(.4,p.g),at:dl+.25,pan:p.pan,att:.05,rel:.4});posCue('cast',m.x,m.y,{mon:m,k:m.k,noImp:1,dl})}
@@ -2587,7 +2598,7 @@ setTimeout(()=>{sndCheck()},9000);
   else posCue(el==='sword'||el==='fist'?'hit':'cast',m.x,m.y,{mon:m,k:m.k,dl,id:m._lastSk})};
  /* ชักกระบี่: ถ้ากระบี่อยู่ในฝัก (ไม่ได้ฟันมา 12 วินาที) ชักกระบี่ เช้งงงง ก่อน แล้วค่อยฟัน คืนเวลาหน่วงก่อนฟัน */
  const swDraw=()=>{const now=Date.now(),out=SKS.sw.out&&now-SKS.sw.t<12000;SKS.sw.t=now;if(out)return 0;SKS.sw.out=true;R5.draw++;
-  envPlay(one('unsheathe'),{g:.8,att:.003,rel:.08});envPlay(one('ring'),{g:.42,at:.05,dur:2.2,att:.01,rel:1.6});return .32};
+  envPlay(one('unsheathe'),{g:1,att:.003,rel:.12});envPlay(one('ring'),{g:.55,at:.05,dur:3,att:.01,rel:2.2});return .32};
  setInterval(()=>{try{if(SKS.sw.out&&Date.now()-SKS.sw.t>12000){SKS.sw.out=false;if(ambOn&&waCtx())envPlay(one('sheathe'),{g:.45})}}catch(e){}},1000);/* ไม่ได้ใช้ 12 วินาที เก็บกระบี่เข้าฝัก */
  HOOK.skFx=(ph,id,k,o)=>{try{const c=waCtx();if(!c){skWant5(id,k);return}k=k||SK[id]||{};const el=elOf(id,k);o=o||{};R5[ph==='charge'?'chg':ph]=(R5[ph==='charge'?'chg':ph]||0);
   if(ph==='charge'){skWant5(id,k);chgStart(el,o.dur);if(!SKS.chg.length){R5.miss++;envPlay(one('qibolt'),{g:.3,att:.02,rel:.2,tag:'chg'})}/* เสียงรวมพลังยังโหลดไม่เสร็จ: เล่นเสียงปราณสั้นๆ ที่โหลดไว้แล้วแทน ผู้เล่นรู้ว่าเริ่มรวมพลังแล้ว */return}
@@ -2654,7 +2665,7 @@ setTimeout(()=>{sndCheck()},9000);
  setInterval(()=>{const n=Date.now();if(n>WMOD.t){WMOD.t=n+2000+Math.random()*3000;WMOD.tg=.7+Math.random()*.45}WMOD.v+=(WMOD.tg-WMOD.v)*.12},250);
  /* ---------- ตัวตรวจเบื้องหลัง CHK ของเสียงรอบที่ 5 ---------- */
  CHK.push(()=>{const o=[],c=waCtx();if(!c)return o;const M=mixInit(c),now=c.currentTime;
-  Object.keys(BUSG).forEach(k=>{const b=M.bus[k];if(!b)o.push('ช่องเสียง: ไม่มีช่อง '+k);else if(Math.abs(b.g.gain.value-BUSG[k])>.001)o.push('ช่องเสียง: ความดังช่อง '+k+' ผิดจาก '+BUSG[k])});
+  Object.keys(BUSG).forEach(k=>{const b=M.bus[k];if(!b)o.push('ช่องเสียง: ไม่มีช่อง '+k);else if(Math.abs(b.g.gain.value-BUSG[k]*(k==='bgm'?1:UV))>.001)o.push('ช่องเสียง: ความดังช่อง '+k+' ผิดจาก '+BUSG[k])});
   if(M.bus.mon&&(Math.abs(M.bus.mon.hp.frequency.value-300)>1||Math.abs(M.bus.mon.lp.frequency.value-3000)>1))o.push('ช่องเสียงอสูร: ย่านความถี่ไม่ใช่ 300 ถึง 3000 เฮิรตซ์');
   if(Date.now()-MAPC.t>800){let old=0;VM.live.forEach(r=>{if(r.end>now+.2&&(r.bus==='amb'||r.bus==='mon'||r.bus==='world')&&r.grp&&r.grp!==MAPC.g)old++});if(old)o.push('เปลี่ยนแผนที่: เสียงของแผนที่เก่ายังค้างอยู่')}
   const z=zoneAt(S.x,S.y),B=zbedOf();if(BED.L.zone&&B&&BED.L.zone.name!==B[0]&&Date.now()-MAPC.t>3000)o.push('เปลี่ยนแผนที่: ลูปบรรยากาศไม่ตรงกับแผนที่ปัจจุบัน');
@@ -2669,7 +2680,7 @@ setTimeout(()=>{sndCheck()},9000);
   if(rms>2||(rms>.7&&++LV.hot>=5)){LV.hot=0;LV.fix++;RVL.forEach(R=>R.flush());bugLog('ระบบเสียง','เสียงรวมดังค้างผิดปกติ ล้างห้องก้องให้แล้ว',{rms:+Math.min(rms,1e6).toFixed(2)})}else if(rms<=.7)LV.hot=0}catch(e){R5.err++}},1000);/* ดังเกินเต็มสเกล 2 เท่า (เสียงจริงดังขนาดนี้ไม่ได้) = หอนแน่นอน ล้างทันทีภายใน 1 วินาที */
  HOOK.R5A={R5,MIX,MAPC,AMB,SKS,BUSG,elOf,envPlay,chgStart,gust,onMapChange,stopAllAmbience,stopAllMonsterSounds,playNewAmbience,nearTree,spOf,grpKey,RVL,LV};
  window.__AUDIO={ROLE,LIVE,play,stopRole,setLayer,skRole,R5A:HOOK.R5A,dbg:()=>({duckCur,duckUntil,now:Date.now(),tick:!!tick}),KN,FOOT,diag:()=>{const D=audDiag(),M=musDiag(),P=spDiag(),F=fxDiag();D.mus=M;D.sp=P;D.fx=F;D.problems=D.problems.concat(M.problems,P.problems,F.problems);return D},repair:()=>audRepair().concat(musRepair(),spRepair()),libMenu,knPlay,stepPlay,MUS,musDiag,musMenu,insPlay,SPA,spOf,HEAR,WIND,fxDiag,FT,FSURF,surfAt,IMP,med:()=>medCur,scnPlay,SCN,skPlay3,SKC,MVOX,mvPlay,fxMenuItems,BED,WATERS,waterSurf,WB,VM,knWant,KQ,rs,SEQ,seqPlay,landPlay,KNB,knExp,SYN,KN_SILENT,KN_LOCAL,mpAct,knEvict,knPump,ZBED,KNBY};
- TIPS.push('ดนตรีจีนโบราณเปลี่ยนตามสถานที่ Shift+Page Up หรือ Shift+Page Down ปรับเสียงดนตรี F3 เปิดปิดดนตรีและเสียงบรรยากาศ ถ้าไม่ได้ยินให้กดปุ่มใดก็ได้หนึ่งครั้งก่อน');
+ TIPS.push('กด Home เพิ่มเสียงเอฟเฟกต์และบรรยากาศ กด End ลดเสียง ทีละ 10 เปอร์เซ็นต์');TIPS.push('ดนตรีจีนโบราณเปลี่ยนตามสถานที่ Shift+Page Up หรือ Shift+Page Down ปรับเสียงดนตรี F3 เปิดปิดดนตรีและเสียงบรรยากาศ ถ้าไม่ได้ยินให้กดปุ่มใดก็ได้หนึ่งครั้งก่อน');
  NEWS.push({id:18,d:'2026-10-26',c:[C_SYS],h:'ระบบเสียงใหม่ จากไฟล์เสียงจริงทั้งหมด',t:'เปลี่ยนเสียงปี๊บเป็นไฟล์เสียงจริง มีคลังเสียงกลาง ดนตรีประกอบ เสียงบรรยากาศ และเสียงวิชาแยกตามธาตุ',x:[
   'ปิดเสียงปี๊บและเสียงสังเคราะห์ทุกชนิด เปลี่ยนเป็นไฟล์เสียงจริง ลิงก์ไหนเสียจะลองลิงก์สำรองเองอัตโนมัติ',
   'เสียงแบ่งเป็น 4 ช่อง คือ เมนู ต่อสู้ บรรยากาศ และดนตรี เสียงสำคัญเช่นระเบิดวิชา เลื่อนขั้น และตาย จะทำให้ดนตรีและบรรยากาศเบาลงชั่วครู่',
@@ -2679,7 +2690,7 @@ setTimeout(()=>{sndCheck()},9000);
   /* ===== PATCH 14 AUDIO FIX (เพิ่มต่อท้าย) ถ้าต้องการย้อนกลับ ใช้ไฟล์สำรอง index.backup-before-patch14.html ===== */
   try{
    ROLE.button.cap=.12;ROLE.button.vol=.45;ROLE.open.cap=.35;
-   ['swoosh','punch','spell','fire','thunder','ice','earth','heal','buff','whoosh','explosion','clash'].forEach(r=>{const R=ROLE[r];if(R){R.mode='short';R.cap=Math.min(R.cap||.65,.65)}});
+   ['swoosh','punch','spell','fire','thunder','ice','earth','heal','buff','whoosh','explosion','clash'].forEach(r=>{const R=ROLE[r];if(R){R.mode='short';R.cap=Math.min(R.cap||.65,({clash:2.5,swoosh:1.2,thunder:3.5})[r]||.65)}});
    
    if(typeof NEWS!=='undefined')NEWS.push({id:19,d:'2026-10-26',c:[C_SYS],h:'แก้เสียงซ้อนในเมนูและกระเป๋า',t:'เสียงเลื่อนเมนูและกระเป๋านิ่งและสั้นลง ไม่ซ้อนกัน เสียงมอนสเตอร์ ผู้คน และบรรยากาศไม่ดังทะลุเข้าเมนู วิชาแต่ละครั้งมีเสียงเดียว',x:[
     'เสียงเมนูเล่นทีละเสียง ใช้ไฟล์เดียวและโทนเดียวทุกครั้ง',
