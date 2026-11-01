@@ -250,17 +250,20 @@ function tribGo(T,test,from){
  if(!test){S.tribPend=S.step+1;try{save()}catch(e){}}
  S.med=false;walk=false;auto=false;target=null;goal=null;PEND=null;
  tribSay((test?'ซ้อม ':'')+'เมฆดำก่อตัวเหนือศีรษะ ลมหยุดนิ่ง ฟ้าคำรามครืนๆ สี'+T.col+' '+T.n+' กำลังจะเริ่ม มี '+T.b+' สาย เตรียมตัวให้พร้อม อีก 6 วินาทีสายแรกจะเริ่มรวมพลัง');
- try{skFx('charge','thunderfall',SK.thunderfall,{dur:TR_CLOUD/1000})}catch(e){}}
+ try{skFx('charge','thunderfall',SK.thunderfall,{dur:TR_CLOUD/1000})}catch(e){}
+  try{HOOK.mpAct&&HOOK.mpAct('trcloud')}catch(e){}}
 /* เริ่มรวมพลังสายที่ i (นับจาก 0) */
 function tribCharge(i){
  TB.i=i;TB.ph='charge';TB.t1=Date.now()+TR_CHARGE;TB.warn=0;
  const n=TB.plan.length,f=TB.plan[i];
  tribSay('สายฟ้าสายที่ '+(i+1)+' จาก '+n+' กำลังรวมพลัง ความแรง'+trLvl(f)+' ถ้าไม่ป้องกันเสียเลือดราว '+Math.round(f*100)+' เปอร์เซ็นต์ของเลือดสูงสุด ชาร์จ 10 วินาทีแล้วฟาด'+(i===n-1?' สายสุดท้าย แรงที่สุด':''));
- try{skFx('charge','thunderfall',SK.thunderfall,{dur:TR_CHARGE/1000})}catch(e){}}
+ try{skFx('charge','thunderfall',SK.thunderfall,{dur:TR_CHARGE/1000})}catch(e){}
+  try{HOOK.mpAct&&HOOK.mpAct('trcharge')}catch(e){}}
 /* สายฟ้าฟาด: เสียง 3 ชั้น (แสบแหลม กระแทกหนัก ฟ้าร้องก้องตามหลัง) สายแรงหนักฟาดซ้ำเสียงอีกครั้ง */
 function tribStrike(){
  const f=TB.plan[TB.i],h=tribHit(f),n=TB.plan.length;
  try{skFx('cast','thunderfall',SK.thunderfall,{});if(f>=.3)setTimeout(()=>{try{skFx('cast','thunderfall',SK.thunderfall,{})}catch(e){}},160)}catch(e){}
+  try{HOOK.mpAct&&HOOK.mpAct('trstrike')}catch(e){}
  trFlash();
  if(!godOn())S.hp-=h.dm;
  if(S.hp<=0){tribEnd('fail');return}
@@ -296,7 +299,7 @@ function tribTick(){
  if(S.med)S.med=false;
  if(TB.ph==='cloud'){if(now-TB.t0>=TR_CLOUD)tribCharge(0);return}
  if(TB.ph==='charge'){const left=TB.t1-now;
-  if(!TB.warn&&left<=3000){TB.warn=1;tribSay('สายฟ้าสายที่ '+(TB.i+1)+' ใกล้ฟาดแล้ว อีก 3 วินาที เปิดโล่ปราณหรือกินโอสถเดี๋ยวนี้')}
+  if(!TB.warn&&left<=3000){TB.warn=1;tribSay('สายฟ้าสายที่ '+(TB.i+1)+' ใกล้ฟาดแล้ว อีก 3 วินาที เปิดโล่ปราณหรือกินโอสถเดี๋ยวนี้');try{HOOK.mpAct&&HOOK.mpAct('trcharge')}catch(e){}}
   if(left<=0)tribStrike();return}
  if(TB.ph==='after'&&now>=TB.t1){if(TB.i+1>=TB.plan.length)tribEnd('ok');else tribCharge(TB.i+1)}}
 setInterval(()=>{try{tribTick()}catch(e){try{bugLog('ทัณฑ์สายฟ้า',e.message)}catch(x){}try{tribEnd('abort','ทัณฑ์สายฟ้าขัดข้อง ยกเลิกให้แล้ว ไม่เสียอะไร')}catch(x){}}},250);
@@ -1608,10 +1611,10 @@ setTimeout(()=>{sndCheck()},9000);
  const ORDER=['steps','button','swoosh','clash','hurt','spell','explosion','levelup','pick','buy','open','bump','whoosh','roar','howl','gong','die','bird','water','wind','cricket','owl','rustle','critter','town','fire','thunder','ice','earth','heal','buff','punch','potion','notify','bossSpawn','revive','qi','rain','festival'];
  const EARLY=['steps','steps_v','steps_f','steps_b','steps_w','steps_m','steps_c','steps_k','steps_in','button','open','close','bump','pick','buy','swoosh','clash','hurt','hurt2','die','levelup','whoosh','sk_fist','sk_finger','sk_sword','amb_v'];EARLY.forEach(r=>{if(ROLE[r]){ROLE[r].busy=1;resolveRole(r)}});const lazyRole=r=>{if(ROLE[r]&&!resolved[r]&&!ROLE[r].busy){ROLE[r].busy=1;resolveRole(r)}};
  /* ---------- 5) เครื่องเล่น: 4 แชนแนล, เพดานความดัง, ducking, จำกัดเสียงซ้อน 3, เปลี่ยนโทน ±5% ---------- */
- const BUS={ui:{cap:1},sfx:{cap:.9},amb:{cap:.35},bgm:{cap:.3}};/* UV = ความดังเอฟเฟกต์และบรรยากาศที่ผู้เล่นปรับเอง 0 ถึง 2 (1 = 100%) ปุ่ม Home เพิ่ม End ลด ไม่รวมดนตรี */let UV=(()=>{try{const v=parseFloat(localStorage.getItem('mdz_sfxuv'));return v>=0&&v<=2?v:1}catch(e){return 1}})();
+ const BUS={ui:{cap:1},sfx:{cap:.9},amb:{cap:.35},bgm:{cap:.3}};
  const LIVE=new Set(),LAST={};let duckUntil=0,duckCur=1,tick=null,ux=0,medCur=1;/* medCur = ความดังเสียงรอบตัว 1 = ปกติ ค่อยๆ ลดถึง 0 ตอนนั่งสมาธิ */
  const clamp=v=>Math.max(0,Math.min(1,v));
- const vol=e=>{const now=Date.now();let m=1;if(e.fade){m=clamp(1-(now-e.fade.t)/e.fade.ms)}else if(e.fin){m=clamp((now-e.t0)/e.fin)}return clamp(e.base*(e.hb||1)*(e.bus==='bgm'?1:UV)*BUS[e.bus].cap*((e.bus==='amb'||e.bus==='bgm')?duckCur*(e.bus==='amb'?medCur:1):1)*m)};
+ const vol=e=>{const now=Date.now();let m=1;if(e.fade){m=clamp(1-(now-e.fade.t)/e.fade.ms)}else if(e.fin){m=clamp((now-e.t0)/e.fin)}return clamp(e.base*(e.hb||1)*BUS[e.bus].cap*((e.bus==='amb'||e.bus==='bgm')?duckCur*(e.bus==='amb'?medCur:1):1)*m)};
  const drop=e=>{if(!LIVE.has(e))return;LIVE.delete(e);try{e.a.pause();e.a.removeAttribute('src');e.a.load()}catch(x){}};
  const fadeOut=(e,ms)=>{if(!e.fade)e.fade={t:Date.now(),ms:ms||300}};
  const ticker=()=>{const now=Date.now();const dTgt=now<duckUntil?.6:1;duckCur+=(dTgt-duckCur)*.3;const mT=S.med?0:1;medCur+=(mT-medCur)*(mT<medCur?.035:.05);if(Math.abs(mT-medCur)<.003)medCur=mT;/* นั่งสมาธิ: เสียงรอบตัวจางหายนุ่มๆ ราว 4 วินาที ลุกขึ้นค่อยๆ กลับมาราว 3 วินาที *//* กฎเหล็กหมวด 2: เปิดเมนู กระเป๋า หรือหน้าต่างใดๆ ไม่หรี่ดนตรีและบรรยากาศ หรี่ชั่วครู่ (เหลือ 60%) เฉพาะเหตุการณ์ใหญ่ที่ตั้ง duck เช่น เลื่อนขั้น ตาย ปราบบอส แชทเข้า */LIVE.forEach(e=>{try{const R=ROLE[e.role];if(e.fade&&now-e.fade.t>=e.fade.ms){drop(e);return}if(!e.fade&&R.mode==='short'&&e.a.currentTime>R.cap)fadeOut(e,250);e.a.volume=vol(e)}catch(x){drop(e)}});if(!LIVE.size&&now>=duckUntil&&Math.abs(duckCur-1)<.01&&medCur===(S.med?0:1)){clearInterval(tick);tick=null}};
@@ -1637,7 +1640,7 @@ setTimeout(()=>{sndCheck()},9000);
      ทุกช่องรวมที่ master แล้วผ่านตัวคุมยอดเสียง (limiter) กันเสียงแตกเวลาหลายเสียงดังพร้อมกัน
      ห้องก้อง (Freeverb: หวีกรองป้อนกลับ 8 ชุดต่อด้วยตัวกรองผ่านทั้งหมด 4 ชุด) สะท้อนเสียงจริงที่เข้ามา ไม่มีเสียงสร้างขึ้นเอง แบบเดียวกับ RoomVerb ของ Wwise
       แต่ละช่องส่งเสียงเข้าห้องก้องตามสัดส่วน ความก้องเปลี่ยนตามสถานที่ (ส่วน ENVRV) หมู่บ้านและทุ่งโล่งไม่ก้อง ป่าไผ่ก้องนิดๆ หุบเขาก้องไกล เมืองหลวงพื้นหินก้อง ในอาคารห้องเล็ก */
-  const BUSG={amb:.9,skill:1.1,mon:.5,foot:1,pl:.85,world:.8,ui:1,bgm:1};/* ปรับให้ดังขึ้น: ทักษะและการต่อสู้ .6 เป็น 1.1 */
+  const BUSG={amb:.7,skill:.6,mon:.35,foot:.85,pl:.6,world:.6,ui:.8,bgm:1};
   const BUSRV={amb:.45,skill:1,mon:.8,foot:.7,pl:.8,world:.7,ui:.2,bgm:0};
   const MIX={c:null,master:null,lim:null,bus:{},rv:null,n:0,err:0,env:'none'};
   const FVC=[1557,1617,1491,1422,1277,1356,1188,1116],FVA=[556,441,341,225],RVL=[];/* RVL = ห้องก้องทุกชุดที่สร้าง ให้ตัวตรวจเบื้องหลังเช็กว่าวงป้อนกลับไม่เสี่ยงหอน */
@@ -1653,19 +1656,15 @@ setTimeout(()=>{sndCheck()},9000);
    const flush=()=>{const T=c.currentTime;combs.forEach(x=>{x.fb.gain.cancelScheduledValues(T);x.fb.gain.setValueAtTime(0,T);x.lp.Q.value=-3.0103});out.gain.cancelScheduledValues(T);out.gain.setValueAtTime(0,T);const p=last;setTimeout(()=>{try{if(p)set(p,.3)}catch(e){}},500)};
    const R={in:inp,out,set,flush,combs};RVL.push(R);return R};
   const mixInit=c=>{if(MIX.c===c&&MIX.master)return MIX;try{
-    const lim=c.createDynamicsCompressor();lim.threshold.value=-6;lim.knee.value=3;lim.ratio.value=18;lim.attack.value=.001;lim.release.value=.18;
-    const master=c.createGain();master.gain.value=1;master.connect(lim);const sc=c.createWaveShaper(),cv=new Float32Array(2049);for(let i=0;i<2049;i++){const x=i/1024-1,a=Math.abs(x);cv[i]=a<=.8?x:Math.sign(x)*(.8+.2*Math.tanh((a-.8)/.2))}sc.curve=cv;sc.oversample='2x';lim.connect(sc);sc.connect(c.destination);/* ตัวกันเสียงแตกชั้นสุดท้าย ยอดเสียงที่เกินถูกโค้งลงนุ่มๆ ไม่ตัดแข็ง */
+    const lim=c.createDynamicsCompressor();lim.threshold.value=-3;lim.knee.value=2;lim.ratio.value=12;lim.attack.value=.002;lim.release.value=.2;
+    const master=c.createGain();master.gain.value=1;master.connect(lim);lim.connect(c.destination);
     const an=c.createAnalyser();an.fftSize=2048;master.connect(an);MIX.an=an;/* ตัวเฝ้าระดับเสียงรวม (ก่อนตัวจำกัดความดัง) */
     const rv=rvMake(c);rv.out.connect(master);
-    const bus={};Object.keys(BUSG).forEach(k=>{const g=c.createGain();g.gain.value=BUSG[k]*(k==='bgm'?1:UV);let o=g;
+    const bus={};Object.keys(BUSG).forEach(k=>{const g=c.createGain();g.gain.value=BUSG[k];let o=g;
      if(k==='mon'){const hp=c.createBiquadFilter(),lp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=300;hp.Q.value=-3.0103;lp.type='lowpass';lp.frequency.value=3000;lp.Q.value=-3.0103;g.connect(hp);hp.connect(lp);o=lp;bus[k]={g,hp,lp}}else bus[k]={g};
      o.connect(master);if(BUSRV[k]>0){const sd=c.createGain();sd.gain.value=BUSRV[k];o.connect(sd);sd.connect(rv.in);bus[k].sd=sd}});
     MIX.c=c;MIX.master=master;MIX.lim=lim;MIX.bus=bus;MIX.rv=rv;MIX.n++;MIX.env='';}catch(e){MIX.err++}return MIX};
   const busIn=(c,name)=>{const M=mixInit(c);const b=M.bus[name]||M.bus.skill;return b?b.g:c.destination};
-/* Home เพิ่ม / End ลด ความดังเอฟเฟกต์และบรรยากาศ ทีละ 10% (0 ถึง 200%) จำค่าไว้ในเครื่อง */
-const applyUV=()=>{try{const c=MIX.c;if(!c||!MIX.bus)return;const T=c.currentTime;Object.keys(BUSG).forEach(k=>{if(k==='bgm')return;const b=MIX.bus[k];if(b&&b.g)b.g.gain.setTargetAtTime(BUSG[k]*UV,T,.02)})}catch(e){}};
-let SVT=0;const uvStep=d=>{const lv=Math.max(0,Math.min(20,Math.round(UV*10)+d));UV=lv/10;try{localStorage.setItem('mdz_sfxuv',String(UV))}catch(e){}applyUV();try{wake()}catch(e){}try{say('เสียงเอฟเฟกต์และบรรยากาศ '+lv*10+' เปอร์เซ็นต์'+(lv===20?' สูงสุดแล้ว':lv===0?' ปิดเสียง':''))}catch(e){}if(lv>0){try{play('button',1)}catch(e){}}};
-addEventListener('keydown',e=>{if(e.code!=='Home'&&e.code!=='End')return;if(e.ctrlKey||e.metaKey||e.altKey)return;const tg=e.target;if(tg&&(/^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName)||tg.isContentEditable))return;e.preventDefault();e.stopPropagation();const n=Date.now();if(e.repeat&&n-SVT<120)return;SVT=n;uvStep(e.code==='Home'?1:-1)},true);
   const mixBusOf=(role,R)=>/^m_/.test(role)?'mon':/^(n_|npc)/.test(role)?'world':/^steps/.test(role)?'foot':R.bus==='amb'?'amb':R.bus==='bgm'?'bgm':R.bus==='ui'?'ui':'skill';
 
   const waLoad=u=>{
@@ -1706,9 +1705,7 @@ addEventListener('keydown',e=>{if(e.code!=='Home'&&e.code!=='End')return;if(e.ct
   const WARM=['button','open','close','bump','pick','buy','swoosh','clash','punch','hurt','hurt2','whoosh','spell','chat','toggle','slotset','page','scroll','levelup','die'];/* เสียงเดินใช้ชุดเสียงที่ฝังในไฟล์ ไม่ต้องอุ่นลิงก์ภายนอก */
   const waWarmAll=()=>{if(!GST){setTimeout(waWarmAll,2000);return}WARM.forEach(r=>{try{const R=ROLE[r];if(R&&R.vars&&R.vars[0])waWarm(R.vars[0].u)}catch(e){}})};
   setTimeout(waWarmAll,2500);
- const SWL={t:0,r:0,l:0};/* เสียงกระบี่ก้องยาว: ตอนกระบี่ปะทะ มีเสียงโลหะก้องตามหลังราว 3 วินาที (ห่างกันอย่างน้อย 0.9 วินาที ไม่ให้ซ้อนจนอื้อ) */
-const swTail=(role,opt)=>{try{if(!/^(clash|sk_sword|sk_sw_thrust|sk_windslash|sk_sw_wave)$/.test(role)||(opt&&(opt.world||opt.pan||opt.lp)))return;const n=Date.now();if(n-SWL.r<900)return;SWL.r=n;envPlay(one('ring'),{g:.26,at:.02,att:.01,rel:1.5})}catch(e){}};
-const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return null;swTail(role,opt);const g=(gain==null?1:gain)*((opt.world&&R.bus!=='amb')?medCur:1);/* opt.world = เสียงรอบตัว ค่อยๆ จางตอนนั่งสมาธิ (ช่องบรรยากาศจางในตัวคุมความดังอยู่แล้ว) */
+ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return null;const g=(gain==null?1:gain)*((opt.world&&R.bus!=='amb')?medCur:1);/* opt.world = เสียงรอบตัว ค่อยๆ จางตอนนั่งสมาธิ (ช่องบรรยากาศจางในตัวคุมความดังอยู่แล้ว) */
   if(R.bus!=='ui'&&R.bus!=='bgm'&&g<=.02)return null;
   if(R.ins&&insPlay(R.ins,g)){if(R.duck)duckUntil=Math.max(duckUntil,Date.now()+1800);wake();return{ins:R.ins}}/* หน้าที่เสียงที่ผูกกับเครื่องดนตรีจีน (ส่วน MUS) เล่นจากเครื่องดนตรีก่อน ถ้ายังไม่พร้อมใช้ทางเดิม */
   /* เสียงชุดที่ฝังในไฟล์ (R.kn) มาก่อนเสมอ ถ้าใช้ไม่ได้ค่อยใช้ลิงก์เดิม หน้าที่เดียวมีหลายไฟล์จะสุ่มสลับ ไม่ซ้ำกับครั้งก่อน */
@@ -2135,8 +2132,11 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
   ksword:[['sw_sword',.85,0]],kfist:[['sw_punch',.85,0]],kqi:[['qibolt',.8,0]],kheal:[['cast_heal',.7,0]],kbuff:[['ward',.7,0]],fly:[['sw_staff',.7,0],['cast_air2',.4,.1]],land:[['thud_s',.6,0]],
   med:[['cure',.35,0]],up:[['rustle',.6,0]],pick:[['pickup',.6,0]],bag:[['packopen',.6,0],['rustle',.45,.18]],drink:[['cork',.55,0],['drink',.6,.3]],lvl:[['levelup',.6,0]],die:[['hum_die',.7,0],['thud_b',.75,.4]],rev:[['wake',.55,0]],
   climb:[['st_stone',.55,0]],door:[['door',.6,0]],hurt:[['hit_punch',.6,0],['hum_hurt',.55,.12]],tp:[['tp_out',.6,0]],craft:[['anvil',.5,0]],fish:[['swish',.45,0],['plop',.5,.45]],
-  eq:[['unsheathe',.5,0]],coin:[['coins',.5,0]],scroll:[['scroll',.45,0]]};
- const plAct=(code,x,y,o,dl,tr)=>{const L=PLA[code];if(!L)return false;const p=spOf(x,y,PL_R);if(!p||p.g*medCur<.03)return false;
+  eq:[['unsheathe',.5,0]],coin:[['coins',.5,0]],scroll:[['scroll',.45,0]],trcloud:[['thunder',.6,0]],trcharge:[['cast_air',.6,0],['thunder',.35,.2]],trstrike:[['thunder',.95,0],['imp_air',.7,.12]]};
+  /* ทัณฑ์สายฟ้าของผู้เล่นอื่น: เมฆดำก่อตัว (trcloud) เริ่มรวมพลังและเตือนก่อนฟาด (trcharge) ฟาด (trstrike) ได้ยินไกลกว่าการกระทำปกติ 78 ก้าว (ระบบออนไลน์ส่งคนรอบตัวมาไม่เกินช่อง 3x3 ของ 40 ก้าว) */
+  const PLR={trcloud:78,trcharge:78,trstrike:78};
+  CHK.push(()=>{const o=[];['trcloud','trcharge','trstrike'].forEach(k=>{if(!PLA[k]||!PLR[k])o.push('ทัณฑ์สายฟ้า: ไม่มีเสียงของผู้เล่นอื่นรหัส '+k)});return o});
+ const plAct=(code,x,y,o,dl,tr)=>{const L=PLA[code];if(!L)return false;const p=spOf(x,y,PLR[code]||PL_R);if(!p||p.g*medCur<.03)return false;
   if((tr||0)<4&&L.some(a=>!rs(a[0]).some(n=>KN.buf[n]))){L.forEach(a=>knWant(rs(a[0]),1));setTimeout(()=>{try{plAct(code,x,y,o,dl,(tr||0)+1)}catch(e){}},350);return false}/* เสียงยังถอดรหัสไม่เสร็จ รอแล้วเล่นตามหลัง ไม่เกิน 1.4 วินาที เสียงการกระทำของเขาจึงไม่หาย */
   let ok=false;L.forEach(a=>{if(knSp(rs(a[0]),a[1]*p.g*medCur,p,1,a[2]+(dl||0),{ch:(a[2]||dl||!o)?null:'pl'+o.ch,bus:'pl'}))ok=true});if(ok)SPA.act++;return ok};
  const plWhoosh=(x,y)=>{const p=spOf(x,y,PL_R);if(!p||p.g*medCur<.03)return;if(knSp(rs('twirls'),.42*p.g*medCur,p,1,0,{bus:'pl'}))SPA.act++};/* เหาะผ่าน: เสียงลมหมุนจริง ไม่ดัด pitch *//* ผู้เล่นอื่นเหาะผ่าน: เสียงลมผ่านตัว */
@@ -2359,7 +2359,7 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
     หมู่บ้าน: ไก่ ไก่ขัน หมาเห่า วัว แกะ นก ตีเหล็กร้านลุงหวัง / ทุ่งและป่า: นก กา ลมพัดใบไม้ ต้นไม้ลั่น / สำนักกระบี่: ศิษย์ซ้อมกระบี่ ระฆัง กลอง / หุบเขาโอสถ: นก ระฆัง / อารามวัชระ: มู่อวี๋ ระฆัง กลอง */
  const SCN={c:[['anvil',.22],['hammer',.14],['bellows',.07],['grind',.06],['coins',.18],['door',.13],['horse',.08],['drum',.1],['bell',.08]],v:[['chickens',.2],['rooster',.1],['dogbark',.15],['cow',.08],['sheep',.06],['bird',.18],['smith',.17],['frog',.08]],
   re:[['bird',.5],['crow',.2],['leaves',.3]],rw:[['bird',.4],['crow',.15],['leaves',.2],['frog',.25]],rn:[['bird',.6],['leaves',.4]],rs:[['bird',.4],['leaves',.35],['creak',.25]],b:[['leaves',.4],['creak',.25],['bird',.25],['crow',.1]],
-  w:[['crow',.35],['leaves',.3],['creak',.2],['bat',.15]],rd:[['bird',.4],['crow',.35],['leaves',.25]],m:[['crow',.35],['wings',.25],['leaves',.25],['bat',.15]],k1:[['practice',.5],['bell',.3],['drum',.2]],k2:[['bird',.55],['bell',.3],['leaves',.15]],k3:[['muyu',.55],['bell',.3],['drum',.15]]};
+  w:[['crow',.35],['leaves',.3],['creak',.2],['bat',.15]],rd:[['bird',.4],['crow',.35],['leaves',.25]],fb:[['bird',.5],['leaves',.35],['creak',.25]],fs:[['bird',.35],['leaves',.4],['frog',.25]],m:[['crow',.35],['wings',.25],['leaves',.25],['bat',.15]],k1:[['practice',.5],['bell',.3],['drum',.2]],k2:[['bird',.55],['bell',.3],['leaves',.15]],k3:[['muyu',.55],['bell',.3],['drum',.15]]};
  const SCNT={next:0,n:0,last:''};
  const ringPos=r=>{const a=Math.random()*Math.PI*2,d=r*(.4+.6*Math.random());return[S.x+Math.cos(a)*d,S.y+Math.sin(a)*d]};
  const at=(x,y,R)=>spOf(x,y,R)||{g:0,pan:0,lp:0};
@@ -2536,7 +2536,7 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
  const R5={env:0,chg:0,rel:0,imp:0,air:0,cancel:0,draw:0,gust:0,leaves:0,tree:0,ins:0,boss:0,map:0,miss:0,err:0},LV={hot:0,fix:0,rms:0,buf:null};
  /* เล่นเสียงจริง 1 เสียงพร้อมซอง ADSR: o = {bus ช่องเสียง, g ความดังสูงสุด, at หน่วงก่อนเริ่ม (วินาที), dur ความยาว, att เวลาค่อยดังขึ้น, dec sus ลดลงสู่ระดับค้าง, rel เวลาค่อยจาง, off จุดเริ่มในไฟล์, loop, pan panTo ซ้ายขวา, lp ตัดเสียงแหลม, tag} */
  const envPlay=(name,o)=>{try{o=o||{};const c=waCtx();if(!c||!name)return null;const b=KN.buf[name];if(!b){knWant(name,1);R5.miss++;return null}KN.use[name]=Date.now();
-   vmCount(c);if(VM.n>=48){VM.drop++;return null}/* เพิ่มจาก 30 ให้ฝนกระบี่ซ้อนหลายเล่มได้ */
+   vmCount(c);if(VM.n>=30){VM.drop++;return null}
    const off=Math.min(Math.max(0,o.off||0),Math.max(0,b.duration-.05)),left=b.duration-off,dur=Math.max(.05,o.dur||left),loop=!!o.loop||dur>left+.01;
    const T=c.currentTime+Math.max(0,o.at||0),s=c.createBufferSource(),g=c.createGain();s.buffer=b;if(loop){s.loop=true;const lr=KN.lp[name];if(lr&&lr[1]>lr[0]&&lr[1]<=b.duration){s.loopStart=lr[0];s.loopEnd=lr[1]}}
    const pk=Math.max(0,Math.min(1.2,Number(o.g)||0)),A=Math.min(dur*.9,Math.max(.004,o.att||.006)),Rl=Math.min(dur-A,Math.max(.02,o.rel||.04)),sl=o.sus!=null?pk*o.sus:pk;
@@ -2551,16 +2551,16 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
  const elOf=(id,k)=>{const s=String(id||'');if(k&&k.heal)return 'heal';if(k&&k.buff)return 'buff';if(/thpalm|thunder|light/.test(s))return 'thunder';if(/blizzard|frost|snow|ice/.test(s))return 'ice';
   if(/fire|flame|pyre|blaze/.test(s))return 'fire';if(/rock|earth|stone/.test(s))return 'earth';if(/sword|^sw_|flysword|windslash/.test(s))return 'sword';if(/fist|palm|vajra|diamond|iron|trap|qiblast/.test(s))return 'fist';return 'qi'};
  const EL2PL={thunder:'kair',ice:'kwater',fire:'kfire',earth:'kearth',sword:'ksword',fist:'kfist',qi:'kqi',heal:'kheal',buff:'kbuff'};
- const SKW={thunder:['throll','swell','shockbolt','cast_air','imp_air2','thunder','hit_crush','imp_earth2'],fire:['firechg','cast_fire','fireball','imp_fire2','imp_fire','crackle'],ice:['coldwind','swell','iceshat','imp_water2','cast_air2','st_snow'],
-  sword:['unsheathe','ring','whistle','sw_sword','sheathe','hit_slash','hit_clash','swish'],fist:['sw_punch','hit_punch','hit_crush'],qi:['qibolt','hit_pierce','swish'],earth:['cast_earth','stoneshot','imp_earth','imp_earth2'],heal:['cast_heal','imp_heal'],buff:['ward','buff']};
+ const SKW={thunder:['throll','swell','shockbolt','cast_air','imp_air2','thunder'],fire:['firechg','cast_fire','fireball','imp_fire2','imp_fire','crackle'],ice:['coldwind','swell','iceshat','imp_water2','cast_air2','st_snow'],
+  sword:['unsheathe','ring','whistle','sw_sword','sheathe','hit_slash','hit_clash'],fist:['sw_punch','hit_punch','hit_crush'],qi:['qibolt','hit_pierce','swish'],earth:['cast_earth','stoneshot','imp_earth','imp_earth2'],heal:['cast_heal','imp_heal'],buff:['ward','buff']};
  const skWant5=(id,k)=>{(SKW[elOf(id,k)]||[]).forEach(x=>knWant(rs(x).length?rs(x):x));knWant('r_lp_windhigh_1')};
  const SKS={chg:[],sw:{out:false,t:0}};
  const chgStop=sec=>{SKS.chg.forEach(r=>{if(r)fadeRec(r,sec)});SKS.chg=[]};
  /* รวมพลัง dur วินาที: เสียงค่อยๆ ดังขึ้นจนถึงตอนปล่อยพลัง */
  const chgStart=(el,D)=>{chgStop(.05);const L=[];D=Math.max(.6,D||1);
   const swell=a=>{const nm=one('swell');if(nm){const pkT=nm==='r_swell_1'?3.42:1.24;L.push(envPlay(nm,{g:a,dur:D+.12,att:Math.min(D*.9,pkT),rel:.12,off:Math.max(0,pkT-D),tag:'chg'}))}};
-  if(el==='thunder'){L.push(envPlay(one('throll'),{g:.95,dur:D+.25,att:D*.9,rel:.25,tag:'chg'}));swell(.45);
-   const n=Math.max(3,Math.round(D*5));for(let i=0;i<n;i++){const t=D*(1-Math.pow(1-(i+1)/(n+1),1.7));L.push(envPlay(one(i%2?'shockbolt':'cast_air'),{g:.1+.5*(i+1)/n,at:t,att:.004,rel:.06,pan:(Math.random()-.5)*.5,tag:'chg'}))}}
+  if(el==='thunder'){L.push(envPlay(one('throll'),{g:.6,dur:D+.25,att:D*.9,rel:.25,tag:'chg'}));swell(.3);
+   const n=Math.max(3,Math.round(D*5));for(let i=0;i<n;i++){const t=D*(1-Math.pow(1-(i+1)/(n+1),1.7));L.push(envPlay(one(i%2?'shockbolt':'cast_air'),{g:.07+.32*(i+1)/n,at:t,att:.004,rel:.06,pan:(Math.random()-.5)*.5,tag:'chg'}))}}
   else if(el==='fire'){L.push(envPlay(one('firechg'),{g:.65,dur:D+.25,att:D*.9,rel:.25,off:Math.random()*2,tag:'chg'}));
    const n=Math.max(2,Math.round(D*2.5));for(let i=0;i<n;i++){const t=D*(1-Math.pow(1-(i+1)/(n+1),1.5));L.push(envPlay(one('cast_fire'),{g:.12+.35*(i+1)/n,at:t,att:.01,rel:.12,pan:(Math.random()-.5)*.4,tag:'chg'}))}}
   else if(el==='ice'){const w=KN.buf['r_lp_windhigh_1']?'r_lp_windhigh_1':null;if(w)L.push(envPlay(w,{g:.55,dur:D+.25,att:D*.9,rel:.25,off:Math.random()*5,loop:true,tag:'chg'}));
@@ -2569,21 +2569,16 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
   else{swell(.3);L.push(envPlay(one('cast_'+(el==='earth'?'earth':'air')),{g:.4,at:Math.max(0,D-.55),tag:'chg'}))}
   SKS.chg=L.filter(Boolean);R5.chg++};
  /* ปล่อยพลัง: tp = ตำแหน่งเป้า (ซ้ายขวา ระยะ) คืนเวลาที่เสียงโดนเป้าควรดัง (วินาที) */
- /* หลายกระบี่ (ฝนกระบี่ พายุกระบี่ กระบี่บิน): ฟันถี่รัวซ้อนกันหลายสิบเสียง กระจายซ้ายขวา เสียงไล่ดังขึ้นแล้วปิดท้ายด้วยเสียงกระบี่ก้อง
-   ทยอยเล่นตามเวลาจริง ไม่จองเสียงล่วงหน้า เพื่อไม่ชนเพดานจำนวนเสียงพร้อมกัน */
-const swarm=(id,pan)=>{const now=Date.now(),full=now-SWL.t>900;if(!full&&now-SWL.l<140)return;SWL.l=now;if(full)SWL.t=now;const st=/storm/.test(id),fl=/fly/.test(id),N=full?(st?44:fl?16:30):3,span=(full?(st?2.6:fl?1.3:1.8):.2)*1000,G=st?1.2:1.1,at=(ms,f)=>{if(ms>0)setTimeout(()=>{try{f()}catch(e){}},ms);else{try{f()}catch(e){}}};
-at(0,()=>envPlay(one('whistle'),{g:.55*G,pan:0,panTo:pan,att:.01,rel:.4}));
-for(let i=0;i<N;i++){const u=N>1?i/(N-1):0,ms=Math.max(0,span*u+(Math.random()-.5)*span/N),pn=(Math.random()*2-1)*.9,g=Math.min(1.2,(.55+.4*Math.random())*G*(full?.75+.45*u:1));at(ms,()=>{envPlay(one(i%3===1?'hit_slash':'sw_sword'),{g,pan:pn,att:.002,rel:.12});if(i%3===0)envPlay(one('hit_clash'),{g:g*.8,at:.012,pan:-pn*.6,att:.002,rel:.1});if(i%4===2)envPlay(one('swish'),{g:g*.6,pan:pn*.5,att:.004,rel:.15})})}
-if(full)at(span*.5,()=>envPlay(one('ring'),{g:.36*G,att:.01,rel:1.6}))};
-const relPlay=(el,id,k,tp,air)=>{const pan=tp?tp.pan*.7:0,d=tp?tp.d:0,trv=Math.min(.45,.05+.035*d);R5.rel++;const gx=(k&&(k.aoe>=3||k.c>=150)||/storm|fall|rain|burst|fire|blizzard|thunder|rock|quake|meteor|dragon|vajra|sw_thrust/.test(String(id)))?1.25:1,ep=(n,o)=>{o=o||{};return envPlay(n,Object.assign({},o,{g:(Number(o.g)||0)*gx}))};/* วิชาใหญ่ดังขึ้น 25% */
-  if(el==='thunder'){const T3=/thunderfall/.test(String(id));ep(one('shockbolt'),{g:1.1,pan,att:.002,rel:.12});ep(one('imp_air2'),{g:1,at:.03,pan,att:.003,rel:.3});ep(one('hit_crush'),{g:.9,at:.05,pan,att:.003,rel:.3});ep(one(Math.random()<.5?'thunder':'throll'),{g:.8,at:.08,dur:T3?3:2.6,att:.04,rel:T3?2.2:1.6,pan:pan*.8,panTo:pan*.4});if(T3){ep(one('shockbolt'),{g:.9,at:.12,pan:-pan,att:.002,rel:.2});ep(one('imp_earth2'),{g:.85,at:.1,pan,att:.004,rel:.5});ep(one('throll'),{g:.7,at:.35,dur:3,att:.1,rel:2.2,pan:-pan*.6})}return .03}/* ฟ้าผ่าและทัณฑ์สวรรค์: แสบแหลม กระแทกหนัก ฟ้าร้องก้องยาว (ทัณฑ์สวรรค์ซ้อนหลายชั้น) *//* เปรี้ยง แสบแหลม + ระเบิดหนัก + ฟ้าร้องก้องยาวตามหลัง */
-  if(el==='fire'){ep(one('fireball'),{g:.85,pan:0,panTo:pan,att:.01,rel:.15});if(air)ep(one('crackle'),{g:.35,at:trv,pan,att:.02,rel:.3});return trv}
-  if(el==='ice'){ep(one('cast_air2'),{g:.8,pan:0,panTo:pan,att:.01,rel:.2});ep(one('coldwind'),{g:.35,dur:1.4,att:.05,rel:.9,pan:0,panTo:pan});return trv}
-  if(el==='sword'){const w=k&&effRng(k)>1.5;if(/swordrain|swordstorm|flysword/.test(String(id))){swarm(String(id),pan);return w?trv:.07}ep(one('sw_sword'),{g:1,pan:pan*.4,att:.003,rel:.12});ep(one('hit_clash'),{g:.55,at:.015,pan:pan*.4,att:.002,rel:.1});{const nr=Date.now();if(nr-SWL.r>700){SWL.r=nr;ep(one('ring'),{g:.3,at:.03,att:.01,rel:1.4,pan:pan*.4})}}if(w)ep(one('whistle'),{g:.5,at:.04,pan:0,panTo:pan,att:.01,rel:.35});return w?trv:.07}
-  if(el==='fist'){ep(one('sw_punch'),{g:.85,pan:pan*.3});if(k&&effRng(k)>2)ep(one('swish'),{g:.35,at:.03,pan:0,panTo:pan});return effRng(k)>2?trv:.07}
-  if(el==='earth'){ep(one('cast_earth'),{g:.5});ep(one('stoneshot'),{g:.8,at:.12,pan:0,panTo:pan});return .12+trv}
-  if(el==='heal'||el==='buff'){ep(one(el==='heal'?'cast_heal':'ward'),{g:.8,rel:.3});ep(one(el==='heal'?'imp_heal':'buff'),{g:.5,at:.28,rel:.4});return 0}
-  ep(one('qibolt'),{g:.85,pan:0,panTo:pan,att:.004,rel:.1});return trv};
+ const relPlay=(el,id,k,tp,air)=>{const pan=tp?tp.pan*.7:0,d=tp?tp.d:0,trv=Math.min(.45,.05+.035*d);R5.rel++;
+  if(el==='thunder'){envPlay(one('shockbolt'),{g:.9,pan,att:.002,rel:.05});envPlay(one('imp_air2'),{g:.85,at:.03,pan,att:.003,rel:.15});
+   envPlay(one(Math.random()<.5?'thunder':'throll'),{g:.55,at:.08,dur:2,att:.04,rel:1.1,pan:pan*.8,panTo:pan*.4});return .03}/* เปรี้ยง แสบแหลม + ระเบิดหนัก + ฟ้าร้องก้องยาวตามหลัง */
+  if(el==='fire'){envPlay(one('fireball'),{g:.85,pan:0,panTo:pan,att:.01,rel:.15});if(air)envPlay(one('crackle'),{g:.35,at:trv,pan,att:.02,rel:.3});return trv}
+  if(el==='ice'){envPlay(one('cast_air2'),{g:.8,pan:0,panTo:pan,att:.01,rel:.2});envPlay(one('coldwind'),{g:.35,dur:1.4,att:.05,rel:.9,pan:0,panTo:pan});return trv}
+  if(el==='sword'){const w=k&&effRng(k)>1.5;envPlay(one('sw_sword'),{g:.9,pan:pan*.4,att:.003,rel:.08});if(w)envPlay(one('whistle'),{g:.45,at:.04,pan:0,panTo:pan,att:.01,rel:.25});return w?trv:.07}
+  if(el==='fist'){envPlay(one('sw_punch'),{g:.85,pan:pan*.3});if(k&&effRng(k)>2)envPlay(one('swish'),{g:.35,at:.03,pan:0,panTo:pan});return effRng(k)>2?trv:.07}
+  if(el==='earth'){envPlay(one('cast_earth'),{g:.5});envPlay(one('stoneshot'),{g:.8,at:.12,pan:0,panTo:pan});return .12+trv}
+  if(el==='heal'||el==='buff'){envPlay(one(el==='heal'?'cast_heal':'ward'),{g:.8,rel:.3});envPlay(one(el==='heal'?'imp_heal':'buff'),{g:.5,at:.28,rel:.4});return 0}
+  envPlay(one('qibolt'),{g:.85,pan:0,panTo:pan,att:.004,rel:.1});return trv};
  /* โดนเป้า: ชั้นเสียงกระแทกตามธาตุ (ฟ้าผ่า ไฟระเบิด น้ำแข็งแตก) แล้วให้อสูรร้องเจ็บ (posCue) */
  const impPlay=(el,m,dl)=>{const p=spOf(m.x,m.y,60)||{d:0,g:1,pan:0,lp:0};R5.imp++;
   if(el==='fire'){envPlay(one('imp_fire2'),{g:.9*Math.max(.4,p.g),at:dl,pan:p.pan,att:.003,rel:.2});envPlay(one('crackle'),{g:.4*Math.max(.4,p.g),at:dl+.25,pan:p.pan,att:.05,rel:.4});posCue('cast',m.x,m.y,{mon:m,k:m.k,noImp:1,dl})}
@@ -2592,7 +2587,7 @@ const relPlay=(el,id,k,tp,air)=>{const pan=tp?tp.pan*.7:0,d=tp?tp.d:0,trv=Math.m
   else posCue(el==='sword'||el==='fist'?'hit':'cast',m.x,m.y,{mon:m,k:m.k,dl,id:m._lastSk})};
  /* ชักกระบี่: ถ้ากระบี่อยู่ในฝัก (ไม่ได้ฟันมา 12 วินาที) ชักกระบี่ เช้งงงง ก่อน แล้วค่อยฟัน คืนเวลาหน่วงก่อนฟัน */
  const swDraw=()=>{const now=Date.now(),out=SKS.sw.out&&now-SKS.sw.t<12000;SKS.sw.t=now;if(out)return 0;SKS.sw.out=true;R5.draw++;
-  envPlay(one('unsheathe'),{g:1,att:.003,rel:.12});envPlay(one('ring'),{g:.55,at:.05,dur:3,att:.01,rel:2.2});return .32};
+  envPlay(one('unsheathe'),{g:.8,att:.003,rel:.08});envPlay(one('ring'),{g:.42,at:.05,dur:2.2,att:.01,rel:1.6});return .32};
  setInterval(()=>{try{if(SKS.sw.out&&Date.now()-SKS.sw.t>12000){SKS.sw.out=false;if(ambOn&&waCtx())envPlay(one('sheathe'),{g:.45})}}catch(e){}},1000);/* ไม่ได้ใช้ 12 วินาที เก็บกระบี่เข้าฝัก */
  HOOK.skFx=(ph,id,k,o)=>{try{const c=waCtx();if(!c){skWant5(id,k);return}k=k||SK[id]||{};const el=elOf(id,k);o=o||{};R5[ph==='charge'?'chg':ph]=(R5[ph==='charge'?'chg':ph]||0);
   if(ph==='charge'){skWant5(id,k);chgStart(el,o.dur);if(!SKS.chg.length){R5.miss++;envPlay(one('qibolt'),{g:.3,att:.02,rel:.2,tag:'chg'})}/* เสียงรวมพลังยังโหลดไม่เสร็จ: เล่นเสียงปราณสั้นๆ ที่โหลดไว้แล้วแทน ผู้เล่นรู้ว่าเริ่มรวมพลังแล้ว */return}
@@ -2659,7 +2654,7 @@ const relPlay=(el,id,k,tp,air)=>{const pan=tp?tp.pan*.7:0,d=tp?tp.d:0,trv=Math.m
  setInterval(()=>{const n=Date.now();if(n>WMOD.t){WMOD.t=n+2000+Math.random()*3000;WMOD.tg=.7+Math.random()*.45}WMOD.v+=(WMOD.tg-WMOD.v)*.12},250);
  /* ---------- ตัวตรวจเบื้องหลัง CHK ของเสียงรอบที่ 5 ---------- */
  CHK.push(()=>{const o=[],c=waCtx();if(!c)return o;const M=mixInit(c),now=c.currentTime;
-  Object.keys(BUSG).forEach(k=>{const b=M.bus[k];if(!b)o.push('ช่องเสียง: ไม่มีช่อง '+k);else if(Math.abs(b.g.gain.value-BUSG[k]*(k==='bgm'?1:UV))>.001)o.push('ช่องเสียง: ความดังช่อง '+k+' ผิดจาก '+BUSG[k])});
+  Object.keys(BUSG).forEach(k=>{const b=M.bus[k];if(!b)o.push('ช่องเสียง: ไม่มีช่อง '+k);else if(Math.abs(b.g.gain.value-BUSG[k])>.001)o.push('ช่องเสียง: ความดังช่อง '+k+' ผิดจาก '+BUSG[k])});
   if(M.bus.mon&&(Math.abs(M.bus.mon.hp.frequency.value-300)>1||Math.abs(M.bus.mon.lp.frequency.value-3000)>1))o.push('ช่องเสียงอสูร: ย่านความถี่ไม่ใช่ 300 ถึง 3000 เฮิรตซ์');
   if(Date.now()-MAPC.t>800){let old=0;VM.live.forEach(r=>{if(r.end>now+.2&&(r.bus==='amb'||r.bus==='mon'||r.bus==='world')&&r.grp&&r.grp!==MAPC.g)old++});if(old)o.push('เปลี่ยนแผนที่: เสียงของแผนที่เก่ายังค้างอยู่')}
   const z=zoneAt(S.x,S.y),B=zbedOf();if(BED.L.zone&&B&&BED.L.zone.name!==B[0]&&Date.now()-MAPC.t>3000)o.push('เปลี่ยนแผนที่: ลูปบรรยากาศไม่ตรงกับแผนที่ปัจจุบัน');
@@ -2674,7 +2669,7 @@ const relPlay=(el,id,k,tp,air)=>{const pan=tp?tp.pan*.7:0,d=tp?tp.d:0,trv=Math.m
   if(rms>2||(rms>.7&&++LV.hot>=5)){LV.hot=0;LV.fix++;RVL.forEach(R=>R.flush());bugLog('ระบบเสียง','เสียงรวมดังค้างผิดปกติ ล้างห้องก้องให้แล้ว',{rms:+Math.min(rms,1e6).toFixed(2)})}else if(rms<=.7)LV.hot=0}catch(e){R5.err++}},1000);/* ดังเกินเต็มสเกล 2 เท่า (เสียงจริงดังขนาดนี้ไม่ได้) = หอนแน่นอน ล้างทันทีภายใน 1 วินาที */
  HOOK.R5A={R5,MIX,MAPC,AMB,SKS,BUSG,elOf,envPlay,chgStart,gust,onMapChange,stopAllAmbience,stopAllMonsterSounds,playNewAmbience,nearTree,spOf,grpKey,RVL,LV};
  window.__AUDIO={ROLE,LIVE,play,stopRole,setLayer,skRole,R5A:HOOK.R5A,dbg:()=>({duckCur,duckUntil,now:Date.now(),tick:!!tick}),KN,FOOT,diag:()=>{const D=audDiag(),M=musDiag(),P=spDiag(),F=fxDiag();D.mus=M;D.sp=P;D.fx=F;D.problems=D.problems.concat(M.problems,P.problems,F.problems);return D},repair:()=>audRepair().concat(musRepair(),spRepair()),libMenu,knPlay,stepPlay,MUS,musDiag,musMenu,insPlay,SPA,spOf,HEAR,WIND,fxDiag,FT,FSURF,surfAt,IMP,med:()=>medCur,scnPlay,SCN,skPlay3,SKC,MVOX,mvPlay,fxMenuItems,BED,WATERS,waterSurf,WB,VM,knWant,KQ,rs,SEQ,seqPlay,landPlay,KNB,knExp,SYN,KN_SILENT,KN_LOCAL,mpAct,knEvict,knPump,ZBED,KNBY};
- TIPS.push('กด Home เพิ่มเสียงเอฟเฟกต์และบรรยากาศ กด End ลดเสียง ทีละ 10 เปอร์เซ็นต์');TIPS.push('ดนตรีจีนโบราณเปลี่ยนตามสถานที่ Shift+Page Up หรือ Shift+Page Down ปรับเสียงดนตรี F3 เปิดปิดดนตรีและเสียงบรรยากาศ ถ้าไม่ได้ยินให้กดปุ่มใดก็ได้หนึ่งครั้งก่อน');
+ TIPS.push('ดนตรีจีนโบราณเปลี่ยนตามสถานที่ Shift+Page Up หรือ Shift+Page Down ปรับเสียงดนตรี F3 เปิดปิดดนตรีและเสียงบรรยากาศ ถ้าไม่ได้ยินให้กดปุ่มใดก็ได้หนึ่งครั้งก่อน');
  NEWS.push({id:18,d:'2026-10-26',c:[C_SYS],h:'ระบบเสียงใหม่ จากไฟล์เสียงจริงทั้งหมด',t:'เปลี่ยนเสียงปี๊บเป็นไฟล์เสียงจริง มีคลังเสียงกลาง ดนตรีประกอบ เสียงบรรยากาศ และเสียงวิชาแยกตามธาตุ',x:[
   'ปิดเสียงปี๊บและเสียงสังเคราะห์ทุกชนิด เปลี่ยนเป็นไฟล์เสียงจริง ลิงก์ไหนเสียจะลองลิงก์สำรองเองอัตโนมัติ',
   'เสียงแบ่งเป็น 4 ช่อง คือ เมนู ต่อสู้ บรรยากาศ และดนตรี เสียงสำคัญเช่นระเบิดวิชา เลื่อนขั้น และตาย จะทำให้ดนตรีและบรรยากาศเบาลงชั่วครู่',
@@ -2684,7 +2679,7 @@ const relPlay=(el,id,k,tp,air)=>{const pan=tp?tp.pan*.7:0,d=tp?tp.d:0,trv=Math.m
   /* ===== PATCH 14 AUDIO FIX (เพิ่มต่อท้าย) ถ้าต้องการย้อนกลับ ใช้ไฟล์สำรอง index.backup-before-patch14.html ===== */
   try{
    ROLE.button.cap=.12;ROLE.button.vol=.45;ROLE.open.cap=.35;
-   ['swoosh','punch','spell','fire','thunder','ice','earth','heal','buff','whoosh','explosion','clash'].forEach(r=>{const R=ROLE[r];if(R){R.mode='short';R.cap=Math.min(R.cap||.65,({clash:2.5,swoosh:1.2,thunder:3.5})[r]||.65)}});
+   ['swoosh','punch','spell','fire','thunder','ice','earth','heal','buff','whoosh','explosion','clash'].forEach(r=>{const R=ROLE[r];if(R){R.mode='short';R.cap=Math.min(R.cap||.65,.65)}});
    
    if(typeof NEWS!=='undefined')NEWS.push({id:19,d:'2026-10-26',c:[C_SYS],h:'แก้เสียงซ้อนในเมนูและกระเป๋า',t:'เสียงเลื่อนเมนูและกระเป๋านิ่งและสั้นลง ไม่ซ้อนกัน เสียงมอนสเตอร์ ผู้คน และบรรยากาศไม่ดังทะลุเข้าเมนู วิชาแต่ละครั้งมีเสียงเดียว',x:[
     'เสียงเมนูเล่นทีละเสียง ใช้ไฟล์เดียวและโทนเดียวทุกครั้ง',
@@ -3089,6 +3084,192 @@ try{
   }
  }
 }catch(e){console.error('PATCH21',e)}
+/* ===== PATCH 32 เมืองหลวงขยาย ขั้นที่ 1 (รอบที่ 7 วันที่ 1 พ.ย. 2569) พิกัดบวกทั้งหมด ไม่ลบโค้ดเดิม =====
+ ผลค้นคว้านิยายเซียน (กฎข้อ 10.1) จดซ้ำไว้ใน reports/status.md:
+ 1) ตลาดเซียน เช่นตลาดเจี่ยเฉิน ใน Sect Master's Immortal Journey: ผู้ฝึกตนมาเตรียมเสบียงก่อนออกเดินทางและมาพักฟื้นหลังกลับ ในตลาดมีค่ายกลห้ามบิน
+ 2) ตลาดมืดแลกวัตถุดิบอสูร พืชวิญญาณ ยันต์ โอสถ ด้วยการแลกของกัน
+ 3) หอประมูลและงานประลองการปรุงยา โอสถที่ปรุงในงานถูกนำออกประมูลต่อทันที (Battle Through the Heavens และเรื่องอื่น)
+ 4) หอภารกิจ: เก็บสมุนไพร ล่าอสูร ตามหาสัตว์เลี้ยงที่หายไป รางวัลเป็นแต้มผลงานและหินวิญญาณ แนะนำตามขั้นพลัง (Who Let Him Cultivate)
+ 5) ลานประลองและตารางอันดับ ท้าชิงเพื่อแทนที่อันดับ (I Am Overlord) เก็บไว้ทำรอบถัดไป
+ 6) หอคัมภีร์และศาลาอ่านตำราของสำนัก โรงเตี๊ยมและร้านน้ำชาเป็นที่แลกข่าวลือของผู้ฝึกตน
+ การขยาย: ต่อจากแถบเดิมไปทางตะวันออกและใต้ เป็น 491 x 491 ช่อง ตรวจแล้วไม่ทับโซนอื่น ทางหมาป่าสร้างจากแถบเดิมแล้ว (PATCH 21) จึงไม่ถูกกระทบ */
+try{
+ const cap=Z.find(a=>a.id==='c');
+ if(!cap){console.error('CAP7 ไม่พบเมืองหลวง')}
+ else if(!cap.big7){
+  const nr=[cap.r[0],cap.r[1],cap.r[0]+490,cap.r[1]+490];
+  const hit=Z.filter(a=>a!==cap&&!(nr[2]<a.r[0]||nr[0]>a.r[2]||nr[3]<a.r[1]||nr[1]>a.r[3])).map(a=>a.id);
+  if(nr.some(v=>!Number.isFinite(v)||v<0))console.error('CAP7 พิกัดเมืองหลวงผิด',nr);
+  else if(hit.length)console.error('CAP7 ขยายทับโซนอื่น ยกเลิก',hit);
+  else{
+   cap.r=nr;cap.big7=1;
+   const X=nr[0],Y=nr[1];
+   const addW=o=>{if(W.some(a=>a.n===o.n))return null;const w=Object.assign({z:'c',cap7:1},o);w.x=Math.max(nr[0]+1,Math.min(nr[2]-1,X+o.x));w.y=Math.max(nr[1]+1,Math.min(nr[3]-1,Y+o.y));W.push(w);return w};
+   const has7=id=>(S.inv.find(a=>a&&a.id===id)||{q:0}).q;
+   const pk=L=>L[Math.floor(Math.random()*L.length)];
+   const dn=()=>Math.floor(Date.now()/864e5);
+   const st7=()=>{const k=new Date().toISOString().slice(0,10);if(!S.cq7||typeof S.cq7!=='object'||S.cq7.d!==k)S.cq7={d:k,done:{}};if(!S.cq7.done||typeof S.cq7.done!=='object')S.cq7.done={};return S.cq7};
+   const re7=(f,n,ix)=>{f(n);if(mn&&mn.items&&mn.items[ix]){mn.i=ix;say(mn.items[ix].t,1)}};
+   const fee7=()=>{try{const f=hfee();return Number.isFinite(f)&&f>0?f:50}catch(e){return 50}};
+   /* ย่าน: ชื่อ ช่วงพิกัดสัมพัทธ์ (x1,y1,x2,y2) และคำบรรยายตอนเดินเข้า */
+   const DS7=[
+    {n:'ย่านตลาดเซียน',r:[112,0,300,75],t:'แผงลอยเรียงสองฝั่งถนน เสียงต่อราคาดังไม่ขาด กลิ่นยาสมุนไพรปนควันธูป'},
+    {n:'ย่านหอคัมภีร์',r:[310,0,490,75],t:'ถนนหินเงียบกว่าที่อื่น มีศาลาอ่านตำราและแท่นศิลาจารึกเรียงเป็นแถว'},
+    {n:'ย่านโรงเตี๊ยมและร้านน้ำชา',r:[0,30,108,110],t:'ป้ายผ้าโรงเตี๊ยมปลิวตามลม ผู้ฝึกตนเพิ่งกลับจากป่านั่งพักและเล่าเรื่องกันเสียงเบาๆ'},
+    {n:'ลานภารกิจเมืองหลวง',r:[112,85,300,160],t:'ลานโล่งหน้าหอภารกิจ ผู้ฝึกตนยืนอ่านกระดานประกาศและรวมกลุ่มก่อนออกเดินทาง'},
+    {n:'สวนศิลาและสระบัวทอง',r:[310,85,490,160],t:'ลมเย็น มีเสียงน้ำไหลในคลองเล็ก ก้อนศิลาประหลาดตั้งอยู่ท่ามกลางดอกบัว'},
+    {n:'ลานกว้างใต้เมืองหลวง',r:[0,170,490,490],t:'ลานหินกว้างสุดสายตา ลมโกรกจากประตูใต้ ใช้จัดงานเทศกาลและชุมนุมของเมือง'}];
+   const LM7=[
+    ['ซุ้มประตูตลาดเซียน',120,38,'ซุ้มไม้ทาชาดแดง แขวนโคมกระดาษเรียงเป็นแถว ใต้ซุ้มมีป้ายห้ามเหาะเหินในเขตตลาด'],
+    ['ลานแผงลอยเรียงราย',165,20,'แผงผ้าใบเรียงกันยาว มีทั้งยันต์ ผลึกหิน และหนังสัตว์วางขายคละกัน'],
+    ['ศิลาจารึกวิถีเซียน',330,38,'ศิลาสูงเท่าสองคนยืน สลักขั้นพลังทั้งห้าขั้นใหญ่เรียงลงมา ตัวอักษรลึกจนคลำได้ด้วยมือ'],
+    ['ศาลาอ่านตำริมคลอง',455,20,'ศาลาไม้ไผ่ริมคลองเล็ก ผู้อ่านนั่งพิงเสากันเงียบๆ มีกลิ่นกระดาษเก่าและหมึกจีน'],
+    ['ป้ายผ้าโรงเตี๊ยมเมฆาพักใจ',30,45,'ป้ายผ้าสีเขียวหม่น ปักอักษรเป็นลายเมฆ ปลิวตามลมหน้าประตูโรงเตี๊ยม'],
+    ['โต๊ะหมากรุกริมถนน',60,100,'โต๊ะหินสลักกระดานหมากรุก ตาสองข้างมีชายชรานั่งคิดนานจนชากลายเป็นน้ำแข็ง'],
+    ['เสาธงเมืองหลวงเมฆาคราม',150,100,'เสาไม้สูงลิ่ว ธงสีฟ้าครามปักลายเมฆโบกสะบัด เสียงผ้าฟาดลมได้ยินไกล'],
+    ['ลานรวมพลนักผจญภัย',260,140,'ลานปูหินกว้าง ผู้ฝึกตนนัดหมายรวมกลุ่มก่อนออกล่าอสูรที่นี่ มีรอยเท้าสึกเป็นร่อง'],
+    ['สระดอกบัวทอง',380,120,'สระน้ำใสมีดอกบัวสีทองแซมอยู่ มีปลาตัวเล็กว่ายตามเงาคนเดินผ่าน'],
+    ['ศาลาชมจันทร์',440,100,'ศาลาหลังคาโค้งตั้งบนเนินเล็ก ยามค่ำมองเห็นทั้งเมืองหลวงและแสงโคมเรียงเป็นสาย'],
+    ['สะพานหินโค้งข้ามคลอง',340,140,'สะพานหินโค้งสูง เหยียบแล้วมีเสียงก้องเบาๆ ใต้สะพานมีน้ำไหลรินตลอดเวลา'],
+    ['ประตูเมืองทิศใต้',245,485,'ประตูหินสูงใหญ่ สลักรูปมังกรเมฆา มียามเมืองยืนเฝ้าและมีค่ายกลคุ้มกันเมืองเรืองแสงจางๆ'],
+    ['ลานกว้างหน้าประตูใต้',245,440,'ลานโล่งกว้างพอให้ขบวนม้าหลายสิบตัวผ่านพร้อมกัน มีรอยล้อเกวียนสึกพื้นหิน'],
+    ['หอสังเกตการณ์ยามเมือง',60,300,'หอไม้สามชั้นสูงเหนือหลังคาบ้าน ยามบนหอคอยตีกลองบอกเวลาเป็นระยะ']];
+   LM7.forEach(([n,x,y,lm])=>addW({n,x,y,lm}));
+   /* บทพูดและข้อมูลกิจกรรม */
+   const MS7=[
+    {id:'a1',s:'เภสัชกรเฒ่าในตลาดเซียนเก็บยาไม่ทัน ขอขนกระต่ายไปรองห่อยา',i:'fur',q:10,k:1},
+    {id:'a2',s:'ช่างหลอมอาวุธต้องการเขี้ยวหมูป่าไปทำด้ามกระบี่ฝึกหัด',i:'tusk',q:6,k:1.5},
+    {id:'a3',s:'หมอยาหลวงกำลังปรุงยาแก้พิษ ต้องใช้พิษงูเป็นตัวตั้ง',i:'venom',q:5,k:2},
+    {id:'a4',s:'ช่างเกราะหลวงรับงานเกราะหนังไว้เต็มมือ แต่หนังสัตว์ในคลังหมดแล้ว',i:'hide',q:6,k:2},
+    {id:'a5',s:'กำแพงเมืองทรุดตัวหลังฝนหนัก ช่างก่อหินขาดศิลาหยาบมาซ่อม',i:'rock',q:8,k:2},
+    {id:'a6',s:'นักปรุงยาหญิงหมกมุ่นกับตำรับใหม่จนลืมหาวัตถุดิบ ขาดหญ้าปราณวิญญาณ',i:'herb_sp',q:8,k:1.5}];
+   const RUM7=['เขาว่าตลาดเซียนใหญ่ๆ มีค่ายกลห้ามบินคุมอยู่ ใครเหาะเข้ามาโดนค่ายกลโจมตีทันที',
+    'หอประมูลจัดงานประลองการปรุงยาเป็นรอบๆ โอสถที่ปรุงได้ในงานจะถูกนำออกประมูลต่อทันที',
+    'ตลาดมืดใต้ถนนมักมีวัตถุดิบจากอสูร พืชวิญญาณ ยันต์ และโอสถ แลกกันด้วยของมากกว่าเงิน',
+    'ผู้ฝึกตนที่กลับจากป่าลึกมักแวะโรงเตี๊ยมก่อนเสมอ เล่าสิ่งที่พบให้คนอื่นฟังแลกกับเหล้าหนึ่งจอก',
+    'หอภารกิจมีทั้งงานเก็บสมุนไพร ล่าอสูร และตามหาสัตว์เลี้ยงที่หายไป ยิ่งขั้นสูงรางวัลยิ่งงาม'];
+   const TALE7=['นักเดินทางผู้หนึ่งเล่าว่า ทางหมาป่าสายลมแรงช่วงเย็น หมาป่าจะออกหากินเป็นฝูง ควรพกโอสถสมานแผลไว้เสมอ',
+    'พ่อค้าเกวียนเล่าว่าเขาเห็นแสงฟ้าแลบเหนือยอดเขาอสูรทั้งที่ไร้เมฆ ชาวบ้านว่ามีผู้ฝึกตนกำลังเผชิญทัณฑ์สายฟ้า',
+    'ศิษย์สำนักหนุ่มเล่าว่า ผู้ที่ตั้งใจฝึกทุกวันแม้เพียงเล็กน้อย จะเหนือกว่าผู้ที่ฝึกหนักแต่หยุดบ่อย'];
+   const TIP7=['บรรณารักษ์บอกว่า ผู้จะเข้าสู่แก่นทองคำต้องผ่านทัณฑ์สายฟ้า ควรเตรียมเกราะดี โอสถฟื้นเลือดหลายเม็ด และเปิดวิชาโล่ปราณก่อนฟ้าฟาด',
+    'บรรณารักษ์บอกว่า ลมปราณหมดแล้วควรนั่งสมาธิในที่ปลอดภัย อย่าฝืนสู้ต่อ',
+    'บรรณารักษ์บอกว่า หอภารกิจจะเปลี่ยนงานทุกวัน ผู้ที่ส่งของครบจะได้ทั้งเหรียญทองและแต้มฝึกฝน'];
+   const RID7=[{q:'ไร้รูปร่าง แต่เซียนทุกคนต้องดูดซับทุกวัน คืออะไร',o:['ลมปราณ','ฝุ่นดิน','หมอกเช้า'],a:0},
+    {q:'สิ่งที่ผู้ฝึกตนต้องผ่านแต่ไม่มีใครอยากผ่าน คืออะไร',o:['ประตูเมือง','ทัณฑ์สายฟ้า','ตลาดเช้า'],a:1},
+    {q:'ยิ่งขัดยิ่งคม ยิ่งปล่อยทิ้งยิ่งขึ้นสนิม คืออะไร',o:['กระบี่','ก้อนหิน','ผ้าไหม'],a:0}];
+   const SP7=['pill_hp','pill_qi','pill_hp2','pill_qi2'];
+   /* กิจกรรม 1: หอภารกิจ (3 งานต่อวัน เปลี่ยนทุกวัน) */
+   NPC7.cmis=n=>{const s=st7(),d=dn(),pick=[d%6,(d+2)%6,(d+4)%6].map(i=>MS7[i]);
+    menu(n.n+' ภารกิจวันนี้',pick.map(m=>({t:(s.done[m.id]?'ส่งแล้ว ':'')+I[m.i].n+' '+m.q+' ชิ้น (มี '+has7(m.i)+') รางวัล '+Math.round(40*(S.step+1)*m.k)+' เหรียญทอง และแต้มฝึกฝน '+Math.round(60*(S.step+1)*m.k),m})),{ent:x=>{const m=x.m,ix=mn.i;
+     if(s.done[m.id])return say('ภารกิจนี้ส่งแล้ว รอพรุ่งนี้');
+     say(m.s);const b=has7(m.i);if(b<m.q)return say('ยังขาด '+I[m.i].n+' อีก '+(m.q-b)+' ชิ้น');
+     remN(m.i,m.q);if(b-has7(m.i)<m.q)return say('ส่งของไม่สำเร็จ ลองใหม่');
+     const c=Math.round(40*(S.step+1)*m.k),e=Math.round(60*(S.step+1)*m.k);s.done[m.id]=1;S.coin=(S.coin||0)+c;S.exp+=e;sfx('buy');say('ส่งภารกิจสำเร็จ ได้ '+c+' เหรียญทอง และแต้มฝึกฝน '+e);re7(NPC7.cmis,n,ix)}})};
+   /* กิจกรรม 2: โรงเตี๊ยม พักฟื้นและฟังเรื่องเล่า */
+   NPC7.cinn=n=>menu(n.n+' (มี '+wallet9()+')',[{t:'พักห้องชั้นดี ฟื้นเลือดและปราณจนเต็ม ราคา '+priceFull(fee7()),a:'rest'},{t:'ฟังเรื่องเล่าของนักเดินทาง ฟรี',a:'tale'}],{ent:x=>{const ix=mn.i;
+    if(x.a==='rest')return payMenu(fee7(),'พักห้องชั้นดี',()=>{S.hp=mhp();S.qi=mqi();sfx('cast');say('หลับสบายตลอดคืน เลือดและปราณเต็มแล้ว')},()=>re7(NPC7.cinn,n,ix));
+    say(pk(TALE7))}});
+   /* กิจกรรม 3: ร้านน้ำชา ข่าวลือ ปริศนารายวัน ชาฟื้นปราณ */
+   NPC7.ctea=n=>{const s=st7();menu(n.n,[{t:'ฟังข่าวลือยุทธภพ ฟรี',a:'rum'},{t:'ทายปริศนาประจำวัน ถูกได้รางวัล'+(s.rid?' (วันนี้ทายแล้ว)':''),a:'rid'},{t:'ดื่มชาหอมลมปราณ ฟื้นปราณ 30 เปอร์เซ็นต์ ราคา 5 หินต่ำ',a:'tea'}],{ent:x=>{const ix=mn.i;
+     if(x.a==='rum')return say(pk(RUM7));
+     if(x.a==='tea')return payMenu(5,'ชาหอมลมปราณ',()=>{S.qi=Math.min(mqi(),S.qi+Math.round(mqi()*.3));say('ชาอุ่นกลิ่นหอม ลมปราณฟื้นขึ้น')},()=>re7(NPC7.ctea,n,ix));
+     if(s.rid)return say('วันนี้ทายปริศนาไปแล้ว พรุ่งนี้มาใหม่');
+     const q=RID7[dn()%RID7.length];
+     menu('ปริศนา '+q.q,q.o.map((t,i)=>({t,ok:i===q.a})),{ent:y=>{s.rid=1;
+      if(y.ok){const c=10*(S.step+1),e=40*(S.step+1);S.coin=(S.coin||0)+c;S.exp+=e;sfx('buy');say('ตอบถูก ได้ '+c+' เหรียญทอง และแต้มฝึกฝน '+e)}else say('ตอบผิด เสี่ยวเอ้อร์ยิ้มแล้วบอกให้มาลองใหม่พรุ่งนี้');
+      NPC7.ctea(n)}})}})};
+   /* กิจกรรม 4: หอคัมภีร์ อ่านตำรารายวัน */
+   NPC7.clib=n=>{const s=st7();menu(n.n,[{t:'อ่านคัมภีร์ประจำวัน รับแต้มฝึกฝน '+80*(S.step+1)+(s.lib?' (วันนี้อ่านแล้ว)':''),a:'rd'},{t:'ขอคำแนะนำเรื่องการฝึกตน ฟรี',a:'tp'}],{ent:x=>{const ix=mn.i;
+     if(x.a==='tp')return say(pk(TIP7));
+     if(s.lib)return say('วันนี้อ่านครบแล้ว จิตใจต้องพักให้ซึมซับ มาใหม่พรุ่งนี้');
+     s.lib=1;const e=80*(S.step+1);S.exp+=e;sfx('levelup');say('นั่งอ่านคัมภีร์จนตะวันคล้อย เข้าใจลมปราณลึกขึ้น ได้แต้มฝึกฝน '+e);re7(NPC7.clib,n,ix)}})};
+   /* กิจกรรม 5: แผงลอยตลาดเซียน ขายโอสถพื้นฐาน (เคารพขั้นที่ต้องถึงของของเดิม) */
+   NPC7.cstall=n=>{const L=SP7.filter(id=>I[id]&&I[id].p>0);menu(n.n+' (มี '+wallet9()+')',L.map(id=>({t:I[id].n+' ราคา '+priceFull(I[id].p),id})),{ent:x=>{const ix=mn.i;
+     if(typeof lvOk==='function'&&!lvOk(x.id,1))return;
+     payMenu(I[x.id].p,I[x.id].n,()=>{add(x.id,1);say('ซื้อ '+I[x.id].n+' 1 เม็ด')},()=>re7(NPC7.cstall,n,ix))}})};
+   addW({n:'ผู้ดูแลหอภารกิจหลัวเฟิง',x:200,y:122,npc:'cmis'});
+   addW({n:'เถ้าแก่เนี้ยหลิวชุนเหม่ย แห่งโรงเตี๊ยมเมฆาพักใจ',x:32,y:62,npc:'cinn'});
+   addW({n:'เสี่ยวเอ้อร์จางไป๋ แห่งร้านน้ำชาลมฟ้า',x:82,y:72,npc:'ctea'});
+   addW({n:'บรรณารักษ์เฒ่าสวี่หมิง แห่งหอคัมภีร์ฟ้าลิขิต',x:400,y:38,npc:'clib'});
+   addW({n:'พ่อค้าแผงลอยโหยวต้ากง',x:200,y:38,npc:'cstall'});
+   Object.assign(NPCDO,{cmis:'รับภารกิจส่งวัตถุดิบประจำวัน แลกเหรียญทองและแต้มฝึกฝน',cinn:'พักฟื้นเลือดและปราณ ฟังเรื่องเล่านักเดินทาง',ctea:'ฟังข่าวลือ ทายปริศนา ดื่มชาฟื้นปราณ',clib:'อ่านคัมภีร์ประจำวันรับแต้มฝึกฝน',cstall:'ซื้อโอสถพื้นฐานจากแผงลอย'});
+   ['cmis','cinn','ctea','clib','cstall'].forEach(k=>{VD['npc_'+k]=.5});
+   /* บอกชื่อย่านตอนเดินเข้า (ไม่พูดซ้ำถ้ายังอยู่ย่านเดิม) */
+   let last7='';
+   setInterval(()=>{try{if(mode!=='play')return;const z=zoneAt(S.x,S.y);if(!z||z.id!=='c'){last7='';return}
+    const d=DS7.find(a=>S.x>=X+a.r[0]&&S.x<=X+a.r[2]&&S.y>=Y+a.r[1]&&S.y<=Y+a.r[3]),k=d?d.n:'';
+    if(k!==last7){last7=k;if(d)say('เข้าสู่'+d.n+' '+d.t)}}catch(e){}},900);
+   /* ตัวตรวจเบื้องหลัง (CHK ทำงานทุก 4 วินาที) และซ่อมสถานะภารกิจที่เสีย */
+   CHK.push(()=>{const o=[],c=Z.find(a=>a.id==='c');if(!c||!c.big7)return o;
+    if(c.r[2]-c.r[0]<400||c.r[3]-c.r[1]<400)o.push('เมืองหลวงเล็กกว่า 400 ช่อง');
+    if(c.r.some(v=>!Number.isFinite(v)||v<0))o.push('พิกัดเมืองหลวงผิดปกติ');
+    const seen={};W.forEach(w=>{if(!w.cap7)return;if(seen[w.n])o.push('ชื่อซ้ำ '+w.n);seen[w.n]=1;const z=zoneAt(w.x,w.y);if(!z||z.id!=='c')o.push('จุดอยู่นอกเมืองหลวง '+w.n);if(w.npc&&!NPC7[w.npc])o.push('NPC ไม่มีบทพูด '+w.n)});
+    try{st7()}catch(e){S.cq7={d:'',done:{}};o.push('สถานะภารกิจเมืองหลวงเสีย ซ่อมแล้ว')}
+    return o});
+   /* ประกาศและเคล็ดลับสำหรับผู้เล่น */
+   try{TIPS.push('เมืองหลวงขยายใหญ่แล้ว มีหอภารกิจ โรงเตี๊ยม ร้านน้ำชา หอคัมภีร์ และแผงลอย กด M เลือกผู้ดูแลแล้ว Shift N เดินไปหา กด F คุย')}catch(e){}
+   try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-01',c:[C_MAP],h:'เมืองหลวงขยายใหญ่ และกิจกรรมใหม่',t:'ขยายเมืองหลวงเมฆาครามเป็น 491 x 491 ช่อง แบ่งเป็น 6 ย่าน และเพิ่มกิจกรรมใหม่ 5 อย่าง',x:[
+     'ย่านใหม่ คือ ตลาดเซียน หอคัมภีร์ โรงเตี๊ยมและร้านน้ำชา ลานภารกิจ สวนศิลาและสระบัวทอง และลานกว้างใต้เมือง เดินเข้าแล้วระบบจะบอกชื่อย่าน',
+     'หอภารกิจ ให้งานส่งวัตถุดิบ 3 งานต่อวัน เปลี่ยนทุกวัน ได้เหรียญทองและแต้มฝึกฝนตามขั้นพลัง',
+     'โรงเตี๊ยมพักฟื้นเลือดและปราณ ร้านน้ำชามีข่าวลือ ปริศนารายวัน และชาฟื้นปราณ',
+     'หอคัมภีร์อ่านตำราได้วันละครั้งรับแต้มฝึกฝน แผงลอยตลาดเซียนขายโอสถพื้นฐาน',
+     'มีจุดสังเกต 14 แห่งให้เดินสำรวจ ทางหมาป่ายังเข้าเมืองที่ประตูตะวันตกเหมือนเดิม']})}catch(e){}
+   console.log('CAP7 เมืองหลวงขยาย',cap.r,'จุด',W.filter(w=>w.cap7).length)
+  }
+ }
+}catch(e){console.error('CAP7',e)}
+/* ===== PATCH 33 ป่าชายหมู่บ้านใต้ คืนสัตว์อสูรระดับต่ำให้เชื่อมกับหมู่บ้าน (รอบที่ 7 วันที่ 1 พ.ย. 2569) =====
+ ผลค้นคว้า (กฎข้อ 10.1): นิยายเซียนแนวเริ่มต้นให้ผู้ฝึกตนขั้นต้นล่าอสูรขั้นต่ำใกล้หมู่บ้านเพื่อเก็บวัตถุดิบ (เขี้ยว พิษ หนัง) และแต้มแรกเริ่ม แล้วนำไปส่งหอภารกิจหรือขายตลาด
+ ก่อนไปป่าลึกที่อันตรายกว่า ผูกกับหอภารกิจเมืองหลวงที่ขอเขี้ยวหมูป่าและพิษงู (PATCH 32)
+ โครงสร้าง: ต่อจากขอบใต้ของหมู่บ้าน (open ทั้งคู่ เดินต่อเนื่อง) หมูป่าอยู่โซนของตัวเอง งูอยู่โซนของตัวเอง (กฎ 9.11) โซนละ 501 x 500 ช่อง พิกัดบวก ตรวจแล้วไม่ทับโซนอื่น
+ จุดเกิดเว้นห่างขอบเหนือ 30 ก้าว กันอสูรประชิดหมู่บ้าน เกิดใหม่ใช้ระบบกลาง respawn() ตามจุดเกิด (home) */
+try{
+ const vil=Z.find(a=>a.id==='v');
+ if(!vil)console.error('FOR7 ไม่พบหมู่บ้าน');
+ else if(!Z.some(a=>a.id==='fb'||a.id==='fs')){
+  const rb=[vil.r[0],vil.r[3]+1,vil.r[2],vil.r[3]+500],rn2=[vil.r[2]+1,vil.r[3]+1,vil.r[2]+500,vil.r[3]+500];
+  const hitR=r=>Z.filter(a=>!(r[2]<a.r[0]||r[0]>a.r[2]||r[3]<a.r[1]||r[1]>a.r[3])).map(a=>a.id);
+  const h1=hitR(rb),h2=hitR(rn2);
+  if(rb.concat(rn2).some(v=>!Number.isFinite(v)||v<0))console.error('FOR7 พิกัดผิด',rb,rn2);
+  else if(h1.length||h2.length)console.error('FOR7 ทับโซนอื่น ยกเลิกการสร้าง',h1,h2);
+  else{
+   const fb={id:'fb',n:'ป่าหมูป่าชายหมู่บ้านใต้',r:rb,b:.1,min:0,open:1,mons:['boar'],cnt:60};
+   const fs={id:'fs',n:'ป่าชื้นงูเขียวชายหมู่บ้าน',r:rn2,b:.1,min:1,open:1,mons:['snake'],cnt:60};
+   Z.push(fb,fs);
+   const S9=window.__SAFE9;
+   const mk=(z,k,n)=>{let made=0;for(let i=0;i<n;i++){for(let t=0;t<400;t++){const x=z.r[0]+1+Math.floor(Math.random()*(z.r[2]-z.r[0]-1)),y=z.r[1]+30+Math.floor(Math.random()*(z.r[3]-z.r[1]-31));if(!S9||S9.homeOK9(z.id,x,y)){spawn(z,k,x,y);made++;break}}}return made};
+   const m1=mk(fb,'boar',fb.cnt),m2=mk(fs,'snake',fs.cnt);
+   const X1=rb[0],Y1=rb[1],X2=rn2[0],Y2=rn2[1];
+   const addF=o=>{if(!W.some(a=>a.n===o.n))W.push(Object.assign({for7:1},o))};
+   addF({z:'rs',n:'ทางลงใต้สู่ป่าหมูป่าชายหมู่บ้าน',x:250,y:490});
+   addF({z:'fb',n:'ชายป่าหมูป่า (ทางกลับหมู่บ้านลำธารใส)',x:X1+250,y:Y1+4});
+   addF({z:'fb',n:'ปากทางป่าชื้นงูเขียว',x:X1+496,y:Y1+250});
+   addF({z:'fs',n:'ทางกลับป่าหมูป่า',x:X2+4,y:Y2+250});
+   addF({z:'fb',n:'ตอไม้ใหญ่หน้าป่าหมูป่า',x:X1+230,y:Y1+40,lm:'ตอไม้ใหญ่ถูกถากเป็นที่นั่ง ดินรอบๆมีรอยกีบหมูป่าและรอยดุนรากไม้ใหม่ๆ'});
+   addF({z:'fb',n:'โคลนแฉะที่หมูป่าลงเกลือก',x:X1+120,y:Y1+200,lm:'แอ่งโคลนแฉะกลางป่า มีรอยกลิ้งตัวของหมูป่าและกลิ่นสาบฉุนลอยอยู่'});
+   addF({z:'fb',n:'ต้นไทรเก่าแก่ในป่าหมูป่า',x:X1+380,y:Y1+380,lm:'ต้นไทรใหญ่รากห้อยเป็นม่าน ใต้ต้นมีเปลือกผลไม้ที่หมูป่ากินทิ้งไว้เต็มพื้น'});
+   addF({z:'fs',n:'ลำห้วยชื้นแฉะของงูเขียว',x:X2+250,y:Y2+200,lm:'ลำห้วยน้ำนิ่งเต็มไปด้วยใบไม้เน่า มีรอยลากตัวยาวของงูบนโคลนริมตลิ่ง'});
+   addF({z:'fs',n:'ซากต้นไม้ล้มปกคลุมด้วยมอส',x:X2+120,y:Y2+360,lm:'ลำต้นไม้ล้มคลุมด้วยมอสหนา มีเปลือกงูลอกเกลี่ยอยู่ตามรอยแตก ระวังให้ดีก่อนก้าวข้าม'});
+   (window.__FZ=window.__FZ||{}).fb='f';window.__FZ.fs='f';(window.__FA=window.__FA||{}).fb='f';window.__FA.fs='b';
+   /* อธิบายเขตครั้งแรกที่เดินเข้า */
+   const ZD7={fb:'ป่าโปร่งใต้หมู่บ้าน พื้นเต็มไปด้วยรากไม้และรอยกีบ หมูป่าเขี้ยวเหล็กออกหากินเป็นกลุ่ม ขั้นต้นก็สู้ได้ถ้าระวังตัว',fs:'ป่าชื้นทึบแสง หญ้าสูงและใบไม้เน่าทับกัน งูเขียวหางไหม้ซ่อนอยู่ตามพุ่มไม้ พิษแรง เตรียมโอสถไว้'};
+   const seen7={};let last7='';
+   setInterval(()=>{try{if(mode!=='play')return;const z=zoneAt(S.x,S.y);if(!z||z.id===last7)return;last7=z.id;if(ZD7[z.id]&&!seen7[z.id]){seen7[z.id]=1;setTimeout(()=>{if(zoneAt(S.x,S.y)===z)say(ZD7[z.id])},1200)}}catch(e){}},700);
+   /* ตัวตรวจเบื้องหลัง: โซนต้องมี พิกัดบวก ไม่มีอสูรปนชนิด จำนวนไม่หาย */
+   CHK.push(()=>{const o=[];[fb,fs].forEach(z0=>{const z=Z.find(a=>a.id===z0.id);if(!z){o.push('ป่าชายหมู่บ้าน: ไม่พบโซน '+z0.id);return}
+    if(z.r.some(v=>!Number.isFinite(v)||v<0))o.push('พิกัดโซน '+z.id+' ผิดปกติ');
+    if(z.r[2]-z.r[0]<400||z.r[3]-z.r[1]<400)o.push('โซน '+z.id+' เล็กกว่า 400 ช่อง');
+    const L=MS.filter(m=>m.z===z.id);if(L.length<z.cnt*.5)o.push('อสูรในโซน '+z.id+' เหลือน้อยผิดปกติ '+L.length);
+    if(L.some(m=>m.k!==z.mons[0]))o.push('อสูรปนชนิดในโซน '+z.id)});return o});
+   try{TIPS.push('ป่าหมูป่าและป่างูเขียวอยู่ทางใต้ของหมู่บ้าน เดินต่อจากทุ่งกระต่ายใต้ ได้เขี้ยวหมูป่ากับพิษงูไปส่งหอภารกิจเมืองหลวง')}catch(e){}
+   try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-01',c:[C_MAP],h:'คืนสัตว์อสูรระดับต่ำให้หมู่บ้าน',t:'เพิ่มป่าหมูป่าและป่างูเขียวต่อจากทางใต้ของหมู่บ้าน สำหรับผู้ฝึกตนขั้นต้น',x:[
+     'ป่าหมูป่าชายหมู่บ้านใต้ มีหมูป่าเขี้ยวเหล็ก 60 ตัว ป่าชื้นงูเขียวชายหมู่บ้าน มีงูเขียวหางไหม้ 60 ตัว แต่ละป่ามีขนาด 500 x 500 ช่อง',
+     'เดินลงใต้จากทุ่งกระต่ายใต้ได้เลย ไม่ต้องกดยืนยัน อสูรแต่ละชนิดอยู่โซนของตัวเอง ไม่ปนกัน',
+     'เขี้ยวหมูป่ากับพิษงูใช้ส่งภารกิจที่หอภารกิจเมืองหลวง หรือขายได้ กด M ดูจุดหมายของป่าทั้งสอง']})}catch(e){}
+   console.log('FOR7 ป่าชายหมู่บ้าน หมูป่า',m1,'งู',m2)
+  }
+ }
+}catch(e){console.error('FOR7',e)}
 
 /* ===== PATCH 22 (เพิ่มต่อท้าย ไม่ลบโค้ดเดิม) ความเร็วเดินด้วยแป้นพิมพ์: กดทีละครั้งเดินทันทีตามความเร็วนิ้ว กดค้างเดินคงที่ 10 ก้าวต่อวินาที ไม่ขึ้นกับความเร็วรีพีทของเครื่อง ถ้าต้องการย้อนกลับ ใช้ไฟล์สำรอง index.backup-before-walk-speed.html ===== */
 try{
