@@ -88,7 +88,19 @@ const CATS=['ทั้งหมด','โลก','แผนที่','สำน�
 const $=id=>document.getElementById(id);
 var SP0=[27,46];let S={x:27,y:46,f:0,step:0,exp:0,hp:100,qi:50,gold:10000,coin:1000,inv:[{id:'sw_wood',q:1},{id:'robe',q:1},{id:'badge',q:1},{id:'pill_hp',q:3},{id:'herb_sp',q:2},{id:'mush_sp',q:2},{id:'jujube',q:2},{id:'talis',q:1}],wpn:null,known:['fist','finger','skysword'],slots:['fist','finger','skysword',null,null,null,null,null,null,null],
 med:false,t:Date.now(),q:{k:0,got:0},chat:[[],[],[],[],[],[]],ground:[],alt:0,bgmLv:5,sfxLv:5,tribDay:'',tribPend:0,tribCd:0,tribPrep:0,hideLv:false,svClrT:0};/* รอบที่ 6: tribDay วันที่ล้มเหลวทัณฑ์สายฟ้าล่าสุด tribPend กำลังรับทัณฑ์ hideLv ผู้พัฒนาซ่อนขั้นพลัง svClrT เวลาคำสั่งล้างพื้นล่าสุดที่รับ เซฟเก่าไม่มีค่าเหล่านี้จึงใช้ค่าเริ่มต้นนี้ *//* alt = ชั้นที่ปีนเขาอยู่ (0 = ยืนบนพื้น) bgmLv = ระดับเสียงดนตรี 0 ถึง 10 เซฟเก่าไม่มีสองค่านี้จึงใช้ค่าเริ่มต้นนี้ */
-try{const l=JSON.parse(localStorage.getItem(window.__KEY||'ipo1')||'null');if(l)S=Object.assign(S,l)}catch(e){}
+/* เซฟสำรองอัตโนมัติ (รอบที่ 8): คีย์ ipo_bak2|บัญชี|เวลา|a (อัตโนมัติ) หรือ m (สำรองด้วยมือจากเมนูผู้พัฒนา) เก็บ 5 ชุดล่าสุดต่อบัญชี สำรองทุก 20 นาที ประกาศไว้ก่อนโหลดเซฟเพราะใช้กู้เซฟหลักที่อ่านไม่ได้ */
+const SAVEH=window.__SAVEH={fail:0,okT:0,warnT:0,bakT:0,err:'',recov:0},BAK_MAX=5,BAK_GAP=1200000;
+const bakPre=()=>'ipo_bak2|'+(window.__KEY||'ipo1')+'|';
+function bakKeys(kind){try{const p=bakPre();return Object.keys(localStorage).filter(k=>k.startsWith(p)&&(!kind||k.endsWith('|'+kind))).sort((a,b)=>(parseInt(a.slice(p.length))||0)-(parseInt(b.slice(p.length))||0))}catch(e){return[]}}
+function bakPrune(keep){try{const a=bakKeys('a');a.slice(0,Math.max(0,a.length-keep)).forEach(k=>{try{localStorage.removeItem(k)}catch(e){}})}catch(e){}}
+SAVEH.bakT=(()=>{const a=bakKeys('a');return a.length?(parseInt(a[a.length-1].slice(bakPre().length))||0):0})();/* เริ่มนับรอบสำรองจากชุดล่าสุดที่มีอยู่ ไม่สำรองซ้ำทุกครั้งที่เข้าเกม */
+const okSave=o=>!!o&&typeof o==='object'&&!Array.isArray(o)&&Number.isFinite(Number(o.step))&&Number.isFinite(Number(o.x))&&Number.isFinite(Number(o.y));
+{let l=null,bad=false;try{l=JSON.parse(localStorage.getItem(window.__KEY||'ipo1')||'null')}catch(e){bad=true}
+ if(bad||(l!=null&&typeof l!=='object')||Array.isArray(l)){l=null;/* เซฟหลักอ่านไม่ได้: กู้จากเซฟสำรองอัตโนมัติที่ใหม่ที่สุดและอ่านได้ ไม่เริ่มตัวละครใหม่ทับ */
+  const ks=bakKeys().reverse();for(let i=0;i<ks.length;i++){try{const o=JSON.parse(localStorage.getItem(ks[i])||'null');if(okSave(o)){l=o;SAVEH.recov=Date.now();break}}catch(e){}}}
+ if(l&&typeof l==='object')S=Object.assign(S,l)}
+const stepFix=()=>{const n=Math.floor(Number(S.step));S.step=Number.isFinite(n)?Math.max(0,Math.min(R.length-1,n)):0};stepFix();/* รอบที่ 8: ขั้นพลังในเซฟเสีย (ติดลบ ข้อความ เกินตาราง) เคยทำให้เกมเริ่มไม่ขึ้น เพราะตารางขั้นอ่านก่อน watchdog ทำงาน ปรับเข้าช่วงที่ถูกต้องตั้งแต่โหลด */
+if(SAVEH.recov)setTimeout(()=>{try{bugLog('บันทึกเซฟ','เซฟหลักอ่านไม่ได้ กู้จากเซฟสำรองอัตโนมัติ');say('เซฟหลักอ่านไม่ได้ เกมกู้จากเซฟสำรองอัตโนมัติล่าสุดให้แล้ว',1)}catch(e){}},4000);
 delete S.fp;/* รอบที่ 5: ยกเลิกพลังเหาะ ใช้ลมปราณหลอดเดียวทุกอย่าง ค่า fp ในเซฟเก่าลบทิ้ง */
 let mode='play',mn=null,cbk=null,prevMode='play',tts=false,spd=1,auto=false,lastSlot=-1,goal=null,target=null,buff=0,cd={},warned=0,rl=null,rlT=0,lastTurn=1,ci=0,mi={},MS=[],AC=null;
 const zoneAt=(x,y)=>Z.find(z=>x>=z.r[0]&&x<=z.r[2]&&y>=z.r[1]&&y<=z.r[3]);
@@ -182,7 +194,21 @@ CHK.push(()=>{const o=[];
  PEAKS.forEach(p=>{const z=zoneAt(p.x,p.y);if(!z||z.id!==p.z)o.push('ปีนเขา: ยอด'+p.n+' อยู่นอกเขต');else if(heightAt(p.x,p.y)!==p.h)o.push('ปีนเขา: ความสูงยอด'+p.n+' ไม่ตรงกับที่ตั้งไว้')});
  return o});
 function render(){altFix();const z=zoneAt(S.x,S.y);$('stat').textContent=(mode==='play'?'':'[เปิดเมนู '+((mode==='menu'||mode==='slot')&&mn?mn.t:mode)+' กด Esc เพื่อปิด] ')+realmName(S.step)+' | HP '+Math.floor(S.hp)+'/'+mhp()+' | ปราณ '+Math.floor(S.qi)+'/'+mqi()+' | แต้ม '+Math.floor(S.exp)+'/'+R[S.step][3]+' | พิกัด '+S.x+','+S.y+' | หัน'+DN[S.f]+' | '+(z?z.n:'')+(S.med?' | นั่งสมาธิ':'')+(S.alt>0?' | ปีนเขาชั้น '+S.alt:'')+(S.fl?' | ขี่กระบี่เหาะ':'')+(CAST.on?' | รวมพลัง':'')+(S.fear>Date.now()?' | หวาดกลัว':'')+(auto?' | ออโต้':'')}
-function save(){if(window.__DUP)return;S.t=Date.now();try{localStorage.setItem(window.__KEY||'ipo1',JSON.stringify(S))}catch(e){}}
+/* บันทึกเซฟ (รอบที่ 8): ตรวจผลการเขียนจริง ล้มเหลวติดกัน 3 ครั้งแจ้งผู้เล่นและบันทึกบั๊ก พื้นที่เต็มจะล้างเซฟสำรองอัตโนมัติแล้วเขียนซ้ำ 1 ครั้ง และสำรองอัตโนมัติทุก 20 นาที เก็บ 5 ชุดล่าสุดต่อบัญชี (คีย์ ipo_bak2|บัญชี|เวลา|a หรือ m) ใช้ร่วมกับเมนูกู้คืนในเมนูผู้พัฒนา */
+function saveWarn(){if(SAVEH.fail<3||Date.now()-SAVEH.warnT<90000)return;SAVEH.warnT=Date.now();try{bugLog('บันทึกเซฟ','เขียนเซฟในเครื่องล้มเหลวติดกัน '+SAVEH.fail+' ครั้ง '+SAVEH.err)}catch(e){}try{say('เตือน บันทึกเซฟในเครื่องไม่สำเร็จ '+SAVEH.fail+' ครั้งติดกัน อาจเพราะพื้นที่เก็บข้อมูลของเบราว์เซอร์เต็มหรือเปิดโหมดส่วนตัว ข้อมูลยังอยู่ในเกมตอนนี้ ถ้าเล่นออนไลน์ระบบจะส่งขึ้นเซิร์ฟเวอร์ให้ แต่ควรล้างพื้นที่หรือเปิดหน้าต่างปกติ',1)}catch(e){}}
+function saveWrite(K,js){try{localStorage.setItem(K,js);return true}catch(e){SAVEH.err=String((e&&e.name)||e).slice(0,40)}
+ for(let i=0;i<4;i++){const a=bakKeys('a');if(a.length<2)break;try{localStorage.removeItem(a[0])}catch(x){}try{localStorage.setItem(K,js);return true}catch(x){}}/* พื้นที่เต็ม: ล้างเซฟสำรองอัตโนมัติชุดเก่าทีละชุดแล้วเขียนซ้ำ เก็บชุดใหม่สุดไว้เสมอ */
+ return false}
+function save(){if(window.__DUP||window.__SAVE_LOCK)return;S.t=Date.now();const K=window.__KEY||'ipo1';let js;try{js=JSON.stringify(S)}catch(e){SAVEH.fail++;SAVEH.err='stringify';saveWarn();return}
+ if(!saveWrite(K,js)){SAVEH.fail++;saveWarn();return}
+ SAVEH.fail=0;SAVEH.okT=S.t;
+ if(S.t-SAVEH.bakT>=BAK_GAP&&js.length<1500000){SAVEH.bakT=S.t;try{localStorage.setItem(bakPre()+S.t+'|a',js);bakPrune(BAK_MAX)}catch(e){}}}
+CHK.push(()=>{const o=[];
+ if(SAVEH.fail>=3)o.push('บันทึกเซฟ: เขียนเซฟในเครื่องล้มเหลวติดกัน '+SAVEH.fail+' ครั้ง ('+SAVEH.err+')');
+ if(!window.__SAVE_LOCK&&!window.__DUP&&SAVEH.okT&&!document.hidden&&Date.now()-SAVEH.okT>180000)o.push('บันทึกเซฟ: ไม่มีการบันทึกสำเร็จเกิน 3 นาที');
+ if(bakKeys('a').length>BAK_MAX)o.push('เซฟสำรอง: สำรองอัตโนมัติเกิน '+BAK_MAX+' ชุด');
+ return o});
+(window.__R5FXH=window.__R5FXH||[]).push(fx=>{if(bakKeys('a').length>BAK_MAX){bakPrune(BAK_MAX);fx.push(['bakmax','เซฟสำรองอัตโนมัติเกินจำนวน ล้างชุดเก่าให้แล้ว'])}});
 addEventListener('pagehide',()=>save());document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
 {const TABID=Math.random().toString(36).slice(2),LK='ipo_lock_'+(window.__KEY||'ipo1');try{localStorage.setItem(LK,TABID)}catch(e){}
 addEventListener('storage',e=>{if(e.key===LK&&e.newValue&&e.newValue!==TABID&&!window.__DUP){window.__DUP=1;auto=false;walk=false;say('มีการเปิดเกมบัญชีนี้ในแท็บอื่น แท็บนี้หยุดบันทึกเพื่อไม่ให้เซฟทับกัน ปิดแท็บนี้ หรือรีเฟรชหน้าเพื่อใช้แท็บนี้แทน',1)}})}
@@ -661,7 +687,7 @@ function rd(d){const L=S.chat[ci];if(!L.length)return say('ไม่มีข้
 function cyc(d){if(!rl||!rl.length)return;let i=rl.indexOf(target);i=(i+d+rl.length)%rl.length;target=rl[i];rlT=Date.now()+8000;say('เป้า '+MD[target.k].n+' '+rel(target.x-S.x,target.y-S.y))}
 /* ===== input state machine ===== */
 function keyName(e){const c=e.code;const b=c.startsWith('Key')?c[3].toLowerCase():c.startsWith('Digit')?c[5]:({Slash:'/',Backslash:'\\',Period:'.',Comma:',',BracketLeft:'[',BracketRight:']',Space:' ',NumpadEnter:'Enter'})[c]||c;return(e.shiftKey?'S+':'')+b}
-function handle(e){if(!AC)beep(1,.01,.001);const k=keyName(e),act=KEYS[k],dg=/^\d$/.test(k)?k:null;
+function handle(e){lastInputT=Date.now();if(!AC)beep(1,.01,.001);const k=keyName(e),act=KEYS[k],dg=/^\d$/.test(k)?k:null;
  if(act==='musUp'||act==='musDn'||act==='sfxUp'||act==='sfxDn'){if(typeof A[act]==='function')A[act]();else say('ระบบเสียงยังไม่พร้อม');return}/* ปรับเสียงดนตรีได้ทุกเวลา แม้เปิดเมนูอยู่ และไม่หยุดการเดินอัตโนมัติ */
  if(walk&&mode==='play'){walk=false;say('หยุดเดินอัตโนมัติ')}
  if(mode==='confirm'){const cb=cbk;mode='play';if(k==='Enter')cb();else say('ยกเลิก ปิดเมนูแล้ว');return}
@@ -686,7 +712,7 @@ setInterval(()=>{if(!auto||mode!=='play')return;const id=S.slots[lastSlot],k=id&
  if(S.qi<qiCost(k)){if(!warned){say('ออโต้หยุดชั่วคราว ลมปราณไม่พอ กด Z นั่งสมาธิ');warned=1}return}useSlot(lastSlot,1)},250);
 setInterval(save,5000);
 /* ===== SOUND ENGINE + AUTOWALK + GATHER ===== */
-let ambOn=true,walk=false,lastStep=S.step;
+let ambOn=true,walk=false,lastStep=S.step,lastInputT=0;/* lastInputT = เวลาที่ผู้เล่นกดปุ่มหรือแตะล่าสุด ระบบออนไลน์ใช้แยกเครื่องที่กำลังเล่นจริงออกจากเครื่องที่ตั้งทิ้งไว้ */
 const ac=()=>{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();return AC};
 const later=(f,ms)=>setTimeout(()=>{try{f()}catch(e){}},ms);
 let voiceUntil=0,lastBump=0;const lastT={};
@@ -704,14 +730,22 @@ if(!S.v2){S.v2=1;S.gold=Math.max(S.gold,10000)}if(typeof S.coin!=='number'){S.co
 document.addEventListener('keyup',e=>{if(e.code==='Space'||e.code==='Enter'||e.code==='NumpadEnter')e.preventDefault()});
 const ND=[],NP={f:['herb_sp','shoot','dew','mush_sp'],b:['herb_sp','mush_sp','shoot','jujube','dew'],w:['ginseng','lotus','lingzhi','bloodroot']};
 Z.forEach(z=>{if(!NP[z.id])return;for(let i=0,nn=Math.max(14,Math.round((z.r[2]-z.r[0])*(z.r[3]-z.r[1])/30));i<nn;i++)ND.push({z:z.id,id:NP[z.id][i%NP[z.id].length],x:z.r[0]+1+Math.floor(Math.random()*(z.r[2]-z.r[0]-1)),y:z.r[1]+1+Math.floor(Math.random()*(z.r[3]-z.r[1]-1)),dead:0})});
-let awT=0;/* เดินอัตโนมัติก้าวละ 0.14 วินาที ขั้น 2 ขึ้นไปเร็วขึ้น 10% (0.127 วินาที) */
-setInterval(()=>{if(!walk||mode!=='play')return;const nw=Date.now();if(nw-awT<140/spdMul()-8)return;awT=nw;if(!goal){walk=false;return}
+let awT=0,awHist=[];/* awHist = ตำแหน่ง 12 ก้าวหลังสุดของการเดินอัตโนมัติ ใช้จับการเดินวนซ้ำ */ /* เดินอัตโนมัติก้าวละ 0.14 วินาที ขั้น 2 ขึ้นไปเร็วขึ้น 10% (0.127 วินาที) */
+setInterval(()=>{if(!walk){if(awHist.length)awHist.length=0;return}if(mode!=='play')return;const nw=Date.now();if(nw-awT<140/spdMul()-8)return;awT=nw;if(!goal){walk=false;return}
  const gm=goal.mon;if(gm){const z0=zoneAt(S.x,S.y);if(gm.dead||!MS.includes(gm)||!z0||gm.z!==z0.id){walk=false;goal=null;return say(gm.dead?'อสูรที่ติดตามตายแล้ว หยุดติดตาม':'อสูรที่ติดตามออกนอกเขตนี้แล้ว หยุดติดตาม')}
   if(dist(S,gm)<1.6){walk=false;goal=null;target=gm;return say('ถึงตัว '+MD[gm.k].n+' แล้ว ล็อกเป้าไว้ กดทักษะโจมตีได้เลย')}}/* ติดตามอสูร (Shift+A หรือปุ่มติดตามบนโทรศัพท์): เดินตามตำแหน่งปัจจุบันของอสูร ถึงตัวแล้วหยุดและล็อกเป้า */
  const dx=goal.x-S.x,dy=goal.y-S.y;if(Math.hypot(dx,dy)<1){walk=false;say('ถึง '+goal.n+' แล้ว'+(/^ทางไป/.test(goal.n)?' เดินข้ามเขตต่อแล้วกด Enter เพื่อเข้า':''));return}
- const sx=Math.sign(dx),sy=Math.sign(dy);let ch=null;for(const a of [[sx,sy],[sx,0],[0,sy]]){if((a[0]||a[1])&&zoneAt(S.x+a[0],S.y+a[1])){ch=a;break}}
+ {const zc=zoneAt(S.x,S.y),dd=Math.hypot(dx,dy);if(goal.npc&&zc&&zc.id===goal.z&&dd<=2){walk=false;say('ถึงตัว '+goal.n+' แล้ว อยู่ห่างประมาณ '+Math.max(1,Math.round(dd))+' ก้าว กด F คุยได้');return}}/* เป้าเป็นคน: หยุดในระยะคุย (คุยได้ไม่เกิน 2.5 ก้าว) ไม่เดินเข้าไปชนตัวคน เดิมเดินจนชนแล้วหยุดพร้อมเสียงกระแทก */
+ const sx=Math.sign(dx),sy=Math.sign(dy);let ch=null;const free=(ax,ay)=>{const q=zoneAt(S.x+ax,S.y+ay);return !!q&&!npcAt(S.x+ax,S.y+ay,q)};
+ for(const a of [[sx,sy],[sx,0],[0,sy]]){if((a[0]||a[1])&&free(a[0],a[1])){ch=a;break}}
+ if(!ch){const sd=sx&&!sy?[[0,1],[0,-1]]:sy&&!sx?[[1,0],[-1,0]]:[];for(const a of sd){if(free(a[0],a[1])){ch=a;break}}}/* ทางตรงมีคนขวาง: ก้าวอ้อมข้างหนึ่งก้าว ไม่หยุดเดินทันที */
+ {const key=S.x+','+S.y;if(awHist.filter(k=>k===key).length>=3){walk=false;awHist.length=0;return say('หยุด: เดินวนที่เดิม ไปต่อไม่ได้')}awHist.push(key);if(awHist.length>12)awHist.shift()}/* กันเดินวน: ยืนจุดเดิมครบ 3 ครั้งใน 12 ก้าวล่าสุด หยุดเอง */
  if(!ch){walk=false;return say('หยุด: ไม่มีทางไปต่อ')}const zn=zoneAt(S.x+ch[0],S.y+ch[1]);if(zn.min>S.step&&!godOn()){walk=false;return say('หยุด: ข้างหน้าคือ '+zn.n+' อันตรายเกินระดับของเจ้า')}
- const f=DX.findIndex((v,i)=>v===ch[0]&&DY[i]===ch[1]);S.f=f;move(f);render()},20);
+ const f=DX.findIndex((v,i)=>v===ch[0]&&DY[i]===ch[1]);S.f=f;const px=S.x,py=S.y;move(f);if(walk&&S.x===px&&S.y===py){walk=false;say('หยุด: ก้าวต่อไปไม่ได้')}/* move() สั่งหยุดเองเกือบทุกกรณี บรรทัดนี้กันกรณีที่เหลือไม่ให้ค้างวนเดินอยู่กับที่ */render()},20);
+CHK.push(()=>{const o=[];if(!Array.isArray(awHist)||awHist.length>12)o.push('เดินอัตโนมัติ: ประวัติตำแหน่งผิดปกติ');if(walk&&!goal)o.push('เดินอัตโนมัติ: เปิดเดินอยู่แต่ไม่มีเป้าหมาย');if(walk&&goal&&!(Number.isFinite(goal.x)&&Number.isFinite(goal.y)))o.push('เดินอัตโนมัติ: พิกัดเป้าหมายผิดปกติ');return o});
+let saveLockSaid=0;setInterval(()=>{try{if(window.__SAVE_LOCK&&!saveLockSaid){saveLockSaid=1;walk=false;say('บัญชีนี้ถูกเปิดเล่นจากอีกเครื่องที่ใหม่กว่า เครื่องนี้หยุดบันทึกและหยุดส่งเซฟขึ้นเซิร์ฟเวอร์ เพื่อไม่ให้ทับความคืบหน้าของอีกเครื่อง กด F10 ออกจากระบบแล้วเข้าใหม่ เพื่อโหลดเซฟล่าสุด',1)}}catch(e){}},2000);/* แจ้งผู้เล่นเมื่อตัวโหลดล็อกเซฟ (เจอเซฟบนเซิร์ฟเวอร์ที่อีกเครื่องเขียนใหม่กว่า) */
+CHK.push(()=>{const o=[];if(window.__SAVE_LOCK&&!saveLockSaid)o.push('เซฟออนไลน์: ถูกล็อกแต่ยังไม่ได้แจ้งผู้เล่น');return o});
+CHK.push(()=>{const o=[];try{if(GMV.online&&!window.__OFFLINE_SAVE&&!window.__DUP&&typeof window.__CLOUD_FLUSH!=='function')o.push('เซฟออนไลน์: ไม่พบตัวส่งเซฟล่าสุดก่อนออกจากระบบ')}catch(e){}return o});/* ตัวตรวจ: โหมดออนไลน์ต้องมีตัวส่งเซฟล่าสุดขึ้นเซิร์ฟเวอร์ก่อนออกจากระบบ (ยกเว้นตอนเซิร์ฟเวอร์ฟรีเต็ม) */
 /* ===== MOBILE MENU UI ===== */
 const isMob=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
 const MAIN=[['⬆ เดินไปข้างหน้า','ArrowUp'],['⬇ ถอยหลัง','ArrowDown'],['⬅ ก้าวไปทางซ้าย','ArrowLeft'],['➡ ก้าวไปทางขวา','ArrowRight'],['หันซ้าย','KeyQ'],['หันขวา','KeyE'],['รีเซ็ตทิศ','KeyW'],['ปีนขึ้นภูเขา (Page Up)','PageUp'],['ปีนลงจากภูเขา (Page Down)','PageDown'],['เปิดกระเป๋า','KeyI'],['แผนที่และจุดหมาย','KeyM'],['เช็กระยะเป้าหมาย','KeyN'],['เดินไปเป้าหมายอัตโนมัติ','S+KeyN'],['เรดาร์มอนสเตอร์','KeyA'],['เก็บของที่พื้น','Enter'],['จัดทักษะ','KeyS'],['เช็กเลือดและปราณ','KeyH'],['ข้อมูลตัวละคร','KeyL'],['นั่งสมาธิ / ลุก','KeyZ'],['ทะลวงขั้น','KeyB'],['คุยกับคน / ร้านค้า','KeyF'],['อุปกรณ์','KeyC'],['เควสต์','KeyG'],['ออโต้ เปิด/ปิด','Space'],['แชทโลก','Backslash'],['แชทแผนที่','Slash'],['หมวดแชทถัดไป','Period'],['อ่านข้อความเก่า','BracketLeft'],['อ่านข้อความใหม่','BracketRight'],['คู่มือ','F1'],['เสียงพูดของเกม เปิด/ปิด','F2'],['เพิ่มเสียงดนตรี (Shift+Page Up)','S+PageUp'],['ลดเสียงดนตรี (Shift+Page Down)','S+PageDown'],['เพิ่มเสียงรอบข้าง บรรยากาศ สัตว์ อาวุธ (Shift+Home)','S+Home'],['ลดเสียงรอบข้าง บรรยากาศ สัตว์ อาวุธ (Shift+End)','S+End'],['ติดตามอสูรที่ใกล้ที่สุด (Shift+A)','S+KeyA'],['บอกพิกัด ทิศ และชั้นที่ปีน (R)','KeyR'],['เรดาร์ผู้เล่นออนไลน์ใกล้ตัว (P)','KeyP'],['ดนตรีและเสียงบรรยากาศ เปิด/ปิด (F3)','F3']];
@@ -728,7 +762,7 @@ const MOBMOVE=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyQ','KeyE'];
 const MOBG=[['sk','ทักษะที่ติดตั้ง',null],
  ['me','ตัวละคร กระเป๋า และฝึกตน',['KeyI','KeyS','KeyC','KeyH','KeyL','KeyZ','KeyB','KeyG','Space','KeyX','KeyD','S+KeyR','S+KeyF','S+KeyD']],
  ['map','แผนที่ เดินทาง และโต้ตอบ',['KeyM','KeyN','S+KeyN','S+KeyA','KeyA','KeyO','KeyR','KeyW','PageUp','PageDown','Enter','KeyF','S+KeyP']],
- ['chat','แชทและผู้เล่นออนไลน์',['Backslash','Slash','Period','BracketLeft','BracketRight','KeyP','KeyK','S+F1']],
+ ['chat','แชทและผู้เล่นออนไลน์',['Backslash','Slash','Period','BracketLeft','BracketRight','KeyP','KeyK','S+F1','S+F2']],
  ['set','เสียง คู่มือ และระบบ',['S+PageUp','S+PageDown','S+Home','S+End','F3','F2','KeyV','F6','F1','KeyU','F4','F5','F8','S+F8','F9','S+F9','F10']],
  ['etc','กิจกรรมรายวันและอื่นๆ',null]];
 const mobItems=gid=>{if(gid==='sk')return S.slots.map((id,i)=>id&&SK[id]?['ทักษะ '+((i+1)%10)+': '+SK[id].n+(effRng(SK[id])?' ไกล '+effRng(SK[id])+' ก้าว':''),'Digit'+((i+1)%10)]:null).filter(Boolean);
@@ -921,7 +955,7 @@ fly:()=>[{t:'ต้องเรียนวิชาขี่กระบี่�
 A.guide=function(){menu('คู่มือเกม',[{t:'วิธีเล่นเบื้องต้น',g:'how'},{t:'แผนที่ อสูร และบอส',g:'maps'},{t:'ผู้คนและสถานที่',g:'npc'},{t:'ไอเทมทั้งหมดและหน้าที่',g:'items'},{t:'เงินและการแลกเปลี่ยน',g:'money'},{t:'การเหาะ',g:'fly'},{t:'การเล่นบนโทรศัพท์และปุ่มตามสถานการณ์',g:'mob'}],{ent:x=>menu(x.t,GUIDE[x.g](),{})})};
 function showNews(all){const L=NEWS.filter(n=>all||n.id>(S.newsSeen||0));if(!L.length)return say('ไม่มีประกาศใหม่');L.forEach(n=>say('ประกาศ '+n.d+' : '+n.t));S.newsSeen=Math.max(...NEWS.map(n=>n.id))}
 A.news=function(){showNews(true)};
-A.logout=function(){conf('ออกจากระบบ ใช่ไหม เกมบันทึกให้ก่อนออก',()=>{try{localStorage.removeItem('ipo_rem');localStorage.removeItem('ipo_tok')}catch(e){}save();try{sessionStorage.removeItem('ipo_sess')}catch(e){}say('กำลังออกจากระบบ',1);sfx('logout');setTimeout(()=>{location.reload()},650)})};/* F10: ถามยืนยัน Enter ยืนยัน ปุ่มอื่นยกเลิก ยืนยันแล้ว ลบความจำการเข้าสู่ระบบ บันทึกเกม มีเสียงปิดประตู แล้วโหลดหน้าใหม่ (เดิมกดพลาดก็ออกทันที และมีตัวดักซ้อน 2 ชั้น) */
+A.logout=function(){conf('ออกจากระบบ ใช่ไหม เกมบันทึกให้ก่อนออก',()=>{try{localStorage.removeItem('ipo_rem');localStorage.removeItem('ipo_tok')}catch(e){}save();try{sessionStorage.removeItem('ipo_sess')}catch(e){}say('กำลังออกจากระบบ',1);sfx('logout');setTimeout(()=>{const b=document.getElementById('l_out');if(b&&typeof b.onclick==='function')b.onclick();else location.reload()},650)})};/* F10: ถามยืนยัน Enter ยืนยัน ปุ่มอื่นยกเลิก ยืนยันแล้ว ลบความจำการเข้าสู่ระบบ บันทึกเกม มีเสียงปิดประตู แล้วโหลดหน้าใหม่ (เดิมกดพลาดก็ออกทันที และมีตัวดักซ้อน 2 ชั้น) */
 function autoNew(){const cur={i:Object.keys(I),m:Object.keys(MD),n:W.filter(w=>w.npc).map(w=>w.npc),z:Z.map(z=>z.id)},old=S.snap;S.snap=cur;if(!old)return;const nw=(a,b,f)=>b.filter(x=>!a.includes(x)).map(f);const o=[...nw(old.i,cur.i,k=>'ไอเทม '+I[k].n),...nw(old.m,cur.m,k=>'อสูร '+MD[k].n),...nw(old.n,cur.n,k=>W.find(w=>w.npc===k).n),...nw(old.z,cur.z,k=>'แผนที่ '+zn(k))];if(o.length)say('ของใหม่ในเกม: '+o.join(', '))}
 function daily(){const d=new Date(),key=d.toISOString().slice(0,10);if(S.dly===key)return;S.dly=key;const bs=MS.filter(m=>BOSSES.includes(m.k)).map(m=>MD[m.k].n+(m.dead?' เกิดอีก '+Math.max(1,Math.ceil((respMs(m)-(Date.now()-m.dead))/60000))+' นาที':' พร้อมท้า')).join(' / ');say('ข้อความประจำวัน '+d.toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+' : '+TIPS[Math.floor(Date.now()/86400000)%TIPS.length]+' บอส: '+bs)}
 // descriptions in inventory
@@ -1076,6 +1110,8 @@ setInterval(()=>{if(!S.med||!S.sect)return;const h=W.find(w=>w.hall&&w.hall===S.
   MS.forEach(m=>{if(!fin(m.hp)||!fin(m.x)||!fin(m.y)){m.hp=MD[m.k].hp;m.x=m.home[0];m.y=m.home[1];fx('mon','มอนสเตอร์ผิดปกติ รีเซ็ตแล้ว')}});
   if((mode==='menu'&&(!mn||!mn.items||!mn.items.length))||(mode==='slot'&&(!mn||!mn.pick))||(mode==='confirm'&&typeof cbk!=='function')||(mode==='input'&&$('in').hidden)){mode='play';fx('mode','เมนูค้าง ปิดให้แล้ว')}
   if(walk&&!goal){walk=false;fx('walk','เดินอัตโนมัติค้าง')}
+  if(walk&&goal&&!(fin(goal.x)&&fin(goal.y))){walk=false;goal=null;fx('walk2','เป้าเดินอัตโนมัติมีพิกัดผิดปกติ ยกเลิกแล้ว')}
+  if(awHist.length>12)awHist.length=0;
   if(walk&&mode==='play'&&goal&&goal.mon&&((goal.mon.dead&&Date.now()-goal.mon.dead>1500)||!MS.includes(goal.mon))){walk=false;goal=null;fx('trk','ยังเดินตามอสูรที่ตายหรือหายไปแล้ว หยุดให้แล้ว')}/* ติดตามอสูร */
   if(mobGrp&&!MOBG.some(x=>x[0]===mobGrp)){mobGrp=null;mobSig='';fx('mobg','หมวดเมนูโทรศัพท์ผิดปกติ กลับหน้าหลักให้แล้ว')}/* เมนูโทรศัพท์ */
   if(auto&&!(S.slots[lastSlot]&&SK[S.slots[lastSlot]])){auto=false;fx('auto','ออโต้ไม่มีทักษะ ปิดให้แล้ว')}
@@ -3782,7 +3818,12 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
     else if(x.a==='buglog'){if(!BUGL.length){mode='play';say('ยังไม่มีบั๊กที่บันทึกไว้')}else menu('บันทึกบั๊กย้อนหลัง '+BUGL.length+' รายการ',BUGL.slice().reverse().map(b=>({t:new Date(b.t).toLocaleString('th-TH')+' ['+b.s+'] '+b.m+(b.n>1?' ซ้ำ '+b.n+' ครั้ง':'')+(b.d?' ข้อมูล '+b.d:'')})))}
     else if(x.a==='bugclear'){BUGL.length=0;try{localStorage.removeItem(BUGK)}catch(e){}mode='play';say('ล้างบันทึกบั๊กย้อนหลังแล้ว')}
     else if(x.a==='muslib'){const AU=window.__AUDIO;if(AU&&typeof AU.musMenu==='function')AU.musMenu();else say('ระบบดนตรียังไม่พร้อม')}
-    else if(x.a==='backup'){const k='ipo_backup_'+Date.now();localStorage.setItem(k,JSON.stringify(S));menu('เลือกเซฟสำรองที่จะกู้คืน',Object.keys(localStorage).filter(k=>k.startsWith('ipo_backup_')).map(k=>({t:'สำรองเมื่อ '+new Date(parseInt(k.slice(11))).toLocaleString('th-TH'),k})),{ent:y=>{S=Object.assign(S,JSON.parse(localStorage.getItem(y.k)));say('กู้คืนเซฟสำรองแล้ว');render();save()}})}
+    else if(x.a==='backup'){try{localStorage.setItem(bakPre()+Date.now()+'|m',JSON.stringify(S))}catch(e){say('บันทึกเซฟสำรองด้วยมือไม่สำเร็จ พื้นที่เก็บข้อมูลเต็ม',1)}
+     const pl=bakPre().length,own=bakKeys().reverse().map(k=>{const r=k.slice(pl).split('|');return{t:(r[1]==='m'?'สำรองด้วยมือ ':'สำรองอัตโนมัติ ')+new Date(parseInt(r[0])).toLocaleString('th-TH'),k}}),
+      old=Object.keys(localStorage).filter(k=>k.startsWith('ipo_backup_')).map(k=>({t:'สำรองรุ่นเก่า ไม่ระบุบัญชี '+new Date(parseInt(k.slice(11))).toLocaleString('th-TH'),k}));
+     menu('เลือกเซฟสำรองที่จะกู้คืน',own.concat(old),{ent:y=>{let o=null;try{o=JSON.parse(localStorage.getItem(y.k)||'null')}catch(e){}
+      if(!okSave(o)){say('เซฟสำรองชุดนี้เสียหรืออ่านไม่ได้ ไม่กู้คืนให้ ลองเลือกชุดอื่น',1);return}
+      S=Object.assign(S,o);stepFix();try{if(typeof window.__WD==='function')window.__WD()}catch(e){}say('กู้คืนเซฟสำรองแล้ว');render();save()}})}
    }catch(e){say('เมนูผู้พัฒนาผิดพลาด '+e.message)}}
  })};
 }
@@ -3830,14 +3871,14 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
  };
  /* ===== ตำแหน่งผู้เล่นแบบเรียลไทม์ (แก้บั๊กเห็นผู้เล่นคนเดียวเป็น 2 ตำแหน่ง) =====
     ส่งตำแหน่ง: กำลังเดินส่งทุก PUSH_MOVE (ครึ่งวินาที) ข้ามช่องหรือข้ามเขตส่งทันที ยืนเฉยๆ ส่งทุก PUSH_IDLE (15 วินาที) ให้คนอื่นรู้ว่ายังออนไลน์
-    ตำแหน่งที่ไม่ได้อัปเดตเกิน FRESH (45 วินาที) ถือว่าหลุดแล้ว ไม่นับ ไม่แสดง
+    ตำแหน่งที่ไม่ได้อัปเดตเกิน FRESH (75 วินาที) ถือว่าหลุดแล้ว ไม่นับ ไม่แสดง
     ต้นเหตุบั๊กเดิม: บัญชีเดียวกันเปิดอยู่ 2 แท็บหรือ 2 เครื่อง (แท็บเก่ายังส่งตำแหน่งต่อ) หรือตำแหน่งเก่าค้างในช่องอื่นหลังปิดเกมไม่ทันลบ
      ตำแหน่งเก่าถือว่าสดอยู่ถึง 3 นาที และตัวอ่านไม่ได้รวมคนเดียวกัน จึงเห็นคนเดียวเป็น 2 พิกัด และนับคนออนไลน์เกินจริง
     แก้แล้ว: 1) แท็บที่ถูกแท็บใหม่ของบัญชีเดียวกันแทนที่ (window.__DUP) หยุดส่งและหยุดฟังทันที
      2) ตัวอ่านทุกตัว (เรดาร์ P รายชื่อ Shift+F1 จำนวน K เลือกผู้รับของขวัญ เสียงฝีเท้า) รวมคนเดียวกันเหลือตำแหน่งที่ใหม่ที่สุดตำแหน่งเดียว (dedupe)
      3) ตำแหน่งเก่าของตัวเองที่ค้างในช่องอื่น ลบทิ้งเอง (ตรวจทั้งโลกครั้งแรกที่ส่งตำแหน่ง และตรวจช่องรอบตัวตลอดเวลา)
      4) บัญชีเดียวกันเปิดอยู่ 2 เครื่อง: เครื่องที่เดินล่าสุดเป็นตัวจริง เครื่องที่ยืนเฉยเกิน 10 วินาทีหยุดแสดงตำแหน่ง (yield) จนกว่าจะเดินอีกครั้ง และแจ้งเตือนผู้เล่น 1 ครั้งทุก 5 นาที */
- const PUSH_MOVE=500,PUSH_IDLE=15000,FRESH=45000,STALE_OWN=20000;
+ const PUSH_MOVE=500,PUSH_IDLE=15000,FRESH=75000,STALE_OWN=20000;/* FRESH 75 วินาที (เดิม 45) กันตัวจับเวลาของหน้าที่ถูกซ่อนช้าลงจนคนอื่นเห็นว่าหลุด */
  /* การกระทำของเจ้าให้ผู้เล่นอื่นได้ยิน (คำสั่งผู้บงการ: ทุกการกระทำต้องมีเสียงให้คนอื่นได้ยิน) ส่งในช่อง a ของตำแหน่งออนไลน์ เช่น G kfire:1a = เดินอยู่ ใช้วิชาไฟ ลำดับที่ 1a
     สถานะ G เดิน F เหาะ M นั่งสมาธิ C ปีนเขา / ส่งทันทีที่มีการกระทำใหม่ (ไม่เกินทุก 0.15 วินาที) ถ้าเซิร์ฟเวอร์ไม่ยอมรับช่อง a (กฎฐานข้อมูลเข้มงวด) ส่งตำแหน่งต่อแบบเดิมไม่มีช่อง a ตำแหน่งจึงไม่พัง
     ส่งรหัสการกระทำล่าสุด 3 อย่าง (เช่น G kfire.pick.lvl:1c) ทำหลายอย่างติดกันภายในรอบส่งเดียว ผู้เล่นอื่นจึงได้ยินครบทุกอย่าง ไม่หายไปอย่างใดอย่างหนึ่ง
@@ -3845,11 +3886,11 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
  const ACT={code:'',q:[],seq:0,dirty:false,ok:null,sent:0,rej:0,last:'',ct:{}};
  const actState=()=>S.fl?'F':S.med?'M':(S.alt>0?'C':'G');
  const actStr=()=>actState()+ACT.q.slice(-3).join('.')+':'+ACT.seq.toString(36);
- HOOK.mpAct=code=>{if(typeof code!=='string'||!/^[a-z0-9]{1,10}$/.test(code))return;const now=Date.now();if(code.charAt(0)!=='k'&&now-(ACT.ct[code]||0)<1200)return;ACT.ct[code]=now;
+ HOOK.mpAct=code=>{if(typeof code!=='string'||!/^[a-z0-9]{1,10}$/.test(code))return;const now=Date.now();if(code.charAt(0)!=='k'&&now-(ACT.ct[code]||0)<1200)return;ACT.ct[code]=now;MP.lastActT=now;/* ตัวละครทำการกระทำ (ออโต้ ใช้วิชา) นับว่ายังเล่นอยู่ แม้ยืนที่เดิม */
   ACT.code=code;ACT.q.push(code);if(ACT.q.length>3)ACT.q.shift();ACT.seq=(ACT.seq+1)%1679616;ACT.dirty=true};
  const push=async()=>{
-  if(MP.busy||window.__MP_OFF||window.__DUP||MP.failed||document.hidden||!online())return;
-  if(MP.yieldT){if(!(MP.lastMove>MP.yieldT))return;MP.yieldT=0}/* หยุดแสดงตำแหน่งเพราะอีกเครื่องเล่นอยู่ เดินแล้วกลับมาแสดง */
+  if(MP.busy||window.__MP_OFF||window.__DUP||MP.failed||!online())return;/* ไม่เช็ก document.hidden แล้ว: หน้าจอดับหรือสลับแอปแต่เกมยังเล่นอยู่ (ออโต้ นั่งสมาธิ) คนอื่นต้องยังเห็นตัวละคร */
+  if(MP.yieldT){if(!(actT()>MP.yieldT))return;MP.yieldT=0}/* หยุดแสดงตำแหน่งเพราะอีกเครื่องเล่นอยู่ เดินแล้วกลับมาแสดง */
   const now=Date.now(),moved=S.x!==MP.lx||S.y!==MP.ly,zz=zoneAt(S.x,S.y),zc=(zz?zz.id:'')!==MP.lz,cc=cellOf(S.x,S.y)!==MP.rcell;
   const st=ACT.ok!==false&&(ACT.dirty||actState()!==(ACT.last||'G:').charAt(0))&&now-MP.lastW>=150;
   if(!((moved&&(cc||zc||now-MP.lastW>=PUSH_MOVE))||now-MP.lastW>=PUSH_IDLE||st))return;
@@ -3881,11 +3922,11 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
   }finally{MP.busy=false}
  };
  /* ตรวจตำแหน่งของตัวเองทั้งโลก (ตอนเริ่มและทุก 20 วินาที): ตำแหน่งเก่าที่ค้างในช่องอื่นลบทิ้ง ถ้าเป็นอีกเครื่องที่เล่นอยู่ ใช้กติกาเครื่องที่เดินล่าสุดเป็นตัวจริง (ownSeen) */
- const ownScan=async uid=>{if(MP.scanBusy)return;MP.scanBusy=1;MP.scanT=Date.now();try{const snap=await MP.rt.get(MP.rt.ref(MP.rdb,'presence')),n0=srvNow();snap.forEach(cs=>{if(cs.key===MP.rcell)return;const v=cs.child(uid).val();if(v)ownSeen(uid,cs.key,v,n0)})}catch(e){devErr('MP scan',e)}finally{MP.scanBusy=0}};
+ const ownScan=async uid=>{if(MP.scanBusy)return;MP.scanBusy=1;MP.scanT=Date.now();try{const snap=await MP.rt.get(MP.rt.ref(MP.rdb,'presence')),n0=srvNow();let fresh=false;snap.forEach(cs=>{if(cs.key===MP.rcell)return;const v=cs.child(uid).val();if(v){if(typeof v.t==='number'&&v.t>n0-STALE_OWN)fresh=true;ownSeen(uid,cs.key,v,n0)}});if(MP.yieldT&&!fresh&&Date.now()-MP.yieldT>STALE_OWN){MP.yieldT=0;MP.lastW=0}/* หยุดแสดงตำแหน่งเพราะเห็นสำเนาของตัวเองที่อื่น แต่ตอนนี้ไม่เหลือสำเนาสดแล้ว (อีกเครื่องปิดไปหรือเป็นสำเนาค้าง) กลับมาแสดงตำแหน่งเอง ไม่ต้องรอให้ผู้เล่นขยับ */}catch(e){devErr('MP scan',e)}finally{MP.scanBusy=0}};
  setTimeout(push,3000);setInterval(()=>{push();liveTick()},250);
  addEventListener('pageshow',e=>{if(e&&e.persisted)MP.lastW=0});
  addEventListener('pagehide',()=>{try{if(MP.ready&&!MP.failed&&!window.__MP_OFF&&!window.__DUP&&MP.auth.currentUser&&MP.rcell)MP.rt.remove(MP.rt.ref(MP.rdb,'presence/'+MP.rcell+'/'+MP.auth.currentUser.uid)).catch(()=>{})}catch(e){}});
- /* รายชื่อและจำนวนคนออนไลน์ทั้งหมด: อ่านทั้งโหนด presence ครั้งเดียว เก็บไว้ 10 วินาที เวลาล่าสุดเกิน FRESH (45 วินาที) ถือว่าหลุดแล้ว คนเดียวกันนับครั้งเดียว */
+ /* รายชื่อและจำนวนคนออนไลน์ทั้งหมด: อ่านทั้งโหนด presence ครั้งเดียว เก็บไว้ 10 วินาที เวลาล่าสุดเกิน FRESH (75 วินาที) ถือว่าหลุดแล้ว คนเดียวกันนับครั้งเดียว */
  const ON={t:0,L:[],busy:null};
  const fetchOnline=maxAge=>{
   if(Date.now()-ON.t<(maxAge==null?10000:maxAge))return Promise.resolve(ON.L);
@@ -3909,10 +3950,11 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
     if(LV.subs[c]){LV.data[c]=m;LV.t=Date.now();onLive()}},e=>{LV.err++;if(isPerm(e)){MP.failed=true;MP.err=e}devErr('MP live',e)})});
   LV.k=k}catch(e){LV.err++;devErr('MP sub',e)}};
  const liveList=()=>{const n0=srvNow(),L=[];Object.keys(LV.data).forEach(c=>{const m=LV.data[c];Object.keys(m).forEach(id=>{if(m[id].t>n0-FRESH)L.push(m[id])})});return dedupe(L)};
- const onLive=()=>{try{const u=MP.auth&&MP.auth.currentUser;if(!u)return;spOthers(liveList().filter(v=>v.id!==u.uid),u.uid);ownCheck(u.uid)}catch(e){}};
+ const onLive=()=>{try{const u=MP.auth&&MP.auth.currentUser;if(!u)return;const L=liveList().filter(v=>v.id!==u.uid);spOthers(L,u.uid);nbUpdate(L,u.uid);ownCheck(u.uid)}catch(e){}};
  /* ตำแหน่งของตัวเองในช่องอื่น: เก่าแล้ว (ไม่อัปเดตเกิน 20 วินาที) ลบทิ้งทันที ถ้ายังใหม่แปลว่าบัญชีนี้เปิดเล่นอยู่อีกเครื่อง
     กติกา: เครื่องที่เดินล่าสุดเป็นตัวจริง ถ้าอีกเครื่องเขียนตำแหน่งใหม่กว่า และเครื่องนี้ไม่ได้เดินเกิน 10 วินาที เครื่องนี้หยุดแสดงตำแหน่ง (yieldNow) จนกว่าจะเดิน */
- const idleMe=()=>!(MP.lastMove&&Date.now()-MP.lastMove<10000);
+ const actT=()=>Math.max(MP.lastMove||0,lastInputT,MP.lastActT||0);/* เวลาที่ผู้เล่นทำอะไรล่าสุด: ขยับ กดปุ่ม หรือตัวละครทำการกระทำ */
+ const idleMe=()=>!(Date.now()-actT()<10000);
  const dupNote=()=>{const n=Date.now();MP.dupSeen=n;if(n-MP.dupT>300000){MP.dupT=n;say('บัญชีนี้กำลังเปิดเล่นอยู่ที่เครื่องหรือแท็บอื่นด้วย ผู้เล่นคนอื่นจะเห็นตำแหน่งของเครื่องที่ขยับล่าสุดเพียงตำแหน่งเดียว ถ้าไม่ได้เล่นที่เครื่องนั้นแล้ว ปิดเกมที่เครื่องนั้นได้เลย',1)}};
  const yieldNow=(sameCell)=>{const n=Date.now();MP.dupSeen=n;if(MP.yieldT)return;MP.yieldT=n;const u=MP.auth&&MP.auth.currentUser;
   if(u&&MP.rcell&&!sameCell)MP.rt.remove(MP.rt.ref(MP.rdb,'presence/'+MP.rcell+'/'+u.uid)).catch(()=>{});/* ช่องเดียวกันใช้ที่เก็บเดียวกัน ห้ามลบ (จะลบของอีกเครื่อง) */
@@ -3925,7 +3967,8 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
  const ownCheck=uid=>{const n0=srvNow();Object.keys(LV.data).forEach(c=>{const v=LV.data[c][uid];if(!v)return;
    if(c===MP.rcell){if(MP.myT&&v.t>MP.myT&&(v.x!==MP.lx||v.y!==MP.ly)){if(idleMe())yieldNow(true);else dupNote()}return}
    ownSeen(uid,c,v,n0)})};
- const liveTick=()=>{try{if(MP.px!==S.x||MP.py!==S.y){if(MP.px!=null)MP.lastMove=Date.now();MP.px=S.x;MP.py=S.y}/* จำเวลาที่ผู้เล่นขยับล่าสุด */
+ const liveTick=()=>{try{try{const u1=MP.auth&&MP.auth.currentUser;if(u1&&LV.k)nbUpdate(liveList().filter(v=>v.id!==u1.uid),u1.uid);onlTick();jnTick()}catch(e){}if(MP.px!==S.x||MP.py!==S.y){if(MP.px!=null)MP.lastMove=Date.now();MP.px=S.x;MP.py=S.y}/* จำเวลาที่ผู้เล่นขยับล่าสุด */
+  if(MP.yieldT&&MP.ready&&!MP.failed&&!window.__MP_OFF&&!window.__DUP&&online()&&MP.scanT&&Date.now()-MP.scanT>20000){const u0=MP.auth&&MP.auth.currentUser;if(u0)ownScan(u0.uid)}/* หยุดแสดงตำแหน่งอยู่: ตรวจหาสำเนาของตัวเองทุก 20 วินาที เพื่อกลับมาแสดงเองเมื่ออีกเครื่องหายไป (ทำแม้หน้าจอดับ) */
   if(window.__MP_OFF||window.__DUP||MP.failed||!MP.ready||!online()||document.hidden){if(LV.k)unsubAll();return}subNear();if(LV.k===cellsNow().join(','))LV.okT=Date.now();
   const u=MP.auth&&MP.auth.currentUser;if(u&&!MP.yieldT&&MP.scanT&&Date.now()-MP.scanT>20000)ownScan(u.uid)}catch(e){}};
  /* อ่านรายชื่อคนรอบตัว: ใช้ข้อมูลเรียลไทม์ถ้าฟังครบทั้ง 9 ช่องแล้ว ไม่งั้นอ่านจากเซิร์ฟเวอร์ (เก็บผลไว้ 3 วินาที) */
@@ -3941,10 +3984,99 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
    NR.L=dedupe(L);NR.t=Date.now();NR.k=k;return NR.L
   }finally{NR.busy=null}})();
   return NR.busy};
+ /* ===== รอบที่ 8: แจ้งผู้เล่นเข้า/ออก (เปิดปิดด้วย Shift+F2 หรือปุ่ม แจ้งคนเข้าออก บนแผงสัมผัสและเมนูโทรศัพท์) =====
+    ก) ใกล้ตัว: ใครเดินเข้ามาในระยะ 36 ก้าว (บอกทิศและระยะ) หรือออกจากระยะ 44 ก้าว หรือหายไปจากข้อมูลเกิน 9 วินาที ใช้ข้อมูล presence ที่ฟังอยู่แล้ว ไม่ต้องแก้กฎ
+       ระยะเข้า 36 น้อยกว่าระยะออก 44 กันแจ้งซ้ำตอนยืนที่ขอบ และฟังข้อมูลครอบคลุมอย่างน้อย 40 ก้าวรอบตัว ข้อมูลยังโหลดไม่ครบหรือหน้าถูกซ่อนจะไม่แจ้งผิด (เริ่มจดรายชื่อใหม่เงียบๆ)
+    ข) ทั้งโลก: ใครออนไลน์หรือออฟไลน์ (ไม่ต้องเป็นเพื่อน) ใช้โหนดเบา online/{uid} = {n,t} เขียนตอนออนไลน์ ต่อชีพจรทุก 60 วินาที ลบเองตอนหลุด (onDisconnect)
+       ต้องเพิ่มกฎ online ใน Realtime Database (ดู reports/rtdb-rules.json) ถ้าเซิร์ฟเวอร์ปฏิเสธ ส่วนนี้เงียบเอง ลองใหม่ทุก 10 นาที ไม่ปิดระบบออนไลน์ส่วนอื่น
+       รอ 8 วินาทีก่อนแจ้งออฟไลน์ ถ้ากลับมาในเวลานั้น (รีเฟรชหน้า) ไม่แจ้งอะไร รายชื่อตอนเข้าเกมจดเงียบๆ ไม่แจ้งทุกคนที่ออนไลน์อยู่แล้ว
+    ข้อความหลายรายการรวมเป็นประโยคเดียวทุก 1.5 วินาที ส่งผ่าน say (ช่อง RP เบื้องหลัง) โหมดข้อความเงียบ (V) กดแล้วจะไม่อ่าน */
+ if(S.joinNote!==0&&S.joinNote!==1)S.joinNote=1;/* เซฟเก่าไม่มีค่านี้ เริ่มต้นเปิด */
+ const NEAR_IN=36,NEAR_OUT=44,HOLD_OUT=9000,HOLD_OFF=8000,REIN=6000,STALE_ON=300000,HB=60000,JQMAX=60;
+ const JN={known:{},miss:{},lastOut:{},recentOn:{},recentOff:{},q:[],seeded:0,upT:0,pruneT:0,said:0};
+ const ONL={sub:null,attach:0,known:null,cur:null,pend:{},wT:0,odc:'',t:0,err:0,perm:0,permT:0,wperm:0,wpermT:0,conn:0};
+ const jqPush=(k,id,n,x)=>{if(JN.q.length<JQMAX)JN.q.push(Object.assign({k,id,n:String(n||'ผู้ฝึกตน').slice(0,20),t:Date.now()},x||{}))};
+ const dirTxt=(dx,dy)=>{const a=Math.atan2(dx,-dy)*180/Math.PI,i=((Math.round(a/45)%8)+8)%8;return DN[i]};/* y น้อยลง = ไปทางเหนือ */
+ const nbUpdate=(L,me)=>{try{
+  const now=Date.now(),cells=cellsNow();
+  if(document.hidden||!LV.k){JN.seeded=0;return}
+  if(!(LV.k===cells.join(',')&&cells.every(c=>LV.data[c])))return;
+  if(now-JN.upT<1000)return;JN.upT=now;
+  const cur={},all={};
+  (L||[]).forEach(v=>{if(!v||v.id===me||!Number.isFinite(v.x)||!Number.isFinite(v.y))return;const d=Math.hypot(v.x-S.x,v.y-S.y);all[v.id]=d;if(d<=NEAR_IN||(JN.known[v.id]&&d<=NEAR_OUT))cur[v.id]={v,d}});
+  if(!JN.seeded){JN.known={};JN.miss={};Object.keys(cur).forEach(id=>{JN.known[id]={n:cur[id].v.n}});JN.seeded=1;return}
+  Object.keys(cur).forEach(id=>{const c=cur[id];delete JN.miss[id];
+   if(!JN.known[id]){JN.known[id]={n:c.v.n};if(S.joinNote&&now-(JN.lastOut[id]||0)>=REIN&&now-(JN.recentOn[id]||0)>20000)jqPush('in',id,c.v.n,{dx:c.v.x-S.x,dy:c.v.y-S.y,d:Math.round(c.d)})}
+   else JN.known[id].n=c.v.n});
+  Object.keys(JN.known).forEach(id=>{if(cur[id])return;
+   const far=Object.prototype.hasOwnProperty.call(all,id);/* ยังมีข้อมูลแต่ไกลเกินระยะออก = ออกทันที ถ้าข้อมูลหายไปรอ 9 วินาทีก่อน (อาจแค่เดินข้ามช่อง) */
+   if(!far){if(!JN.miss[id]){JN.miss[id]=now;return}if(now-JN.miss[id]<HOLD_OUT)return}
+   const n=JN.known[id].n;delete JN.known[id];delete JN.miss[id];JN.lastOut[id]=now;if(S.joinNote&&now-(JN.recentOff[id]||0)>20000)jqPush('out',id,n)});
+  if(now-JN.pruneT>60000){JN.pruneT=now;['lastOut','recentOn','recentOff'].forEach(k=>Object.keys(JN[k]).forEach(id=>{if(now-JN[k][id]>300000)delete JN[k][id]}))}
+ }catch(e){}};
+ const onlSnap=(sn,me)=>{try{const now=Date.now(),n0=srvNow(),cur={};
+  sn.forEach(c=>{const v=c.val();if(v&&typeof v.n==='string'&&typeof v.t==='number'&&v.t>n0-STALE_ON)cur[c.key]={n:v.n.slice(0,20)}});
+  ONL.cur=cur;ONL.t=now;
+  if(!ONL.known){ONL.known=Object.assign({},cur);return}/* ครั้งแรก: จดรายชื่อเงียบๆ */
+  if(me&&!cur[me])ONL.wT=0;/* โหนดของเราหาย (แท็บอื่นของเราปิด) เขียนใหม่ทันที */
+  Object.keys(cur).forEach(id=>{if(id===me)return;
+   if(ONL.pend[id]){delete ONL.pend[id];ONL.known[id]=cur[id];return}
+   if(!ONL.known[id]){ONL.known[id]=cur[id];JN.recentOn[id]=now;if(S.joinNote)jqPush('on',id,cur[id].n)}else ONL.known[id]=cur[id]});
+  Object.keys(ONL.known).forEach(id=>{if(id===me||cur[id]||ONL.pend[id])return;ONL.pend[id]={n:ONL.known[id].n,t:now}});
+ }catch(e){}};
+ const onlTick=()=>{
+  const now=Date.now();
+  if(!(MP.ready&&!MP.failed&&!window.__MP_OFF&&!window.__DUP&&online()))return;
+  const u=MP.auth&&MP.auth.currentUser;if(!u)return;const rd=MP.rt;
+  if(!ONL.conn){ONL.conn=1;try{rd.onValue(rd.ref(MP.rdb,'.info/connected'),s=>{if(s.val()===false){ONL.odc='';ONL.wT=0}})}catch(e){}}
+  if(!ONL.sub&&!ONL.attach&&(!ONL.perm||now-ONL.permT>600000)){ONL.perm=0;ONL.attach=1;
+   try{ONL.sub=rd.onValue(rd.ref(MP.rdb,'online'),sn=>onlSnap(sn,u.uid),e=>{ONL.err++;ONL.sub=null;ONL.attach=0;ONL.known=null;if(isPerm(e)){ONL.perm=1;ONL.permT=Date.now()}devErr('MP online',e)})}catch(e){ONL.attach=0;ONL.err++}}
+  if(!MP.yieldT&&now-ONL.wT>=HB&&(!ONL.wperm||now-ONL.wpermT>600000)){ONL.wT=now;ONL.wperm=0;
+   const rf=rd.ref(MP.rdb,'online/'+u.uid);
+   rd.set(rf,{n:String(S.pname||'ผู้ฝึกตน').slice(0,20),t:srvNow()}).then(()=>{if(ONL.odc!==u.uid){ONL.odc=u.uid;rd.onDisconnect(rf).remove().catch(()=>{ONL.odc=''})}}).catch(e=>{ONL.err++;ONL.wT=Date.now();if(isPerm(e)){ONL.wperm=1;ONL.wpermT=Date.now()}else devErr('MP online write',e)})}
+ };
+ const jnFlush=()=>{if(!JN.q.length||Date.now()-JN.q[0].t<1500)return;
+  const q=JN.q.splice(0),by={in:[],out:[],on:[],off:[]};q.forEach(x=>{if(by[x.k])by[x.k].push(x)});
+  const nm=a=>{const u=[];a.forEach(x=>{if(!u.includes(x.n))u.push(x.n)});return u.length<=2?u.join(' และ '):u.slice(0,2).join(' ')+' และอีก '+(u.length-2)+' คน'};
+  const out=[];
+  if(by.on.length)out.push('ผู้ฝึกตน '+nm(by.on)+' ออนไลน์แล้ว');
+  if(by.off.length)out.push('ผู้ฝึกตน '+nm(by.off)+' ออฟไลน์แล้ว');
+  if(by.in.length){const a=by.in;out.push(a.length===1?'ผู้ฝึกตน '+a[0].n+' เข้ามาใกล้ '+(a[0].d<2?'อยู่ติดตัวเจ้า':'ทาง'+dirTxt(a[0].dx,a[0].dy)+' ห่างประมาณ '+a[0].d+' ก้าว'):'ผู้ฝึกตน '+nm(a)+' เข้ามาใกล้')}
+  if(by.out.length)out.push('ผู้ฝึกตน '+nm(by.out)+' ออกจากพื้นที่ใกล้ตัวแล้ว');
+  if(!out.length)return;JN.said=Date.now();
+  say(out.join('. '));
+  try{const AU=window.__AUDIO;if(AU&&typeof AU.play==='function'&&(by.on.length||by.off.length))AU.play(by.on.length?'online':'offline',.5)}catch(e){}};
+ const jnTick=()=>{const now=Date.now();
+  Object.keys(ONL.pend).forEach(id=>{const p=ONL.pend[id];if(now-p.t<HOLD_OFF)return;delete ONL.pend[id];
+   if(ONL.cur&&!ONL.cur[id]){if(ONL.known)delete ONL.known[id];JN.recentOff[id]=now;if(S.joinNote)jqPush('off',id,p.n)}});
+  jnFlush()};
+ window.__JN={JN,ONL,flush:jnFlush};/* ดูสถานะ (ผู้พัฒนาและตัวทดสอบ) */
+ addEventListener('pagehide',()=>{try{if(MP.ready&&!MP.failed&&!window.__MP_OFF&&!window.__DUP&&MP.auth.currentUser&&!MP.yieldT)MP.rt.remove(MP.rt.ref(MP.rdb,'online/'+MP.auth.currentUser.uid)).catch(()=>{})}catch(e){}});
+ A.joinNote=function(){S.joinNote=S.joinNote?0:1;say('แจ้งผู้เล่นเข้า ออก '+(S.joinNote?'เปิด จะแจ้งเมื่อมีคนเข้ามาใกล้ ออกจากพื้นที่ใกล้ตัว และเมื่อมีผู้เล่นออนไลน์หรือออฟไลน์':'ปิด'));save()};
+ if(KEYS['S+F2']&&KEYS['S+F2']!=='joinNote')bugLog('แจ้งผู้เล่นเข้าออก','ปุ่ม Shift+F2 ชนกับคำสั่งอื่น: '+KEYS['S+F2']);
+ KEYS['S+F2']='joinNote';
+ MAIN.push(['แจ้งผู้เล่นเข้า/ออก เปิด/ปิด (Shift+F2)','S+F2']);
+ {const b=document.createElement('button');b.tabIndex=-1;b.onmousedown=e=>e.preventDefault();b.textContent='แจ้งคนเข้าออก';b.setAttribute('aria-label','ปุ่ม เปิดปิดแจ้งผู้เล่นเข้าออก');b.onclick=()=>{if(mode==='input')return;handle({code:'F2',shiftKey:true});render()};$('pad').appendChild(b)}
+ renderMob();
+ try{TIPS.push('กด Shift F2 เปิดหรือปิดการแจ้งผู้เล่นเข้า ออก เกมจะบอกเมื่อมีคนเดินเข้ามาใกล้ ออกจากพื้นที่ และเมื่อมีผู้เล่นออนไลน์หรือออฟไลน์')}catch(e){}
+ try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-06',c:[C_SYS],h:'แจ้งผู้เล่นเข้า ออก',t:'เกมจะบอกเมื่อมีผู้ฝึกตนเดินเข้ามาใกล้ตัว (บอกทิศและระยะ) ออกจากพื้นที่ใกล้ตัว และเมื่อมีผู้เล่นคนใดออนไลน์หรือออฟไลน์ ไม่ต้องเป็นเพื่อนกัน กด Shift F2 หรือปุ่ม แจ้งคนเข้าออก เพื่อเปิดหรือปิด'})}catch(e){}
+ CHK.push(()=>{const o=[],now=Date.now();
+  if(S.joinNote!==0&&S.joinNote!==1)o.push('แจ้งผู้เล่นเข้าออก: ค่าตั้งใน S ผิดรูป');
+  if(JN.q.length>=JQMAX)o.push('แจ้งผู้เล่นเข้าออก: คิวข้อความเต็ม');
+  if(JN.q.length&&now-JN.q[0].t>30000)o.push('แจ้งผู้เล่นเข้าออก: ข้อความค้างในคิวเกิน 30 วินาที');
+  if(Object.keys(ONL.pend).some(id=>now-ONL.pend[id].t>60000))o.push('แจ้งผู้เล่นเข้าออก: สถานะรอแจ้งออฟไลน์ค้างเกิน 60 วินาที');
+  if(Object.keys(JN.known).length>400)o.push('แจ้งผู้เล่นเข้าออก: รายชื่อคนใกล้ตัวยาวผิดปกติ');
+  if(KEYS['S+F2']!=='joinNote')o.push('แจ้งผู้เล่นเข้าออก: ปุ่ม Shift+F2 ไม่ได้ผูกกับคำสั่ง');
+  return o});
  /* ตัวซ่อมและตัวตรวจของระบบตำแหน่ง ใช้โดย watchdog และ selfCheck */
  window.__MPFIX=()=>{const fx=[];if(window.__DUP&&LV.k){unsubAll();fx.push(['dup','แท็บนี้ถูกแท็บใหม่ของบัญชีเดียวกันแทนที่ หยุดส่งและหยุดฟังตำแหน่งแล้ว'])}
   if(MP.ready&&!MP.failed&&!document.hidden&&!window.__DUP&&online()&&LV.k&&LV.k!==cellsNow().join(',')){LV.k='__';subNear();fx.push(['sub','ย้ายการฟังตำแหน่งคนรอบตัวตามช่องปัจจุบันแล้ว'])}
-  if(NR.L.length>500){NR.L=[];fx.push(['nr','ล้างรายชื่อคนรอบตัวที่ยาวผิดปกติ'])}return fx};
+  if(NR.L.length>500){NR.L=[];fx.push(['nr','ล้างรายชื่อคนรอบตัวที่ยาวผิดปกติ'])}
+  if(S.joinNote!==0&&S.joinNote!==1){S.joinNote=1;fx.push(['jn0','ค่าแจ้งผู้เล่นเข้าออกผิดรูป ตั้งเป็นเปิดแล้ว'])}
+  if(JN.q.length>=JQMAX){JN.q.length=0;fx.push(['jnq','ล้างคิวข้อความแจ้งผู้เล่นเข้าออกที่เต็ม'])}
+  Object.keys(ONL.pend).forEach(id=>{if(Date.now()-ONL.pend[id].t>60000){delete ONL.pend[id];fx.push(['jnp','ล้างสถานะรอแจ้งออฟไลน์ที่ค้างนาน'])}});
+  if(Object.keys(JN.known).length>400){JN.known={};JN.miss={};JN.seeded=0;fx.push(['jnk','ล้างรายชื่อคนใกล้ตัวที่ยาวผิดปกติ'])}
+  return fx};
  window.__MPDBG=()=>({ready:MP.ready,failed:MP.failed,yieldT:MP.yieldT,lastMove:MP.lastMove,rcell:MP.rcell,subK:LV.k,cells:Object.keys(LV.data),live:liveList(),healed:MP.healed,dupSeen:MP.dupSeen,lastW:MP.lastW,myT:MP.myT,err:LV.err});/* ดูสถานะระบบตำแหน่ง (ผู้พัฒนาและตัวทดสอบ) */
  window.__MPDIAG=()=>{const p=[];if(ACT.ok===false)p.push('ออนไลน์: เซิร์ฟเวอร์ไม่รับช่องเสียงการกระทำ (a) ผู้เล่นอื่นจึงไม่ได้ยินเสียงวิชาและการกระทำของเจ้า ให้เพิ่มช่อง a ในกฎฐานข้อมูล presence');if(!(ACT.seq>=0&&ACT.seq<1679616))p.push('ออนไลน์: ลำดับการกระทำผิดปกติ');if(!(PUSH_MOVE<=2000))p.push('ออนไลน์: ส่งตำแหน่งช้ากว่า 2 วินาที ไม่เรียลไทม์');if(!(FRESH>PUSH_IDLE*2))p.push('ออนไลน์: เวลาหมดอายุตำแหน่งสั้นกว่ารอบส่งตำแหน่ง');
   const t=dedupe([{id:'a',t:1,x:0,y:0},{id:'a',t:2,x:5,y:5},{id:'b',t:1,x:1,y:1}]);if(t.length!==2||t.find(v=>v.id==='a').t!==2)p.push('ออนไลน์: ตัวรวมผู้เล่นซ้อนทำงานผิด');return p};
@@ -3977,6 +4109,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
    if(MP.failed)o.push('ออนไลน์: เรดาร์หยุดทำงาน '+(isPerm(MP.err)?'Realtime Database ไม่อนุญาต ต้องตรวจกฎ':'เกิดข้อผิดพลาด'));
    else if(!document.hidden&&Date.now()-visAt>30000&&performance.now()>90000){
     if(!MP.ready)o.push('ออนไลน์: เรดาร์ยังเชื่อมต่อไม่สำเร็จ');
+    else if(MP.yieldT&&!window.__DUP&&Date.now()-MP.yieldT>180000&&!(MP.scanT&&Date.now()-MP.scanT<60000))o.push('ออนไลน์: หยุดแสดงตำแหน่งเกิน 3 นาทีโดยไม่มีการตรวจหาสำเนาของตัวเอง');
     else if(!window.__DUP&&!MP.yieldT){if(Date.now()-MP.lastW>PUSH_IDLE*4)o.push('ออนไลน์: เรดาร์ไม่ส่งตำแหน่งเกิน 1 นาที');if(Date.now()-LV.okT>15000)o.push('ออนไลน์: ไม่ได้ฟังตำแหน่งคนรอบตัวแบบเรียลไทม์')}
    }
    if(MP.rcell&&!/^-?\d+_-?\d+$/.test(MP.rcell))o.push('ออนไลน์: ชื่อช่องเรดาร์ผิดรูปแบบ');
@@ -5125,8 +5258,11 @@ async function cloudStart(email,name){
  if(qf){if(!ls)throw new Error('เซิร์ฟเวอร์ฟรีเต็มชั่วคราว และเครื่องนี้ยังไม่มีเซฟของคุณ ลองใหม่อีกครั้งหลังบ่าย 2 หรือ 3 โมงเวลาไทย');window.__QUOTA_FULL=Date.now();window.__OFFLINE_SAVE=1;return}
  const tOf=s=>{try{return(JSON.parse(s)||{}).t||0}catch(e){return 0}};
  const body=s=>{try{const o=JSON.parse(s);delete o.t;return JSON.stringify(o)}catch(e){return s}};
- const push=s=>FB.fs.setDoc(ref,{name:name,email:email,save:s,t:Date.now()},{merge:true});
- if(cs&&(!ls||tOf(cs)>=tOf(ls))){try{localStorage.setItem(KEY,cs)}catch(e){}ls=cs}
+ const DEV=(()=>{const mk=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36);try{let d=localStorage.getItem('ipo_dev');if(!d||d.length<8){d=mk();localStorage.setItem('ipo_dev',d)}return d}catch(e){return mk()}})();/* รหัสเครื่อง (เบราว์เซอร์นี้) เก็บถาวรในเครื่อง ฝังในตัวเซฟบนเซิร์ฟเวอร์ (ข้างใน JSON ของช่อง save จึงไม่ต้องแก้กฎ Firestore) เก็บถาวรเพื่อให้การรีเฟรชหน้าไม่ถูกนับเป็นเครื่องอื่น (เซฟค้างจากหน้าเก่าจะไม่ทำให้ล็อกผิด) */
+ const withDev=s=>{try{const o=JSON.parse(s);o.dev=DEV;return JSON.stringify(o)}catch(e){return s}};
+ const noDev=s=>{try{const o=JSON.parse(s);delete o.dev;return JSON.stringify(o)}catch(e){return s}};
+ const push=s=>{if(window.__SAVE_LOCK)return Promise.resolve();return FB.fs.setDoc(ref,{name:name,email:email,save:withDev(s),t:Date.now()},{merge:true})};
+ if(cs&&(!ls||tOf(cs)>=tOf(ls))){ls=noDev(cs);try{localStorage.setItem(KEY,ls)}catch(e){}}
  else if(ls){try{await push(ls)}catch(e){if(quotaErr(e)){window.__QUOTA_FULL=Date.now();window.__OFFLINE_SAVE=1;return}throw new Error('ส่งข้อมูลขึ้นเซิร์ฟเวอร์ไม่ได้ ลองใหม่อีกครั้ง')}}
  let last=null,sent=ls?body(ls):null,timer=null,lastP=0;
  const VOL=['x','y','f','hp','qi','med','fear','poison'];
@@ -5136,9 +5272,13 @@ async function cloudStart(email,name){
   if(!force&&core(s)===sentCore)return;
   if(window.__QUOTA_FULL&&Date.now()-window.__QUOTA_FULL<1800000)return;
   last=null;sent=b;sentCore=core(s);lastP=Date.now();
-  push(s).catch(e=>{sent=null;sentCore=null;if(last==null)last=s;if(quotaErr(e))window.__QUOTA_FULL=Date.now()})};
+  return push(s).catch(e=>{sent=null;sentCore=null;if(last==null)last=s;if(quotaErr(e))window.__QUOTA_FULL=Date.now()})};
+ let seenSave=cs;/* ฟังเอกสารเซฟบนเซิร์ฟเวอร์: ถ้ามีเครื่องอื่นเขียนเซฟใหม่ (รหัสเครื่องไม่ใช่ของเรา) ล็อกเครื่องนี้ไม่ให้เขียนทับ อ่านเพิ่มเฉพาะตอนมีคนเขียน */
+ window.__SAVE_LOCK=0;
+ try{if(typeof FB.fs.onSnapshot==='function')FB.fs.onSnapshot(ref,sn=>{try{if(sn.metadata&&sn.metadata.hasPendingWrites)return;const d=sn.exists()?sn.data():null,sv=d&&typeof d.save==='string'?d.save:null;if(sv==null||sv===seenSave)return;seenSave=sv;let dv=null;try{dv=JSON.parse(sv).dev}catch(e){}if(dv&&dv!==DEV&&!window.__SAVE_LOCK)window.__SAVE_LOCK=Date.now()}catch(e){}},()=>{})}catch(e){}
+ window.__CLOUD_FLUSH=()=>{try{return Promise.resolve(flush(true))}catch(e){return Promise.resolve()}};/* ใช้ตอนกดออกจากระบบ: ส่งเซฟล่าสุดขึ้นเซิร์ฟเวอร์ให้เสร็จก่อนค่อยออก */
  const orig=Storage.prototype.setItem;
- Storage.prototype.setItem=function(k,v){orig.call(this,k,v);if(this===localStorage&&k===KEY){last=v;if(!timer)timer=setTimeout(()=>{timer=null;flush(false)},180000)}};
+ Storage.prototype.setItem=function(k,v){let er=null;try{orig.call(this,k,v)}catch(e){er=e}/* เขียนในเครื่องล้มเหลว (พื้นที่เต็ม) ยังต้องส่งขึ้นเซิร์ฟเวอร์ แล้วค่อยโยนข้อผิดพลาดต่อให้เกมรู้ */if(this===localStorage&&k===KEY){last=v;if(!timer)timer=setTimeout(()=>{timer=null;flush(false)},180000)}if(er)throw er};
  addEventListener('pagehide',()=>flush(true));addEventListener('beforeunload',()=>flush(true));document.addEventListener('visibilitychange',()=>{if(document.hidden&&Date.now()-lastP>60000)flush(true)});
 }
 async function start(email,name){try{curMail=String(email||'').trim().toLowerCase();window.__ACC=email;window.__EMAIL=email;window.__NAME=name;window.__KEY='ipo1_'+email;try{sessionStorage.setItem('ipo_sess',email)}catch(e){}try{const rm=E('l_rem');if(!rm||rm.checked)localStorage.setItem('ipo_rem',JSON.stringify({m:email,n:name}));else localStorage.removeItem('ipo_rem');localStorage.setItem('ipo_pre',JSON.stringify({m:email,n:name}))}catch(e){}
@@ -5155,7 +5295,7 @@ E('l_in').onclick=async()=>{const v=vals();if(!v.name||!v.mail||!v.pw)return msg
   if(nm&&nm.toLowerCase()!==v.name.toLowerCase()){try{await FB.au.signOut(FB.auth)}catch(e){}return msg('ชื่อ อีเมล หรือรหัสผ่านไม่ถูกต้อง')}msg('');pwAuthed=true;start(v.mail,nm||v.name)}catch(e){msg(errTh(e))}return}
  const ac=accs()[v.mail];if(!ac||ac.name.toLowerCase()!==v.name.toLowerCase()||!(await pwOk(ac,v.mail,v.pw)))return msg('ชื่อ อีเมล หรือรหัสผ่านไม่ถูกต้อง');msg('');pwAuthed=true;start(v.mail,ac.name)};
 E('l_pass').addEventListener('keydown',e=>{if(e.key==='Enter')E('l_in').onclick()});
-E('l_out').onclick=async()=>{try{localStorage.removeItem('ipo_rem');localStorage.removeItem('ipo_tok');sessionStorage.removeItem('ipo_sess')}catch(e){}try{if(typeof FB!=='undefined'&&FB)await FB.au.signOut(FB.auth)}catch(e){}location.reload()};
+E('l_out').onclick=async()=>{try{localStorage.removeItem('ipo_rem');localStorage.removeItem('ipo_tok');sessionStorage.removeItem('ipo_sess')}catch(e){}try{if(typeof window.__CLOUD_FLUSH==='function')await Promise.race([window.__CLOUD_FLUSH(),new Promise(r=>setTimeout(r,4000))])}catch(e){}/* ส่งเซฟล่าสุดขึ้นเซิร์ฟเวอร์ก่อนออกจากบัญชี (เดิมออกก่อนแล้วค่อยส่ง ทำให้ส่งไม่ผ่านเพราะไม่มีสิทธิ์แล้ว ความคืบหน้าล่าสุดหาย) รอไม่เกิน 4 วินาที */try{if(typeof FB!=='undefined'&&FB)await Promise.race([FB.au.signOut(FB.auth),new Promise(r=>setTimeout(r,4000))])}catch(e){}location.reload()};
 try{const s=sessionStorage.getItem('ipo_sess')||remM();
  if(CLOUD){if(FB){await FB.auth.authStateReady();const u=FB.auth.currentUser;if(s&&u&&u.email&&u.email.toLowerCase()===s){let nm=null;try{const sn=await FB.fs.getDoc(FB.fs.doc(FB.db,'users',u.uid));nm=sn.exists()?sn.data().name:null}catch(e){}start(s,nm||'ผู้ฝึกตน')}else E('l_name').focus()}else{msg('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ลองรีเฟรชหน้า')}}
  else{const a=accs();if(s&&a[s])start(s,a[s].name);else E('l_name').focus()}}catch(e){}})();
