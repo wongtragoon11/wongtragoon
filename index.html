@@ -152,9 +152,9 @@ const WALLH=2,ALT_MAX=9;
 function heightAt(x,y){const z=zoneAt(x,y);if(!z||z.inn)return 0;const id=z.id;
  if(W.some(w=>w.z===id&&!w.hill&&Math.abs(w.x-x)<=3&&Math.abs(w.y-y)<=3))return 0;/* w.hill = จุดเชิงเขาสำหรับเดินไปฝึกปีน ไม่ทำให้พื้นรอบตัวราบ */
  if(z.boss&&Math.hypot(z.boss[1]-x,z.boss[2]-y)<8)return 0;
- let h=0;if(id==='w'&&(y<=z.r[1]+1||y>=z.r[3]-1))h=WALLH;
+ let h=0;if(id==='w'&&(x<=z.r[0]+1||x>=z.r[2]-1))h=WALLH;/* รอบที่ 9: หุบเขากว้าง 500 ผาสูงอยู่ริมตะวันตกและตะวันออก ทางเหนือใต้เปิดโล่ง */
  for(const p of PEAKS){if(p.z!==id)continue;const d=Math.hypot(p.x-x,p.y-y);if(d<p.r){const v=Math.floor(p.h*(1-d/p.r)+1e-9);if(v>h)h=v}}
- if(h&&id==='m'&&(x-z.r[0]<3||z.r[2]-x<3||y-z.r[1]<3||z.r[3]-y<3))return 0;
+ if(h&&/^(m|ma|mp)$/.test(id)&&(x-z.r[0]<3||z.r[2]-x<3||y-z.r[1]<3||z.r[3]-y<3))return 0;
  return Math.min(ALT_MAX,h)}
 /* ภูเขาที่ช่องนี้เป็นส่วนหนึ่ง (ลูกที่สูงที่สุดตรงนั้น) ผาหินริมหุบเขาคืนค่า wall:1 */
 function peakAt(x,y){const z=zoneAt(x,y);if(!z)return null;let b=null,bh=0;
@@ -581,8 +581,25 @@ const CAST={on:false,id:null,slot:-1,t0:0,t1:0,x:0,y:0,z:'',tg:null,tm:0};
 const skFx=(ph,id,k,o)=>{try{if(HOOK.skFx)HOOK.skFx(ph,id,k,o||{})}catch(e){bugLog('เสียงวิชา',e.message)}};
 const noFightAt=()=>{try{if(typeof noFight9==='function')return noFight9()}catch(e){}const z=zoneAt(S.x,S.y);return !!(z&&z.safe)};
 const monDef=m=>{const d=MD[m.k];return d&&Number.isFinite(d.def)?d.def:0};
+/* ===== รอบที่ 10 (6 พ.ย. 2569): ระดับพลังของผู้เล่นต้องสัมพันธ์กับอสูรและบอสจริง =====
+   1) ช่องว่างขั้นใหญ่ (gapMulAt): ผู้เล่นขั้นใหญ่ต่ำกว่าอสูร (เช่น สร้างรากฐานสู้แก่นทองคำ) ความเสียหายที่ทำได้เหลือ 1 ใน 100 ต่อหนึ่งขั้นใหญ่ที่ต่ำกว่า (นิยายเซียน: ข้ามขั้นใหญ่สู้ไม่ได้)
+      ขั้นใหญ่เดียวกันแต่ต่ำกว่าอสูรเกิน 3 ขั้น ความเสียหายลดลงขั้นละ 40% (ขั้นต่ำเหลือ 2%) ผู้เล่นขั้นเท่ากับขั้นที่โซนรับเข้าไม่โดนลด
+   2) บอสทุกตัว (BOSSREQ = จำนวนผู้ฝึกตนที่ต้องมี): ต้องมีผู้ฝึกตนระดับใกล้เคียงบอส (ไม่ต่ำกว่าระดับบอส 3 ขั้น) อยู่ใกล้ตัวบอสภายใน 30 ก้าวตามจำนวนที่กำหนด
+      ไม่ครบ = ปราณคุ้มกันบอสสะกด ความเสียหายเหลือ 0.2% (ล้มไม่ได้) ครบ = พลังรวมตี้คูณตามจำนวนคน (สูงสุด 5) แทนการแบ่งเลือดบอสร่วมกันบนเซิร์ฟเวอร์ที่ยังไม่เปิด
+      ผู้เล่นที่ระดับต่ำกว่าบอสเกิน 3 ขั้นเองก็โดนปราณคุ้มกันเช่นกัน ไม่นับเป็นสมาชิกตี้ ผู้พัฒนาที่เปิดโหมดเทพ (godOn) ข้ามเงื่อนไขนี้เพื่อทดสอบ */
+const BOSSREQ={pboar:2,bsnake:2,king:3,lion:3,king2:3,bsnake2:4,lion2:4},NEAR_LO=3,PARTY_R=30,PARTY_CAP=5,BARRIER=.002;
+const majorOf=s=>Math.floor((Number(s)||0)/10);
+const gapMulAt=(k,ps)=>{const mr=MRM[k];if(!Number.isFinite(mr))return 1;ps=Math.max(0,Number(ps)||0);const mg=majorOf(mr)-majorOf(ps);if(mg>0)return Math.pow(.01,mg);const g=mr-ps;return g<=NEAR_LO?1:Math.max(.02,Math.pow(.6,g-NEAR_LO))};
+const partyMulAt=(k,selfOk,n)=>{if(!BOSSREQ[k])return 1;if(!selfOk||!(n>=BOSSREQ[k]))return BARRIER;return Math.min(n,PARTY_CAP)};
+const partyCount=(L,me,m,lo,now)=>{let n=(S.step|0)>=lo?1:0;if(!m||!Array.isArray(L))return n;L.forEach(v=>{if(!v||v.id===me||v.z!==m.z||!(v.lv>=lo)||!(v.t>now-40000))return;if(Math.hypot(v.x-m.x,v.y-m.y)<=PARTY_R)n++});return n};
+let partyNear=(m,lo)=>partyCount([],'',m,lo,Date.now());/* ระบบออนไลน์ตั้งตัวนับจริงทับตรงนี้ (อ่านผู้เล่นใกล้บอสจาก presence) ออฟไลน์นับได้แค่ตัวเอง จึงล้มบอสไม่ได้ */
+const partyInfo=m=>{const need=BOSSREQ[m.k];if(!need)return null;const lo=Math.max(0,MRM[m.k]-NEAR_LO);let n=0;try{n=Number(partyNear(m,lo))||0}catch(e){n=0}return{need,lo,n,selfOk:(S.step|0)>=lo}};
+const BSAY={};
+const barrierSay=(m,p)=>{const t=Date.now();if(t-(BSAY[m.k]||0)<8000)return;BSAY[m.k]=t;const nm=MD[m.k].n;
+ say(p.selfOk?'ปราณคุ้มกันของ '+nm+' สะกดพลังโจมตีของเจ้า ต้องมีผู้ฝึกตนตั้งแต่ '+realmName(p.lo)+' ขึ้นไปอย่างน้อย '+p.need+' คนอยู่ใกล้บอสภายใน '+PARTY_R+' ก้าว ตอนนี้มี '+p.n+' คน':nm+' อยู่เหนือระดับเจ้ามากเกินไป พลังโจมตีของเจ้าแทบไม่ระคายผิว ต้องถึง '+realmName(p.lo)+' ขึ้นไปและรวมตี้กับผู้ฝึกตนระดับใกล้เคียง')};
+const monMul=m=>{try{if(!m||godOn())return 1;let u=gapMulAt(m.k,S.step);const p=partyInfo(m);if(p){const q=partyMulAt(m.k,p.selfOk,p.n);if(q<=BARRIER)barrierSay(m,p);u*=q}return Number.isFinite(u)&&u>0?u:1}catch(e){return 1}};
 /* ความเสียหายต่ออสูร 1 ตัว = พลังโจมตี x ตัวคูณวิชา x สุ่ม 0.9 ถึง 1.1 x 100/(100+ป้องกันของอสูร) อย่างน้อย 1 */
-function hitMon(m,k,mul){if(!m||m.dead||!(m.hp>0))return 0;const d=Math.max(1,Math.round(atk()*(Number(k.m)||1)*(mul||1)*(.9+Math.random()*.2)*100/(100+monDef(m))));if(!Number.isFinite(d)){bugLog('ต่อสู้','ความเสียหายคำนวณผิด',{k:m.k});return 0}m.hp-=d;m.ag=1;m.hitT=Date.now();return d}
+function hitMon(m,k,mul){if(!m||m.dead||!(m.hp>0))return 0;const d=Math.max(1,Math.round(atk()*(Number(k.m)||1)*(mul||1)*(.9+Math.random()*.2)*100/(100+monDef(m))*monMul(m)));if(!Number.isFinite(d)){bugLog('ต่อสู้','ความเสียหายคำนวณผิด',{k:m.k});return 0}m.hp-=d;m.ag=1;m.hitT=Date.now();return d}
 function useSlot(i,quiet){
  const id=S.slots[i];if(!id){say('ช่อง '+(i+1)+' ว่าง');return 0}
  const k=SK[id];if(!k){S.slots[i]=null;bugLog('ต่อสู้','ช่อง '+(i+1)+' มีวิชาที่ไม่มีอยู่ '+id+' ถอดออกแล้ว');return 0}
@@ -673,7 +690,7 @@ talk(){const z=zoneAt(S.x,S.y),n=W.find(w=>w.npc&&w.z===z.id&&dist(S,w)<=2.5);if
  menu('ร้าน '+n.n+' (มีหินวิญญาณ '+Math.floor(S.gold/100)+' ก้อน)',SHOP[n.npc].map(id=>({t:I[id].n+' ราคา '+I[id].p+' หินวิญญาณระดับต่ำ'+reqTxt(id),id})),{ent:x=>(lvOk(x.id,1)?ask:()=>0)('ซื้อ '+I[x.id].n+' กี่ชิ้น',v=>{const q=parseInt(v);if(!(q>0)){mode='menu';return say('ยกเลิก')}const c=q*I[x.id].p*100;if(S.gold<c)say('หินวิญญาณไม่พอ ต้องใช้ '+c/100+' ก้อน มี '+Math.floor(S.gold/100));else{S.gold-=c;add(x.id,q);sfx('buy');say('ซื้อแล้ว '+q+' ชิ้น')}})})},
 fly(){if(!canFly())return say('ต้องเรียนวิชาขี่กระบี่และถึงระดับสร้างรากฐาน หรือถึงระดับแก่นทองคำจึงจะบินเองได้');say('ขี่กระบี่เหาะ (ระบบบินเต็มรูปแบบรอแพตช์ถัดไป)')},
 quest(){say('เควสต์: ล่ากระต่ายเขาเดียวที่ทุ่งกระต่าย '+Math.min(3,S.q.k)+' จาก 3 ตัว'+(S.q.got?' รับรางวัลแล้ว':S.q.k>=3?' กลับไปคุยผู้ใหญ่บ้านหลี่ (F)':''))},
-party(){say('ระบบปาร์ตี้ยังไม่เปิดใช้งาน')},craft(){say('วิชาชีพเสริมยังไม่เปิดในแพตช์ทดลองนี้')},
+party(){const z=zoneAt(S.x,S.y);let b=null,bd=1e9;MS.forEach(o=>{if(!o.dead&&BOSSREQ[o.k]&&z&&o.z===z.id){const d=dist(o,{x:S.x,y:S.y});if(d<bd){bd=d;b=o}}});if(!b||bd>80)return say('ระบบจัดตี้เต็มรูปแบบยังไม่เปิด แต่บอสทุกตัวต้องมีผู้ฝึกตนระดับใกล้เคียงบอสอยู่ใกล้ตัวบอสตามจำนวนที่กำหนด เดินเข้าใกล้บอสในระยะ 80 ก้าวแล้วกด T เพื่อฟังว่าตี้พร้อมหรือยัง');const p=partyInfo(b);if(!p)return;say(MD[b.k].n+' อยู่ห่าง '+Math.round(bd)+' ก้าว ต้องมีผู้ฝึกตนตั้งแต่ '+realmName(p.lo)+' ขึ้นไปอย่างน้อย '+p.need+' คนอยู่ใกล้บอสภายใน '+PARTY_R+' ก้าว ตอนนี้มี '+p.n+' คน '+(!p.selfOk?'ขั้นของเจ้าต่ำกว่าเกณฑ์ ตีบอสไม่เข้า':p.n>=p.need?'ตี้พร้อม พลังรวมตี้ x'+Math.min(p.n,PARTY_CAP):'ตี้ยังไม่พร้อม ปราณคุ้มกันบอสยังสะกดพลังโจมตีอยู่'))},craft(){say('วิชาชีพเสริมยังไม่เปิดในแพตช์ทดลองนี้')},
 equip(){menu('อุปกรณ์',[{t:'อาวุธ: '+(S.wpn?I[S.wpn].n:'ไม่มี')}],{ent:()=>{if(S.wpn){add(S.wpn,1);S.wpn=null;say('ถอดอาวุธแล้ว');mode='play'}}})},
 help(){const L=['ลูกศรเดิน Q E หัน W รีเซ็ตทิศ','M เมนูแผนที่ N เช็กระยะ A เช็คคนรอบตัว P เช็คคนออนไลน์ใกล้ตัว K เช็กจำนวนคนออนไลน์ Shift F1 รายชื่อคนออนไลน์','I กระเป๋า Enter เก็บหรือใช้ของ Delete ทิ้ง','S จัดทักษะ เลข 1 ถึง 0 ใช้ทักษะ Space ออโต้','H เลือดปราณ L ข้อมูลตัวละคร Z สมาธิ B ทะลวง F คุยหรือซื้อของ','C อุปกรณ์ G เควสต์ X ขี่กระบี่','ข้ามเขตแผนที่ ต้องกด Enter ที่ทางเข้าเพื่อยืนยัน','ซื้อของและสร้างของที่ร้าน กด F คุยกับเจ้าของร้าน X ขี่กระบี่เหาะ (ไม่ต้องติดตั้งทักษะ ตั้งแต่ขั้นแก่นทองคำขึ้นไปบินได้เองไม่ต้องใช้กระบี่)','A เช็คคนรอบตัว ไกล 39 ก้าว O เช็คอสูรและสมุนไพร ไกล 29 ก้าว U คู่มือเกม F4 ประกาศล่าสุดและข้อความประจำวัน F5 บันทึกการอัพเดท F10 ออกจากระบบ เดินชนคนได้ และแต่ละคนมีเสียงประจำตัว','แชท: ทับ \\ โลก / แผนที่ จุด คอมมา เปลี่ยนหมวด วงเล็บเหลี่ยม อ่านข้อความ','F2 เปิดปิดเสียงพูดของเกม','F3 เปิดปิดเสียงบรรยากาศ Shift N เดินอัตโนมัติไปเป้าหมายที่ล็อกไว้ใน M ถึงสมุนไพรกด Enter เก็บ','Page Up ปีนขึ้นภูเขาหรือหน้าผาทีละชั้น Page Down ปีนลง ปีนอยู่สูงกว่าพื้นแล้วอสูรบนพื้นโจมตีไม่ถึง แต่ต้องปีนลงก่อนจึงจะสู้ได้','Shift ค้างไว้แล้วกด Page Up เพิ่มเสียงดนตรี Shift ค้างไว้แล้วกด Page Down ลดเสียงดนตรี ระดับ 0 ถึง 10 ระดับ 0 คือปิดดนตรี','Shift ค้างไว้แล้วกด Home เพิ่มเสียงรอบข้าง คือเสียงบรรยากาศ สัตว์ อาวุธ เอฟเฟกต์ และของใช้ Shift ค้างไว้แล้วกด End ลดเสียงรอบข้าง ระดับ 0 ถึง 10 ระดับ 5 คือมาตรฐาน เสียงเท้ากับดนตรีไม่เปลี่ยนตาม','Shift A ติดตามอสูรที่ใกล้ที่สุดในระยะ 20 ก้าว เดินอัตโนมัติไปถึงตัวแล้วล็อกเป้าให้','R บอกพิกัด ทิศที่หัน และชั้นที่ปีนอยู่','M เมนูแผนที่ ล็อกเป้าได้เฉพาะสถานที่ที่ไปได้ จุดสังเกตอย่างต้นไม้หรือหุ่นไล่กา เกมบอกเองตอนเดินผ่าน','F10 ออกจากระบบ เกมถามยืนยันก่อน','เลข 1 ถึง 0 ใช้ทักษะได้ตลอดเวลาแม้ไม่มีอสูร (ฟันลม) ทุกท่าใช้ลมปราณ ลมปราณหมดกด Z นั่งสมาธิ ขั้น 2 ขึ้นไปฟื้นเร็วขึ้น 20%','ระยะโจมตีตามขั้น ขั้น 1 ประชิด 1.5 ก้าว ขั้น 2 3 ก้าว ขั้น 3 5 ก้าว ขั้น 4 8 ก้าว ขั้น 5 ขึ้นไป 12 ถึง 15 ก้าว ขั้นแก่นทองคำ 24 ก้าว วิญญาณแรกเริ่ม 33 ก้าว เทพแปลงกาย 45 ก้าว กด S ฟังระยะของแต่ละวิชา กด L ฟังระยะพื้นฐาน','ทัณฑ์สายฟ้า ทะลวงขั้นแก่นทองคำและวิญญาณแรกเริ่มด้วย B ต้องออกไปที่โล่งนอกเขตปลอดภัย มีเวลาเตรียมตัว 5 นาทีและประกาศทั่วเกม ระหว่างเตรียมตัวขยับไม่ได้ กด B ยกเลิกได้ ระหว่างสายฟ้ารวมพลังใช้เลข 1 ถึง 0 ปล่อยวิชาโจมตีสู้สายฟ้า ลดความแรงได้','วิชารวมพลัง เช่น ฝ่ามืออัสนี ต้องยืนนิ่งจนปล่อยพลัง เดินหรือนั่งสมาธิ = ยกเลิก ไม่เสียลมปราณ เป้าเดินออกนอกระยะระหว่างรวมพลัง = เป้าหลบได้','บอสคำราม = หวาดกลัว 3 วินาที ใช้วิชาโจมตีไม่ได้ ได้ยินบอสตั้งท่า ให้เดินหลบออกไป 3 ก้าว กด H ฟังเลือด ลมปราณ หวาดกลัว และพิษ','กระเป๋า I: Enter ใช้หรือกิน ของกินหรือหินวิญญาณที่มีหลายชิ้นจะถามจำนวน กดตัวเลข 0 ถึง 9 ใส่จำนวนได้เลย หรือเลือก 1 จนเลือดเต็ม ครึ่งหนึ่ง ทั้งหมด พิมพ์เอง แล้วกด Enter Esc กลับเข้ากระเป๋า','กระเป๋า I: Delete ทิ้งของ เลือกจำนวน แล้วกด Enter ยืนยัน ของวางไว้ตรงที่ยืน กด Enter ตรงนั้นเก็บคืนได้'];menu('คู่มือปุ่ม',L.map(t=>({t})))},
 go(){if(goal&&goal.mon&&(goal.mon.dead||!MS.includes(goal.mon)))goal=null;if(!goal)return say('ยังไม่ได้เลือกเป้าหมาย กด M');walk=true;say('เริ่มเดินอัตโนมัติไป '+goal.n+' กดปุ่มใดก็ได้เพื่อหยุด')},ambT(){ambOn=!ambOn;say('เสียงบรรยากาศ '+(ambOn?'เปิด':'ปิด'))},tts(){tts=!tts;say('เสียงพูดของเกม '+(tts?'เปิด':'ปิด'))},spd(){if(!isGM())return;spd=spd===1?60:1;say('ตัวคูณแต้มสมาธิทดสอบ '+spd+' เท่า')},esc(){},
@@ -892,7 +909,7 @@ function takeGround(a,o){const i=S.ground.indexOf(a);if(i<0)return false;S.groun
  if(a.gold!=null){if(!ok(a.gold)){bugLog('เก็บของ','หินวิญญาณบนพื้นค่าผิดปกติ ทิ้งแล้ว',a);return false}const n=Math.floor(a.gold)||1;S.gold+=n;o.push('หินต่ำ '+(n/100).toFixed(2)+' ก้อน');return true}
  const q=Math.floor(Number(a.q==null?1:a.q));if(!I[a.id]||!ok(q)){bugLog('เก็บของ','ของบนพื้นไม่มีอยู่จริงหรือจำนวนผิด ทิ้งแล้ว',a);return false}add(a.id,q);o.push(I[a.id].n+(q>1?' x'+q:''));return true}
 function autoLoot(m){const o=[],q=r=>Array.isArray(r.q)?r.q[0]+Math.floor(Math.random()*(r.q[1]-r.q[0]+1)):(r.q||1);
- (BOSS_DROP[m.k]||[]).forEach(r=>{if(Math.random()>=r.p)return;const n=q(r);if(r.cur){S[r.cur]+=n;o.push('หินวิญญาณระดับกลาง '+n+' ก้อน')}else{add(r.id,n);o.push(I[r.id].n+' x'+n)}});
+ (BOSS_DROP[m.k]||[]).forEach(r=>{if(Math.random()>=r.p)return;const n=q(r);if(r.cur){S[r.cur]+=n;o.push('หินวิญญาณระดับ'+({sm:'กลาง',sh:'สูง',sx:'สุดยอด'}[r.cur]||'กลาง')+' '+n+' ก้อน')}else{add(r.id,n);o.push(I[r.id].n+' x'+n)}});
  S.ground.filter(a=>a&&a.x===S.x&&a.y===S.y&&!a.mine).forEach(a=>takeGround(a,o));
  say('ได้รับ: '+(o.join(', ')||'ไม่มีของตก'));if(BOSSES.includes(m.k)){S.bd[m.k]=Date.now();say(MD[m.k].n+' จะเกิดใหม่ในอีก 30 นาที')}}
 /* รอบที่ 5: ตัวห่อกระเป๋าเดิมยุบเข้า invMenu/useItem ต้นฉบับแล้ว */
@@ -946,7 +963,7 @@ function descOf(id){const d=I[id];let s='';if(d.u==='hp')s='ฟื้นเล�
 const NPCDO={chief:'รับเควสต์ล่ากระต่ายและรางวัล',smith:'ซื้ออาวุธและคัมภีร์ สร้างกระบี่ (กด F คุย)',herb:'ซื้อน้ำยาและโอสถ สร้างน้ำยา (กด F คุย)',tailor:'สร้างเกราะ (กด F คุย)',exch:'แลกเหรียญและหินวิญญาณ ขายวัตถุดิบ'};
 const zn=id=>Z.find(z=>z.id===id).n,names=a=>a.map(k=>I[k].n).join(', ');
 const GUIDE={how:()=>['เดินด้วยลูกศร หันด้วย Q E','Shift A ติดตามอสูรที่ใกล้ที่สุดในระยะ 20 ก้าว เดินอัตโนมัติไปหาจนถึงตัวแล้วล็อกเป้าให้ กดปุ่มใดก็ได้เพื่อหยุด','R บอกพิกัด ทิศที่หัน และชั้นที่ปีนอยู่','ล่าอสูรด้วยทักษะเลข 1 ถึง 0 จัดช่องที่ปุ่ม S กด Space เปิดออโต้','ของจากอสูรเข้ากระเป๋าเอง ของที่ทิ้งเองต้องกด Enter เก็บ','Z นั่งสมาธิ B ทะลวงขั้น H ดูเลือด L ข้อมูล','เดินถึงขอบแผนที่แล้วกด Enter เพื่อเข้าแผนที่ใหม่','M เลือกจุดหมาย Shift N เดินอัตโนมัติ ชนคนแล้วกด F','A เช็คคนรอบตัว ไกล 39 ก้าว O เช็คอสูร ไกล 29 ก้าว','Shift F1 ดูรายชื่อคนออนไลน์ F4 ประกาศล่าสุดและข้อความประจำวัน F5 บันทึกการอัพเดท F10 ออกจากระบบ','Page Up ปีนขึ้นภูเขาหรือหน้าผาทีละชั้น Page Down ปีนลง ที่ฝึกปีนคือเนินเขาหินครามหลังหมู่บ้าน กด M แล้วเลือกเชิงเนินเขาหินคราม','Shift ค้างไว้แล้วกด Page Up หรือ Page Down เพิ่มหรือลดเสียงดนตรีจีนโบราณ ระดับ 0 ถึง 10 F3 ปิดเปิดดนตรีและเสียงบรรยากาศ','เครดิตดนตรี เครื่องดนตรีจากชุด Fluid R3 GM โดย Frank Wen ใบอนุญาต CC BY 3.0','เครดิตเสียงประกอบ เสียงบันทึกจริง 541 เสียง ใบอนุญาต CC0 และสาธารณสมบัติทั้งหมด เสียงเท้า ลม และน้ำ โดย Nox_Sound, felix.blume, TRP, Auxide_Audio และ scholzn จาก freesound เสียงสัตว์จากกรมอุทยานแห่งชาติสหรัฐ (NPS) และนักบันทึกเสียงใน freesound เครื่องดนตรี ระฆัง และทั่งตีเหล็กจาก Versilian Studios ของใช้โดย Jan Schupke (Vehicle), Vrymaa และ SpaceJoe น้ำกระเซ็นและโคลนโดย rubberduck ลมโบกโดย Benjamin Burnes ชุด RPG Audio และ Impact Sounds ของ Kenney คัดเลือกจากคลังเสียงของเกม conquest โดย hoffspot','รายชื่อผู้บันทึกเสียงครบทุกไฟล์ อยู่ในไฟล์ sound-credits.md ที่ส่งมาพร้อมกับเกม'].map(t=>({t})),
-maps:()=>Z.map(z=>({t:z.n+(z.safe?' เขตปลอดภัย':' เหมาะกับขั้น '+(z.min+1)+' ขึ้นไป')+(z.mons?' อสูร: '+z.mons.map(k=>MD[k].n+' ระดับพลัง '+mpw(k)+' ตก '+names(MD[k].it)).join(' | '):'')+(NP[z.id]?' สมุนไพร: '+names([...new Set(NP[z.id])]):'')+(z.boss?' บอส '+MD[z.boss[0]].n+' อยู่กลางแผนที่ ตก: '+(BOSS_DROP[z.boss[0]]||[]).map(r=>r.cur?'หินกลาง':I[r.id].n).join(', '):'')})),
+maps:()=>Z.map(z=>({t:z.n+(z.safe?' เขตปลอดภัย':' เหมาะกับขั้น '+(z.min+1)+' ขึ้นไป')+(z.mons?' อสูร: '+z.mons.map(k=>MD[k].n+' ระดับพลัง '+mpw(k)+' ตก '+names(MD[k].it)).join(' | '):'')+(NP[z.id]?' สมุนไพร: '+names([...new Set(NP[z.id])]):'')+(z.boss?' บอส '+MD[z.boss[0]].n+' อยู่กลางแผนที่ ตก: '+(BOSS_DROP[z.boss[0]]||[]).map(r=>r.cur?({sm:'หินกลาง',sh:'หินสูง',sx:'หินสุดยอด'}[r.cur]||'หินกลาง'):I[r.id].n).join(', '):'')})),
 npc:()=>W.filter(w=>w.npc).map(w=>({t:w.n+' ใน'+zn(w.z)+' พิกัด '+w.x+','+w.y+' : '+(NPCDO[w.npc]||'')})),
 items:()=>Object.keys(I).map(id=>({t:I[id].n+' : '+descOf(id)})),
 money:()=>[{t:'หินวิญญาณต่ำ กลาง สูง สุดยอด แลกขึ้นทีละระดับ 100 ต่อ 1'},{t:'เหรียญทอง 100 แลกหินต่ำ 1 ก้อน ขายหินต่ำคืนได้ 80 เหรียญ'},{t:'แลกลงระดับล่างได้ 95 ต่อ 1 ก้อน'},{t:'ของซื้อได้ด้วยหินต่ำ ขายวัตถุดิบเป็นเหรียญที่ผู้แลกเงิน'}],
@@ -1005,6 +1022,82 @@ W.push({z:'w',n:'ทางไปเทือกเขาอสูรบรรพ
 {const zm=Z[Z.length-1];for(let i=0;i<zm.cnt;i++)spawn(zm,zm.mons[i%zm.mons.length]);spawn(zm,'lion',185,20);
  MS.forEach(m=>{if(m.k==='lion'&&S.bd.lion&&Date.now()-S.bd.lion<BOSS_MS)m.dead=S.bd.lion})}
 Object.assign(VD,{leo:.6,ape:.8,phx:.8,lion:1.8});
+/* ===== รอบที่ 9 (6 พ.ย. 2569): อสูรแก่นทองคำ ใช้เสียงร้อง เสียงเท้า เสียงโดนตี ชุดเดียวกับอสูรต้นแบบที่มีในคลังเสียงอยู่แล้ว (b = ต้นแบบ) ไม่เพิ่มไฟล์เสียงใหม่
+   สมดุลคิดจากตารางขั้นพลัง R เทียบกับขั้นที่โซนรับเข้า (mrm): อสูรธรรมดา ผู้เล่นขั้นนั้นฟันราว 8 ถึง 16 ครั้งจึงล้ม และอสูรตีผู้เล่นราว 4 ถึง 6 ครั้งจึงล้ม (อัตราส่วนเดียวกับ เสือดาว วานร วิหคเพลิง ของเขตสร้างรากฐานเดิม)
+   บอส (base = [เลือด, โจมตี, ป้องกัน] ก่อนคูณ 1.5 ตามกฎ 9.10): เลือดราว 100 เท่าของพลังโจมตีผู้เล่นขั้นนั้น ต้องรวมตี้จึงล้ม ตรวจ 1.5 เท่าผ่าน BASEB เหมือนบอสเดิม */
+const GV={
+ leo2:{b:'leo',n:'เสือดาวสายฟ้าเกล็ดทอง',lv:30,hp:160000,atk:16000,xp:62000,mrm:20,hear:48,rate:.92,coin:[9000,16000],
+  drop:[{cur:'sm',p:.9,q:[10,20]},{cur:'sh',p:.2,q:[1,1]},{id:'leo_fang',p:.6},{id:'pill_hp4',p:.12}]},
+ bear2:{b:'bear',n:'หมีเกราะศิลาผลึกทอง',lv:34,hp:256000,atk:25000,xp:93000,mrm:22,hear:48,rate:.92,coin:[14000,24000],
+  drop:[{cur:'sm',p:.9,q:[12,24]},{cur:'sh',p:.25,q:[1,1]},{id:'ore',p:.6,q:[2,4]},{id:'rock',p:.6,q:[2,4]},{id:'pill_hp4',p:.12}]},
+ wolf2:{b:'wolf',n:'หมาป่าอสนีบาตสีทอง',lv:36,hp:307000,atk:31000,xp:138000,mrm:24,hear:48,rate:.92,coin:[12000,22000],
+  drop:[{cur:'sm',p:.9,q:[12,24]},{cur:'sh',p:.25,q:[1,1]},{id:'hide',p:.7,q:[3,6]},{id:'pill_qi3',p:.1}]},
+ ape2:{b:'ape',n:'วานรแขนเหล็กพันชั่ง',lv:40,hp:494000,atk:46000,xp:169000,mrm:25,hear:49,rate:.92,coin:[22000,36000],
+  drop:[{cur:'sm',p:.9,q:[14,28]},{cur:'sh',p:.3,q:[1,1]},{id:'ape_bone',p:.5},{id:'ore',p:.6,q:[3,6]},{id:'pill_hp5',p:.08}]},
+ snake2:{b:'snake',n:'งูเขียวหางไหม้พันปี',lv:42,hp:513000,atk:53000,xp:252000,mrm:27,hear:49,rate:.92,coin:[28000,42000],
+  drop:[{cur:'sm',p:.9,q:[16,30]},{cur:'sh',p:.3,q:[1,1]},{id:'scale',p:.8,q:[3,6]},{id:'venom',p:.7,q:[3,6]},{id:'pill_xp4',p:.1}]},
+ phx2:{b:'phx',n:'วิหคเพลิงปีกทอง',lv:46,hp:804000,atk:67000,xp:307000,mrm:28,hear:49,rate:.92,coin:[34000,52000],
+  drop:[{cur:'sm',p:.9,q:[18,34]},{cur:'sh',p:.35,q:[1,1]},{id:'phx_feather',p:.5},{id:'pill_qi5',p:.1}]},
+ king2:{b:'king',n:'ราชาหมาป่าอสนีบาตทองคำ (บอส)',lv:48,base:[2050000,36000,180],xp:1900000,mrm:24,hear:125,rate:.88,coin:[90000,140000],
+  drop:[{cur:'sm',p:1,q:[30,50]},{cur:'sh',p:1,q:[6,10]},{id:'king_fang',p:1},{id:'king_core',p:.5},{id:'pill_xp5',p:.4},{id:'pill_hp5',p:.3}],
+  sk:{n:'อสนีบาตวายุทอง',warn:'ราชาหมาป่าอสนีบาตทองคำเงยหน้า สายฟ้าสีทองก่อตัวรอบตัวมัน ถอยออกไป 3 ก้าว',hit:'อสนีบาตทองคำฟาดโดนเจ้า',m:1.8}},
+ bsnake2:{b:'bsnake',n:'พญางูมรกตพันปี (บอส)',lv:50,base:[3100000,48000,220],xp:3500000,mrm:27,hear:115,rate:.88,coin:[120000,180000],
+  drop:[{cur:'sm',p:1,q:[40,60]},{cur:'sh',p:1,q:[8,12]},{id:'scale',p:1,q:[6,10]},{id:'snake_gall',p:.6},{id:'pill_xp5',p:.4}],
+  sk:{n:'พ่นพิษมรกตพันปี',warn:'พญางูมรกตพันปีชูคอพองกว้าง น้ำพิษหยดจากเขี้ยว ถอยออกไป 3 ก้าว',hit:'พิษมรกตพันปีโดนเจ้า ติดพิษ 5 วินาที',m:1.4,poison:1}},
+ lion2:{b:'lion',n:'ราชสีห์เพลิงสวรรค์ผู้อมตะ (บอส)',lv:52,base:[3600000,58000,260],xp:4300000,mrm:28,hear:150,rate:.88,coin:[160000,240000],
+  drop:[{cur:'sm',p:1,q:[60,90]},{cur:'sh',p:1,q:[10,16]},{id:'lion_mane',p:1,q:[3,5]},{id:'lion_core',p:.6},{id:'sw_lion',p:.25},{id:'pill_xp5',p:.5},{id:'pill_hp5',p:.4}],
+  sk:{n:'เพลิงสวรรค์อมตะ',warn:'ราชสีห์เพลิงสวรรค์ผู้อมตะสูดลมหายใจ เปลวไฟสีทองลุกในปาก ถอยออกไป 3 ก้าว',hit:'เพลิงสวรรค์อมตะเผาเจ้า',m:1.9}}};
+Object.keys(GV).forEach(k=>{const g=GV[k],bs=g.base;
+ MD[k]=bs?{n:g.n,lv:g.lv,hp:Math.round(bs[0]*1.5),atk:Math.round(bs[1]*1.5),def:bs[2]*1.5,aspd:1333,xp:g.xp,it:[]}:{n:g.n,lv:g.lv,hp:g.hp,atk:g.atk,xp:g.xp,it:[]};
+ MRM[k]=g.mrm;COIN[k]=g.coin;BOSS_DROP[k]=g.drop;VD[k]=VD[g.b];if(bs&&!BOSSES.includes(k))BOSSES.push(k)});
+/* ตารางแผนที่รอบที่ 9: ทุกโซนกว้างยาว 500 ช่อง พิกัดบวก เรียงเป็นตาราง 3 คอลัมน์ (x 501 ถึง 1000 = ป่าไผ่ หุบเขาหมาป่า หุบเขาหมี / x 1001 ถึง 1500 = เทือกเขาสร้างรากฐาน 3 ตอน / x 1501 ถึง 2000 = แก่นทองคำ 6 แห่ง)
+   อสูรธรรมดาโซนละชนิดเดียว (กฎ 9.11) บอสอยู่กลางโซน eye = มีตาน้ำวิญญาณ 3 จุด (นั่งสมาธิ +120%) c = ค่าวาร์ปเป็นหินกลาง */
+const G9=(()=>{const R5=(cx,ri)=>[cx,1001+ri*500,cx+499,1500+ri*500];
+ const A=[
+ {id:'b',n:'ป่าไผ่เขียวขจี',r:R5(501,0),b:.1,min:2,mons:['snake'],cnt:90,boss:'bsnake',herb:40,npk:'b',c:0,
+  intro:'ป่าไผ่หนาทึบสูงเสียดฟ้า ลมพัดผ่านใบไผ่เสียงซ่าเยือกเย็น พื้นปูด้วยใบไผ่แห้งหนา งูเขียวหางไหม้ซ่อนตัวตามกอไผ่ กลางป่ามีรังของพญางูมรกตราชินี ต้องรวมตี้จึงล้มได้',
+  lm:[['กอไผ่ยักษ์ริมทาง',100,140,'กอไผ่ลำเท่าต้นขาเบียดกันแน่น เปลือกมีรอยเกล็ดงูเสียดสีเป็นแนวยาว'],['สระน้ำใต้ร่มไผ่',380,350,'น้ำนิ่งใสใต้ร่มไผ่ ผิวน้ำมีใบไผ่ลอยเป็นแพ ริมสระมีรอยลากยาวของงู']]},
+ {id:'w',n:'หุบเขาหมาป่าวายุ',r:R5(501,1),b:.2,min:3,mons:['wolf'],cnt:100,boss:'king',herb:40,npk:'w',c:0,
+  intro:'หุบเขากว้างมีผาหินสูงขนาบสองข้าง ลมหุบเขาพัดกรวดหินกลิ้งเสียงกราว หมาป่าวายุครามวิ่งเป็นฝูงตามร่องหุบ และกลางหุบเขาคือถิ่นของราชาหมาป่าวายุกลายพันธุ์',
+  lm:[['ซากกวางใต้ผาหิน',120,100,'ซากกวางถูกแทะเหลือแต่กระดูก รอยเล็บหมาป่าลึกบนก้อนหินข้างๆ'],['ลำธารแห้งกลางหุบ',350,380,'ท้องลำธารเหลือแต่กรวดขาว มีรอยเท้าหมาป่าเป็นร้อยเดินทับกันไปมา']]},
+ {id:'wb',n:'หุบเขาหมีเกราะศิลา',r:R5(501,2),b:.3,min:6,mons:['bear'],cnt:80,herb:40,npk:'w',c:2,
+  intro:'หุบเขาศิลาเทาสลับถ้ำเตี้ย ก้อนหินเกลื่อนพื้น หมีเกราะศิลาออกหากินกลางวัน ผิวหนังแข็งดั่งหิน เสียงฟันโดนจึงก้องเหมือนฟันก้อนหิน',
+  lm:[['ปากถ้ำหมีใหญ่',140,160,'ปากถ้ำมีรอยข่วนลึกบนหน้าผา กลิ่นสาบหมีฉุนแรงลอยออกมา'],['กองหินที่หมีพลิก',360,330,'ก้อนหินใหญ่ถูกพลิกกลับทั้งแถบ ใต้ก้อนหินมีรังมดแตกกระจาย']]},
+ {id:'m',n:'เทือกเขาอสูรบรรพกาล ตอนเสือดาวสายฟ้า',r:R5(1001,0),b:.6,min:10,mons:['leo'],cnt:80,herb:60,npk:'m',c:10,eye:1,circle:1,
+  peaks:[['เขาสายฟ้าตะวันตก',130,330,4,10],['ยอดเขาเสือดาวสายฟ้า',360,260,6,14]],
+  intro:'ขอบเทือกเขาอสูรบรรพกาล อากาศเบาบางลง ปราณฟ้าดินหนาแน่นกว่าข้างล่าง เสือดาวสายฟ้าซ่อนตัวตามโขดหิน เร็วและแม่นยำ ตาน้ำวิญญาณสามจุดช่วยให้นั่งสมาธิได้ผลเพิ่ม',
+  lm:[['หินดำรอยสายฟ้า',150,300,'ก้อนหินดำร้าวเป็นรอยไหม้รูปกิ่งไม้ ที่ฟ้าเคยฟาดซ้ำที่เดิมหลายครั้ง'],['น้ำตกเล็กบนหน้าผา',330,100,'น้ำตกสายเล็กตกจากหน้าผา ละอองน้ำเย็นเฉียบ ริมหินมีรอยเท้าแมวใหญ่']]},
+ {id:'ma',n:'เทือกเขาอสูรบรรพกาล ตอนวานรแขนเหล็ก',r:R5(1001,1),b:.6,min:12,mons:['ape'],cnt:80,herb:60,npk:'m',c:12,eye:1,
+  peaks:[['ภูเขาวานรเหล็ก',150,150,5,12],['ยอดเขาแขนเหล็ก',370,380,7,15]],
+  intro:'เนินเขาหินสูงต่ำสลับกัน วานรแขนเหล็กตัวใหญ่ล่ำสันเดินตามไหล่เขา ตีอกดังสนั่นก้องหุบ แขนยาวและแข็งดั่งเหล็ก',
+  lm:[['กองกระดูกที่วานรเล่น',100,320,'กองกระดูกสัตว์ใหญ่ถูกกองซ้อนเหมือนของเล่น รอยมือใหญ่เท่าจานบนก้อนหิน'],['ต้นไม้หักครึ่ง',330,300,'ลำต้นใหญ่สองคนโอบถูกหักครึ่งด้วยแรงแขน ปลายไม้ยังสดอยู่']]},
+ {id:'mp',n:'เทือกเขาอสูรบรรพกาล ตอนวิหคเพลิง',r:R5(1001,2),b:.6,min:14,mons:['phx'],cnt:70,boss:'lion',herb:60,npk:'m',c:15,eye:1,
+  peaks:[['เขาเพลิงตะวันตก',100,380,5,12],['ยอดเขาเพลิงสวรรค์',400,100,8,16]],
+  intro:'ยอดเขาร้อนระอุ หินสีแดงคล้ำ วิหคเพลิงปีกแดงบินวนเหนือยอด ไอร้อนลอยขึ้นจากรอยแยก กลางเทือกเขาคือถิ่นของราชสีห์เพลิงสวรรค์ ต้องรวมตี้จึงล้มได้',
+  lm:[['รอยแยกพ่นไอร้อน',130,260,'รอยแยกในหินพ่นไอร้อนเป็นจังหวะ หินรอบๆร้อนจนยืนนานไม่ได้'],['รังวิหคเพลิงบนหน้าผา',340,360,'รังขนาดใหญ่ทำจากกิ่งไม้ไหม้เกรียม ขนสีแดงสดตกเกลื่อนพื้น']]},
+ {id:'g1',n:'ทุ่งสายฟ้าแก่นทอง',r:R5(1501,0),b:.7,min:20,mons:['leo2'],cnt:80,herb:60,npk:'m',c:25,eye:1,circle:1,
+  peaks:[['เนินสายฟ้าทอง',200,300,6,12]],
+  intro:'ทุ่งหินเหนือเมฆ ปราณฟ้าดินหนาแน่นจนหายใจหนัก สายฟ้าแลบอยู่ไกลๆแม้ไม่มีเมฆ เสือดาวสายฟ้าเกล็ดทองพุ่งเร็วจนเห็นแต่เงา เฉพาะขั้นแก่นทองคำขึ้นไปจึงทนแรงกดดันปราณที่นี่ได้',
+  lm:[['ลานหินหลอมเป็นแก้ว',100,330,'พื้นหินถูกสายฟ้าฟาดจนหลอมเป็นแก้วสีทอง เหยียบแล้วมีเสียงแตกกรอบ'],['เสาหินสายฟ้า',360,380,'เสาหินสูงสามวาถูกฟ้าผ่าซ้ำ ปลายเสามีประกายไฟฟ้าแลบเป็นระยะ']]},
+ {id:'g2',n:'ธารผลึกหมีศิลาทอง',r:R5(1501,1),b:.75,min:22,mons:['bear2'],cnt:80,herb:60,npk:'m',c:30,eye:1,
+  peaks:[['เขาผลึกปราณ',300,120,7,14]],
+  intro:'ธารน้ำใสเย็นยะเยือก ผลึกปราณงอกจากพื้นหินเป็นแท่งสูงต่ำ หมีเกราะศิลาผลึกทองตัวสูงเท่าบ้าน ผิวเป็นประกายทอง ทุบหินแตกได้ด้วยฝ่ามือ',
+  lm:[['ป่าผลึกใส',140,320,'แท่งผลึกใสงอกเป็นป่า เมื่อลมพัดเสียดสีกันเกิดเสียงกังวานคล้ายระฆังเล็ก'],['รอยทุบบนหน้าผา',370,220,'หน้าผาเป็นหลุมลึกรูปฝ่ามือ หินร้าวทั่วแนว ผลึกที่แตกกระจายเกลื่อนพื้น']]},
+ {id:'g3',n:'หุบเขาอสนีหมาป่าทอง',r:R5(1501,2),b:.8,min:24,mons:['wolf2'],cnt:80,boss:'king2',herb:60,npk:'m',c:35,eye:1,
+  intro:'หุบเขาที่ฟ้าร้องไม่ขาดสาย พายุสายฟ้าวนรอบยอดผา หมาป่าอสนีบาตสีทองหอนก้องสะท้านทั้งหุบ และราชาหมาป่าอสนีบาตทองคำครองถิ่นกลางหุบ ต้องรวมตี้จึงล้มได้',
+  lm:[['ผาหอนพายุ',110,330,'ผาหินที่หมาป่าขึ้นไปหอนทุกค่ำ ลมแรงจนเสื้อผ้าสะบัดเป็นเสียงดัง'],['ซากต้นสนถูกฟ้าผ่า',380,360,'ต้นสนใหญ่ถูกฟ้าผ่าเป็นถ่านทั้งต้น ควันบางๆยังลอยขึ้นจากโคน']]},
+ {id:'g4',n:'ป่าวานรพันชั่ง',r:R5(1501,3),b:.85,min:25,mons:['ape2'],cnt:80,herb:60,npk:'m',c:40,eye:1,
+  intro:'ป่าโบราณต้นไม้สูงร้อยวา รากไม้ใหญ่เท่าเสาเรือน วานรแขนเหล็กพันชั่งโหนกิ่งไม้ เสียงกิ่งหักดังสนั่น แรงแขนทุบพื้นสะเทือนถึงเท้า',
+  lm:[['โพรงไม้ยักษ์',120,300,'โพรงไม้กว้างพอให้คนเดินเข้าได้ ผนังในโพรงขัดมันด้วยขนวานร'],['ลานทุบหิน',370,150,'ลานโล่งกลางป่ามีก้อนหินแตกเป็นเศษ วานรใช้ที่นี่ประลองกำลังกัน']]},
+ {id:'g5',n:'บึงมรกตพญางูพันปี',r:R5(1501,4),b:.9,min:27,mons:['snake2'],cnt:80,boss:'bsnake2',herb:60,npk:'b',c:45,eye:1,
+  intro:'บึงน้ำสีมรกตลึกทึบ หมอกเขียวลอยเหนือผิวน้ำ งูเขียวหางไหม้พันปีตัวยาวเท่าเรือเลื้อยตามเกาะโคลน พญางูมรกตพันปีนอนขดอยู่กลางบึง พิษแรงมาก พกโอสถไว้ให้พอ',
+  lm:[['เกาะโคลนเกล็ดงู',120,310,'เกาะโคลนเต็มไปด้วยเกล็ดงูหลุดร่วงสีเขียวเข้ม ใหญ่เท่าฝ่ามือ'],['ซากเรือผุ',340,240,'ซากเรือไม้ผุติดกลางบึง มีรอยรัดของงูเป็นวงรอบเสากระโดง']]},
+ {id:'g6',n:'ลานเพลิงสวรรค์ผู้อมตะ',r:R5(1501,5),b:1,min:28,mons:['phx2'],cnt:70,boss:'lion2',herb:60,npk:'m',c:50,eye:1,
+  peaks:[['เขาเพลิงทอง',60,300,8,16]],
+  intro:'ลานหินร้อนระอุ เปลวไฟลุกจากรอยแยกไม่เคยดับ อากาศสั่นเป็นริ้ว วิหคเพลิงปีกทองบินวนเหนือหัว และราชสีห์เพลิงสวรรค์ผู้อมตะเฝ้ากลางลาน นี่คือที่สุดของแผนที่แก่นทองคำ ต้องรวมตี้จึงล้มได้',
+  lm:[['บ่อเพลิงทอง',130,380,'บ่อหินลึกมีเปลวไฟสีทองลุกอยู่ก้นบ่อ ความร้อนแผ่ถึงใบหน้าแม้ยืนห่างสิบก้าว'],['ลานขนวิหคไหม้',380,330,'ขนนกสีทองไหม้เกรียมตกเกลื่อนลาน แต่ละเส้นยาวเท่าแขนและยังอุ่นอยู่']]}];
+ A.forEach(g=>{if(g.eye)g.eyes=[[g.r[0]+120,g.r[1]+120],[g.r[0]+380,g.r[1]+150],[g.r[0]+240,g.r[1]+410]]});
+ return A})();
 /* ตรึงศัตรู (stun) และโล่ปราณวารี 20 วินาที ยุบรวมไว้ที่ useSlot ต้นฉบับแล้ว */
 setInterval(()=>{if(!S.med)return;const e=W.find(w=>w.eye&&dist(S,w)<=1.5),z=zoneAt(S.x,S.y);if(e&&z)S.exp+=medBase()*(1.2-z.b)*spd},1000);
 
@@ -2032,7 +2125,7 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
   m:{set:'gravel',r:.93,g:.6,rv:.1},mr:{set:'stone',r:.96,g:.55,rv:.18},c:{set:'stone',r:.96,g:.6,rv:.24},k:{set:'stone',r:1,g:.55,rv:.18},in:{set:'wood',r:1,g:.56,rv:.08,cr:1},
   mud:{set:'mud',r:1,g:.66},water:{set:'water',r:1,g:.72},sand:{set:'sand',r:1,g:.6},bridge:{set:'wood',r:1.04,g:.6,cr:1}};
  const VSQ=[245,278,355,318];/* ย่านตลาดและร้านค้ากลางหมู่บ้าน (x1,y1,x2,y2) ปูพื้นหิน นอกนั้นเป็นดินอัดแน่น */
- const FZ={re:'f',rw:'f',rn:'f',rs:'b',rd:'rd',fb:'b',fs:'f'};const CSURF={ci:'in',cg:'f',cl:'vs'};/* PATCH 34 พื้นเฉพาะย่านในเมืองหลวง และป่าหมูป่า ป่างู *//* ทุ่งกระต่ายเป็นหญ้า ชายป่ากระต่ายใต้เป็นใบไม้แห้ง ทางหมาป่าเป็นดิน */
+ const FZ={re:'f',rw:'f',rn:'f',rs:'b',rd:'rd',fb:'b',fs:'f',wb:'w',ma:'m',mp:'m',g1:'m',g2:'m',g3:'w',g4:'b',g5:'b',g6:'m'};const CSURF={ci:'in',cg:'f',cl:'vs'};/* PATCH 34 พื้นเฉพาะย่านในเมืองหลวง และป่าหมูป่า ป่างู *//* ทุ่งกระต่ายเป็นหญ้า ชายป่ากระต่ายใต้เป็นใบไม้แห้ง ทางหมาป่าเป็นดิน */
  const surfAt=(x,y)=>{const ws=waterSurf(x,y);if(ws)return ws;const z=zoneAt(x,y),id=z?z.id:'';if(/^bd_/.test(id))return 'in';if(/^k\d$/.test(id))return 'k';
   if(id==='v'&&x>=VSQ[0]&&x<=VSQ[2]&&y>=VSQ[1]&&y<=VSQ[3])return 'vs';if(id==='c'&&window.__CAPD){const dk=window.__CAPD(x,y);if(dk&&CSURF[dk])return CSURF[dk]}const a=FZ[id]||id;return FSURF[a]?a:'v'};
  const surfOf=()=>S.alt>0?'mr':surfAt(S.x,S.y);/* ปีนเขาอยู่ = เกาะหน้าผาหิน */
@@ -2224,7 +2317,7 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
   if((typeof auto!=='undefined'&&auto)||(typeof target!=='undefined'&&target&&!target.dead&&target.ag&&dist(S,target)<=12))MUS.fightT=now;
   if(now-MUS.fightT<8000)return 'battle';
   if(S.fl)return 'sky';if(S.alt>0)return 'peak';
-  if(id==='bd_arena')return 'arena';if(/^bd_/.test(id))return 'indoor';if(id==='k1')return 'sect';if(id==='k2')return 'herbsect';if(id==='k3')return 'temple';if(id==='c'){const dk=window.__CAPD?window.__CAPD(S.x,S.y):null;return(dk&&CMUS[dk])||'city'}if(id==='m')return 'mountain';
+  if(id==='bd_arena')return 'arena';if(/^bd_/.test(id))return 'indoor';if(id==='k1')return 'sect';if(id==='k2')return 'herbsect';if(id==='k3')return 'temple';if(id==='c'){const dk=window.__CAPD?window.__CAPD(S.x,S.y):null;return(dk&&CMUS[dk])||'city'}if(/^(m|ma|mp|g1|g2|g6)$/.test(id))return 'mountain';
   const a=(window.__FA||{})[id]||id;if(a==='b'||a==='f')return 'bamboo';if(a==='w'||id==='rd')return 'valley';return 'village'};
  const musLevel=()=>.42*(Math.max(0,Math.min(10,S.bgmLv|0))/5)*(Number.isFinite(duckCur)?duckCur:1)*((MSTY[MUS.style]||{}).vol||1);
  const musTick=()=>{try{if((S.med?0:1)!==medCur)wake();/* ให้ตัวคุมความดังทำงานต่อจนเสียงรอบตัวจางหรือกลับมาครบ */const want=musWant();MUS.want=want;const c=waCtx();
@@ -2293,7 +2386,7 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
     PL_R = ระยะได้ยินผู้เล่นอื่น (ระบบออนไลน์) 45 ก้าว: ได้ยินเสียงฝีเท้าตามเส้นทางที่เขาเดินจริงแบบเรียลไทม์ (เดินผ่านจากซ้ายไปขวา เสียงเท้าก็เคลื่อนจากซ้ายไปขวา) และเสียงเสื้อผ้าขยับเป็นระยะเมื่อยืนอยู่ใกล้
     นั่งสมาธิอยู่: เสียงรอบตัวทั้งหมดค่อยๆ จางหาย (medCur) ลุกขึ้นแล้วค่อยๆ กลับมา
     ทิศซ้ายขวาและเสียงทึบด้านหลังทำงานกับเสียงที่ถอดรหัสไว้แล้ว (ชุดเสียงที่ฝังในไฟล์ และลิงก์ที่เว็บต้นทางอนุญาต) ลิงก์อื่นยังเบาลงตามระยะเหมือนกัน */
- const HEAR={rab:20,fox:30,boar:32,snake:28,wolf:45,bear:45,leo:45,ape:45,phx:49,pboar:100,bsnake:110,king:120,lion:140},PL_R=45;
+ const HEAR={rab:20,fox:30,boar:32,snake:28,wolf:45,bear:45,leo:45,ape:45,phx:49,pboar:100,bsnake:110,king:120,lion:140},PL_R=45;Object.keys(GV).forEach(k=>{HEAR[k]=GV[k].hear});
  const SPA={mon:0,steps:0,cue:0,imp:0,mstep:0,chg:0,br:0,act:0,err:0,lastMon:0,others:{},q:[],chN:0};const ACT_M=1679616;/* ACT_M = รอบของลำดับการกระทำ (36 ยกกำลัง 4) ต้องตรงกับส่วน MP */
  /* ตำแหน่งเสียงเทียบกับผู้เล่น: d ระยะ, g ความดัง 0 ถึง 1, pan ซ้าย (-) ขวา (+), lp ความถี่ตัดเสียงแหลม (0 = ไม่ตัด) คืน null ถ้าพ้นระยะได้ยิน */
  /* รอบที่ 5 (กฎหมวด 9.5): ความดังตามระยะใช้โมเดล inverse ของ Web Audio (PannerNode distanceModel inverse) refDistance 10 maxDistance 100 rolloffFactor 1
@@ -2399,9 +2492,7 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
   {id:'cpond',n:'สระบัวเมืองหลวง',t:'pond',c:[1285,265],r:2,mud:1,loop:'r_lp_lake_1',R:20,g:.25},
   {id:'k1pond',n:'สระบัวสำนักกระบี่',t:'pond',c:[1756,261],r:2,mud:1,loop:'r_lp_lake_1',R:20,g:.25},
   {id:'k3pond',n:'สระบัวอาราม',t:'pond',c:[329,2111],r:2,mud:1,loop:'r_lp_lake_1',R:20,g:.22},
-  {id:'eye1',n:'ตาน้ำวิญญาณจุดที่ 1',t:'spring',c:[3282,260],r:1,mud:0,loop:'r_lp_stream_1',R:22,g:.22},
-  {id:'eye2',n:'ตาน้ำวิญญาณจุดที่ 2',t:'spring',c:[3302,280],r:1,mud:0,loop:'r_lp_stream_1',R:22,g:.22},
-  {id:'eye3',n:'ตาน้ำวิญญาณจุดที่ 3',t:'spring',c:[3327,262],r:1,mud:0,loop:'r_lp_stream_1',R:22,g:.22}];
+  ...G9.filter(g=>g.eye).reduce((a,g)=>a.concat(g.eyes.map((e,i)=>({id:'eye_'+g.id+'_'+(i+1),n:'ตาน้ำวิญญาณจุดที่ '+(i+1)+' ('+g.n+')',t:'spring',c:[e[0]+2,e[1]],r:1,mud:0,loop:'r_lp_stream_1',R:22,g:.22}))),[])];
  const segD=(px,py,ax,ay,bx,by)=>{const vx=bx-ax,vy=by-ay,L=vx*vx+vy*vy;let t=L?((px-ax)*vx+(py-ay)*vy)/L:0;t=Math.max(0,Math.min(1,t));const qx=ax+vx*t,qy=ay+vy*t;return[Math.hypot(px-qx,py-qy),qx,qy]};
  /* จุดของแหล่งน้ำที่ใกล้ตำแหน่ง x y ที่สุด: raw ระยะถึงเส้นกลางน้ำ (หรือจุดกลางสระ), d ระยะถึงขอบน้ำ, qx qy จุดขอบน้ำที่ใกล้ที่สุด (ต้นเสียง), si ช่วงเส้นที่ใกล้ที่สุด */
  const wNear=(f,x,y)=>{if(f.c){const dx=x-f.c[0],dy=y-f.c[1],d=Math.hypot(dx,dy),k=d>.001?Math.min(1,f.r/d):0;return{raw:d,d:Math.max(0,d-f.r),qx:f.c[0]+dx*k,qy:f.c[1]+dy*k,si:0}}
@@ -2434,7 +2525,7 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
  /* บรรยากาศของแต่ละเขต [ลูป, ความดัง, ตัดเสียงแหลม] (เมืองหลวง: เสียงผู้คนตลาดที่อยู่ไกล ตัดเสียงแหลมจนฟังไม่ออกว่าพูดอะไร ในอาคาร: เสียงข้างนอกแผ่วๆ) */
  const ZBED={v:['r_lp_windopen_1',.08,0],re:['r_lp_windopen_1',.12,0],rw:['r_lp_windopen_1',.11,0],rn:['r_lp_windopen_1',.11,0],rs:['r_lp_windforest_1',.12,0],b:['r_lp_windforest_1',.15,0],
   w:['r_lp_windhigh_1',.12,0],rd:['r_lp_windopen_1',.11,0],m:['r_lp_windhigh_1',.15,0],c:['r_lp_market_1',.08,2200],k1:['r_lp_windhigh_1',.07,0],k2:['r_lp_windforest_1',.08,0],k3:['r_lp_windopen_1',.06,0],in:['r_lp_market_1',.03,1200]};/* รอบที่ 5: เลิกตัดเสียงแหลมจนอับ เหลือเฉพาะเสียงผู้คนในตลาดที่ไกล (2200) และเสียงข้างนอกผ่านผนังอาคาร (1200) */
- const CBED={cm:['r_lp_market_1',.12,2000],cl:['r_lp_windopen_1',.05,0],ci:['r_lp_market_1',.1,1500],cq:['r_lp_market_1',.07,2200],cg:['r_lp_windforest_1',.07,0],cs:['r_lp_windopen_1',.09,0]};ZBED.fb=['r_lp_windforest_1',.14,0];ZBED.fs=['r_lp_windforest_1',.13,0];/* PATCH 34 เสียงพื้นหลังเฉพาะย่านและป่าใหม่ */
+ const CBED={cm:['r_lp_market_1',.12,2000],cl:['r_lp_windopen_1',.05,0],ci:['r_lp_market_1',.1,1500],cq:['r_lp_market_1',.07,2200],cg:['r_lp_windforest_1',.07,0],cs:['r_lp_windopen_1',.09,0]};ZBED.fb=['r_lp_windforest_1',.14,0];ZBED.fs=['r_lp_windforest_1',.13,0];Object.assign(ZBED,{wb:ZBED.w,ma:ZBED.m,mp:ZBED.m,g1:ZBED.m,g2:ZBED.m,g3:ZBED.w,g4:ZBED.b,g5:ZBED.b,g6:ZBED.m});/* PATCH 34 เสียงพื้นหลังเฉพาะย่านและป่าใหม่ */
   const zbedOf=()=>{const z=zoneAt(S.x,S.y);if(!z)return null;if(z.id==='c'&&window.__CAPD){const k=window.__CAPD(S.x,S.y);if(k&&CBED[k])return CBED[k]}return ZBED[/^bd_/.test(z.id)?'in':z.id]||null};
  setInterval(()=>{try{const B=(ambOn&&!document.hidden&&!S.fl)?zbedOf():null;bedSet('zone',B?B[0]:null,B?B[1]*medCur:0,0,B&&B[2]?B[2]:20000,1,1.1)}catch(e){BED.err++}},400);
  const waterDiag=()=>{const pr=[];WATERS.forEach(f=>{const P=f.c?[f.c]:f.pts;P.forEach(p=>{if(!(p[0]>=0&&p[1]>=0))pr.push('แหล่งน้ำ '+f.n+' มีพิกัดติดลบ');if(!zoneAt(p[0],p[1]))pr.push('แหล่งน้ำ '+f.n+' อยู่นอกแผนที่')});
@@ -2458,8 +2549,8 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
     วิชาโจมตี 3 จังหวะ (skPlay3): 1) รวมพลังตามธาตุ 2) ปล่อยพลังตามหลัง SK_CHG วินาที ไปทางเป้า 3) โดนเป้า (posCue) ท่าแรงมีกลองเบสซ้อน */
  const kseq=(b,n)=>Array.from({length:n},(_,i)=>b+'_'+String(i).padStart(3,'0'));
  const IMP={flesh:kseq('impactSoft_medium',5),heavy:kseq('impactSoft_heavy',5),metal:kseq('impactPlate_medium',5),ring:kseq('impactMetal_light',5),plate:kseq('impactPlate_light',5)};/* ชุด Kenney เดิม (เสียงจริง) plate ใช้เป็นเสียงเกราะโลหะกระทบกันเวลาเดิน ที่เหลือเก็บสำรอง */
- const MSIZE={rab:[1.5,.12],fox:[1.3,.14],snake:[1.15,.08],boar:[.85,.3],pboar:[.7,.42],bsnake:[.85,.22],wolf:[1,.22],bear:[.75,.4],king:[.8,.42],leo:[.95,.28],ape:[.8,.4],phx:[1.2,.1],lion:[.72,.5]};/* [ความเร็วเล่นเสียงเท้า, ความดังเสียงเท้า] */
- const HARDMON=/^(ape|bear|king|lion)$/;/* วานรแขนเหล็ก หมีศิลา ราชาหมาป่า ราชสีห์ ผิวแข็ง ฟันโดนแล้วเสียงคมดาบปะทะ */
+ const MSIZE={rab:[1.5,.12],fox:[1.3,.14],snake:[1.15,.08],boar:[.85,.3],pboar:[.7,.42],bsnake:[.85,.22],wolf:[1,.22],bear:[.75,.4],king:[.8,.42],leo:[.95,.28],ape:[.8,.4],phx:[1.2,.1],lion:[.72,.5]};Object.keys(GV).forEach(k=>{MSIZE[k]=MSIZE[GV[k].b].slice()});/* [ความเร็วเล่นเสียงเท้า, ความดังเสียงเท้า] */
+ const HARDMON=/^(ape|bear|king|lion|ape2|bear2|king2|lion2)$/;/* วานรแขนเหล็ก หมีศิลา ราชาหมาป่า ราชสีห์ ผิวแข็ง ฟันโดนแล้วเสียงคมดาบปะทะ */
  const RSL={};Object.keys(KN.url).forEach(n=>{const m=/^r_(.+)_\d+$/.exec(n);if(m)(RSL[m[1]]=RSL[m[1]]||[]).push(n)});
  const rs=k=>RSL[k]||[];
  const VM={live:new Set(),drop:0,peak:0,ch:{},n:0,amb:0};
@@ -2538,7 +2629,7 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
   wolf:{call:'wolf_call',atk:'wolf_atk',hurt:'wolf_hurt',die:'wolf_die',br:'breath',r:1,g:.8},king:{call:'wolf_call',atk:'wolf_atk',hurt:'wolf_hurt',die:'wolf_die',br:'breath',r:.8,g:1},
   bear:{call:'bear_call',atk:'bear_atk',hurt:'bear_hurt',die:'bear_die',br:'bear_call',r:1,g:.9},leo:{call:'cat_call',atk:'cat_atk',hurt:'cat_hurt',die:'cat_die',br:'breath',r:.7,g:.85},
   ape:{call:'troll_call',atk:'troll_atk',hurt:'troll_hurt',die:'troll_die',br:'breath',r:.86,g:.85},phx:{call:'gull',atk:'wingbeat',hurt:'crow',die:'gull',br:'smallwings',r:.76,g:.8},
-  lion:{call:'drag_call',atk:'drag_atk',hurt:'drag_hurt',die:'drag_die',br:'breath',r:.92,g:1}};
+  lion:{call:'drag_call',atk:'drag_atk',hurt:'drag_hurt',die:'drag_die',br:'breath',r:.92,g:1}};Object.keys(GV).forEach(k=>{const v=MVOX[GV[k].b];MVOX[k]=Object.assign({},v,{r:Math.round(v.r*GV[k].rate*100)/100})});
  const MVT=['call','atk','hurt','die','br'],MVTH={call:'ร้องประจำตัว',atk:'จู่โจม',hurt:'ร้องเจ็บ',die:'ร้องตอนตาย',br:'หายใจ'};
  const MID=new WeakMap();let midN=0;const mid=m=>{let i=MID.get(m);if(!i){i=++midN;MID.set(m,i)}return i};
  const mvWant=k=>{const v=MVOX[k];if(v)MVT.forEach(t=>{if(v[t])knWant(rs(v[t]))})};
@@ -2608,6 +2699,7 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
  const SCN={c:[['anvil',.22],['hammer',.14],['bellows',.07],['grind',.06],['coins',.18],['door',.13],['horse',.08],['drum',.1],['bell',.08]],v:[['chickens',.2],['rooster',.1],['dogbark',.15],['cow',.08],['sheep',.06],['bird',.18],['smith',.17],['frog',.08]],
   re:[['bird',.5],['crow',.2],['leaves',.3]],rw:[['bird',.4],['crow',.15],['leaves',.2],['frog',.25]],rn:[['bird',.6],['leaves',.4]],rs:[['bird',.4],['leaves',.35],['creak',.25]],b:[['leaves',.4],['creak',.25],['bird',.25],['crow',.1]],
   w:[['crow',.35],['leaves',.3],['creak',.2],['bat',.15]],rd:[['bird',.4],['crow',.35],['leaves',.25]],fb:[['bird',.5],['leaves',.35],['creak',.25]],fs:[['bird',.35],['leaves',.4],['frog',.25]],m:[['crow',.35],['wings',.25],['leaves',.25],['bat',.15]],k1:[['practice',.5],['bell',.3],['drum',.2]],k2:[['bird',.55],['bell',.3],['leaves',.15]],k3:[['muyu',.55],['bell',.3],['drum',.15]],cm:[['talk',.45],['coins',.3],['horse',.15],['whistle',.1],['door',.1]],cl:[['pageturn',.35],['quill',.3],['scroll',.2],['bell',.15],['leaves',.15]],ci:[['talk',.4],['pour',.25],['cork',.2],['drink',.2],['door',.2],['dogbark',.05]],cq:[['talk',.3],['drum',.2],['gate',.1],['swish',.15],['horse',.15],['practice',.2]],cg:[['bird',.4],['splash',.2],['plop',.15],['frog',.15],['leaves',.3],['creak',.1],['bell',.1]],cs:[['horse',.3],['gate',.2],['drum',.2],['talk',.2],['gong',.15],['wings',.1],['whistle',.1]]};
+  Object.assign(SCN,{wb:SCN.w,ma:SCN.m,mp:SCN.m,g1:SCN.m,g2:SCN.m,g3:SCN.w,g4:SCN.b,g5:SCN.b,g6:SCN.m});
   const SCG={talk:['talk',.3,26],whistle:['whistle',.18,40],gong:['gong',.22,60],ring:['ring',.25,35],tick:['tick',.2,18],tap:['tap',.2,18],pageturn:['pageturn',.28,16],quill:['quill',.26,16],scroll:['scroll',.3,20],pour:['pour',.3,14],cork:['cork',.3,14],drink:['drink',.28,14],splash:['splash',.3,22],plop:['plop',.3,20],gate:['gate',.35,60],swish:['swish',.25,26],mapunfold:['mapunfold',.3,20]};/* PATCH 34 เสียงจริงเฉพาะย่านของเมืองหลวง */
   const zk=z=>{const k=z&&z.id==='c'&&window.__CAPD?window.__CAPD(S.x,S.y):null;return k||(z?z.id:'')};
  const SCNT={next:0,n:0,last:''};
@@ -2639,7 +2731,7 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
  const preWant=()=>{try{if(!waCtx())return;const z=zoneAt(S.x,S.y);if(!z)return;const ks=new Set((z.mons||[]).concat(z.boss?[z.boss[0]]:[]));
   MS.forEach(m=>{if(!m.dead&&m.z===z.id&&Math.hypot(m.x-S.x,m.y-S.y)<80)ks.add(m.k)});ks.forEach(mvWant);
   const B=zbedOf();if(B)knWant(B[0]);WATERS.forEach(f=>{const b=f.bb,R=f.R+25;if(S.x>b[0]-R&&S.x<b[2]+R&&S.y>b[1]-R&&S.y<b[3]+R){knWant(f.loop);if(f.frogs)knWant('r_lp_frogs_1')}});
-  if(S.fl||S.alt>0||(S.known||[]).includes('fly')||S.step>=20){knWant('r_lp_windhigh_1');knWant(rs('twirl'))}(S.slots||[]).forEach(id=>{const k=id&&SK[id];if(k&&!k.passive){skWant(id,k);skWant5(id,k)}});if(z.boss){knWant(rs('gong'));knWant(rs(({king:'troll_call',bsnake:'hiss',lion:'cat_call',pboar:'bear_call'})[z.boss[0]]||'troll_call'))}
+  if(S.fl||S.alt>0||(S.known||[]).includes('fly')||S.step>=20){knWant('r_lp_windhigh_1');knWant(rs('twirl'))}(S.slots||[]).forEach(id=>{const k=id&&SK[id];if(k&&!k.passive){skWant(id,k);skWant5(id,k)}});if(z.boss){knWant(rs('gong'));knWant(rs(({king:'troll_call',bsnake:'hiss',lion:'cat_call',pboar:'bear_call'})[(GV[z.boss[0]]||{b:z.boss[0]}).b]||'troll_call'))}
   {const P=AMBP[envKey(z)];if(P){P.gust.forEach(n=>knWant(n));knWant(rs('leaves'));if(P.ins)knWant('r_lp_night_1');if(P.creak)knWant(rs('creaktree'))}}
   const E={anvil:'anvil',smith:'anvil',hammer:'hammer',bellows:'bellows',grind:'grind',coins:'coins',door:'door',horse:'horse',chickens:'chickens',rooster:'rooster',dogbark:'dogbark',cow:'cow',sheep:'sheep',bird:'bird_day',crow:'crow',leaves:'leaves',creak:'creaktree',wings:'wingbeat',bat:'bat',frog:'frog',practice:'sw_sword'};
   (SCN[zk(z)]||[]).forEach(e=>{if(E[e[0]])knWant(rs(E[e[0]]));else if(SCG[e[0]])knWant(rs(SCG[e[0]][0]))});
@@ -2694,10 +2786,10 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
  /* ---------- 7) ผูกเหตุการณ์ในเกมกับหน้าที่เสียง ---------- */
  const skRole=(id,k)=>{if(ROLE['sk_'+id])return 'sk_'+id;return k&&k.heal?'heal':k&&k.buff?'buff':k&&k.rng>2?'spell':'swoosh'};
  const NPCROLE=id=>{const b=id.replace(/_1$/,'').replace(/^tailorc$/,'tailor').replace(/^(vwarp|circle)$/,'warp').replace(/^(elder[123])$/,'elder').replace(/^forge$/,'smith').replace(/^royalarm$/,'armor').replace(/^(alch|herb2)$/,'herb').replace(/^trade$/,'exch');return ROLE['n_'+b]?'n_'+b:'n_gen'};
- const MONR={rab:'m_rab',fox:'m_fox',boar:'m_boar',pboar:'m_pboar',snake:'m_snake',bsnake:'m_bsnake',wolf:'m_wolf',bear:'m_bear',king:'m_king',leo:'m_leo',ape:'m_ape',phx:'m_phx',lion:'m_lion'};
+ const MONR={rab:'m_rab',fox:'m_fox',boar:'m_boar',pboar:'m_pboar',snake:'m_snake',bsnake:'m_bsnake',wolf:'m_wolf',bear:'m_bear',king:'m_king',leo:'m_leo',ape:'m_ape',phx:'m_phx',lion:'m_lion'};Object.keys(GV).forEach(k=>{MONR[k]=MONR[GV[k].b]});
  const AUTO=[[/fire|boom|bomb|burst|explod/,'explosion'],[/heal|med|recover|qi/,'spell'],[/hit|attack|slash|cut/,'swoosh'],[/clash|block|parry/,'clash'],[/walk|step|run/,'steps'],[/click|select|menu|btn|ui/,'button'],[/coin|gold|buy|sell|shop/,'buy'],[/get|pick|loot|item/,'pick'],[/die|dead|lose/,'die'],[/win|up|success|done|quest/,'levelup'],[/roar|growl|beast|mon/,'roar'],[/wind/,'wind'],[/water|river|rain/,'water'],[/bird/,'bird'],[/night|insect|cricket|cicada/,'cricket']];
  const MI2={step:0,/* เสียงเท้า: 0 = ไม่จำกัด เดิน 1 ก้าวมีเสียง 1 ครั้งเสมอ (เดิม 380 ทำให้ดังได้ไม่เกิน 1 ครั้งต่อ 0.38 วินาที ดังช้ากว่าก้าวจริง) ก้าวใหม่ตัดหางเสียงก้าวเก่าเองจึงไม่ซ้อนกัน */hit:200,cast:200,hurt:350,pick:150,bump:300,open:120,buy:150};Object.assign(MI,MI2);
- ['wolf','bear','king','lion','leo','ape','phx','pboar'].forEach(k=>{VD[k]=2.5});['bsnake','fox','snake','boar','rab'].forEach(k=>{VD[k]=1});['bird','cricket','cicada','owl','wind','windh','water'].forEach(k=>{VD[k]=3.5});
+ ['wolf','bear','king','lion','leo','ape','phx','pboar'].concat(Object.keys(GV)).forEach(k=>{VD[k]=2.5});['bsnake','fox','snake','boar','rab'].forEach(k=>{VD[k]=1});['bird','cricket','cicada','owl','wind','windh','water'].forEach(k=>{VD[k]=3.5});
  const OWNER={};
  /* ===== ตัวจ่ายเสียงตัวเดียว แยกสองทางอิสระ ไม่ใช้ตัวนับหรือด่านร่วมกัน =====
   ทางผู้เล่น: ฝีเท้า ชน เปิดเมนู หยิบ ซื้อ ต่อสู้ ถูกตี เลื่อนขั้น ตาย นั่งสมาธิ ผ่านเฉพาะตัวหน่วง MI ของแต่ละเสียง
@@ -2856,11 +2948,11 @@ const relPlay=(el,id,k,tp,air)=>{const pan=tp?tp.pan*.7:0,d=tp?tp.d:0,trv=Math.m
   if(pre>0)setTimeout(go,pre*1000);else go();try{if(HOOK.mpAct)HOOK.mpAct(EL2PL[el]||'kqi')}catch(e){}}catch(e){R5.err++}};
  HOOK.flyFx=on=>{try{mpAct(on?'fly':'land');if(on){const tw=knSp(rs('twirl'),.5,{pan:0,lp:0},1,0,{pri:1,bus:'skill'});if(!(tw&&!MUS.ready))play('fly',.9)}else landPlay()}catch(e){R5.err++}};
  /* ---------- เสียงบอส ---------- */
- const BLAY={king:'troll_call',bsnake:'hiss',pboar:'bear_call',lion:'cat_call'};
+ const BLAY={king:'troll_call',bsnake:'hiss',pboar:'bear_call',lion:'cat_call'};Object.keys(GV).forEach(k=>{if(GV[k].base)BLAY[k]=BLAY[GV[k].b]});
  HOOK.bossFx=(kind,m,o)=>{try{const c=waCtx();if(!c||!m)return;R5.boss++;const p=spOf(m.x,m.y,HEAR[m.k]||120)||{g:.25,pan:0,lp:0,d:60};
   if(kind==='roar'){m.vt=0;mvPlay(m,'call',p,0);const ly=BLAY[m.k];if(ly)knSp(rs(ly),.7*p.g,p,1,.06,{bus:'mon',pri:1});envPlay(one('gong'),{g:.5,at:.4,dur:3.4,att:.01,rel:2.6,bus:'skill',tag:'fear'});return}
-  if(kind==='tele'){const nm={king:'r_lp_windhigh_1',lion:one('firechg'),bsnake:one('hiss'),pboar:one('boar_call')}[m.k]||'r_lp_windhigh_1';envPlay(nm,{g:.6*Math.max(.35,p.g),dur:1.25,att:1.1,rel:.15,off:Math.random()*3,pan:p.pan,bus:'mon',tag:'tele',loop:nm==='r_lp_windhigh_1'});return}
-  if(kind==='slam'){const q=spOf(o.x,o.y,40)||p;const L={king:['imp_air2','leaves'],bsnake:['imp_water','hiss'],pboar:['hit_crush','thud_b'],lion:['imp_fire2','crackle']}[m.k]||['hit_crush','thud_b'];
+  if(kind==='tele'){const nm={king:'r_lp_windhigh_1',lion:one('firechg'),bsnake:one('hiss'),pboar:one('boar_call')}[(GV[m.k]||{b:m.k}).b]||'r_lp_windhigh_1';envPlay(nm,{g:.6*Math.max(.35,p.g),dur:1.25,att:1.1,rel:.15,off:Math.random()*3,pan:p.pan,bus:'mon',tag:'tele',loop:nm==='r_lp_windhigh_1'});return}
+  if(kind==='slam'){const q=spOf(o.x,o.y,40)||p;const L={king:['imp_air2','leaves'],bsnake:['imp_water','hiss'],pboar:['hit_crush','thud_b'],lion:['imp_fire2','crackle']}[(GV[m.k]||{b:m.k}).b]||['hit_crush','thud_b'];
    envPlay(one(L[0]),{g:.85*Math.max(.4,q.g),pan:q.pan,att:.003,rel:.2,bus:'skill'});envPlay(one(L[1]),{g:.5*Math.max(.4,q.g),at:.08,pan:q.pan,att:.02,rel:.5,bus:'skill'})}}catch(e){R5.err++}};
  /* ---------- บรรยากาศหลายชั้น (AMB) ---------- */
  const AMBP={v:{gust:['r_lp_windopen_1'],every:[11,20],gg:[.08,.14],att:[1.2,2],sus:[1,2],rel:[2.5,3.5],leaves:.45,ins:.022},
@@ -3083,7 +3175,7 @@ renderMob();
      if(S.frag[x.id]>=x.need){S.sec.push(x.id);say('ปลดล็อกตำราลับ '+x.n+' '+x.d);sfx('levelup')}}}
    rumAdv('kill',1);
   }catch(e){}});/* ตำราลับ: ตะขอหลังสังหาร (เดิมห่อ kill) */
- HOOK.secHit=t=>{if(hasSec('dbl')&&Math.random()<.15&&t&&!t.dead&&t.hp>0){const d=Math.max(1,Math.round(atk()*.7*100/(100+monDef(t))));t.hp-=d;say('ฟันซ้ำ โจมตีเพิ่ม '+d);if(t.hp<=0)kill(t)}};/* ตำราลับฟันซ้ำ: useSlot ต้นฉบับเรียกหลังตีโดน (เดิมห่อ useSlot) */
+ HOOK.secHit=t=>{if(hasSec('dbl')&&Math.random()<.15&&t&&!t.dead&&t.hp>0){const d=Math.max(1,Math.round(atk()*.7*100/(100+monDef(t))*monMul(t)));t.hp-=d;say('ฟันซ้ำ โจมตีเพิ่ม '+d);if(t.hp<=0)kill(t)}};/* ตำราลับฟันซ้ำ: useSlot ต้นฉบับเรียกหลังตีโดน (เดิมห่อ useSlot) */
  DIEH.push(m=>{if(typeof m==='string'&&m.indexOf('เจ้าถูก')===0&&hasSec('deathres')&&Math.random()<.2){S.hp=1;S.med=false;say('กายาอมตะ ช่วยให้รอดตายด้วยเลือด 1');return true}return false});/* ตำรากายาอมตะ: ตะขอก่อนตาย (เดิมห่อ die) */
  A.secrets=function(){
   menu('ตำราลับ ปลดล็อกแล้ว '+S.sec.length+' จาก '+SEC.length,SEC.map(x=>({t:x.n+' '+x.d+' '+(hasSec(x.id)?'ปลดล็อกแล้ว':'เศษคัมภีร์ '+Math.min(S.frag[x.id]||0,x.need)+' จาก '+x.need)})))};
@@ -3130,7 +3222,7 @@ renderMob();
    f:()=>{if(noFight9()){say('เขตปลอดภัย ใช้ไม่ได้');return false}
     const c=Math.round(mqi()*.5);if(S.qi<c){say('ปราณไม่พอ ต้องใช้ '+c);return false}
     const t=nearest(10);if(!t){say('ไม่มีอสูรในระยะ 10 ก้าว');return false}
-    S.qi-=c;const d=Math.max(1,Math.round(atk()*4*(.9+Math.random()*.2)));t.hp-=d;t.ag=1;S.med=false;
+    S.qi-=c;const d=Math.max(1,Math.round(atk()*4*(.9+Math.random()*.2)*monMul(t)));t.hp-=d;t.ag=1;S.med=false;
     say('ฟาดวิญญาณ ใส่ '+MD[t.k].n+' '+d+' เหลือ '+Math.max(0,Math.floor(t.hp)));sfx('cast');if(t.hp<=0)kill(t)}},
   {id:'chaos',n:'กายาจ้าวโกลาหล',d:'เสียปราณ 40% ของปราณสูงสุด พลังโจมตีและป้องกัน +30% นาน 45 วินาที',lv:12,cd:200,
    f:()=>{const c=Math.round(mqi()*.4);if(S.qi<c){say('ปราณไม่พอ ต้องใช้ '+c);return false}
@@ -3321,7 +3413,7 @@ try{
    /* เสียงฝีเท้ากับเสียงบรรยากาศ ใช้ชุดเดียวกับหุบเขาหมาป่า (ถ้าไม่มีชุดเสียง เกมจะใช้เสียงปกติเอง) */
    (window.__FZ=window.__FZ||{}).rd='w';(window.__FA=window.__FA||{}).rd='w';
    /* อธิบายทางครั้งแรกที่เดินเข้า */
-   let seenRd=0;setInterval(()=>{if(mode!=='play'||seenRd)return;const z=zoneAt(S.x,S.y);if(z&&z.id==='rd'){seenRd=1;setTimeout(()=>{if(zoneAt(S.x,S.y)===z)say('ทางดินแคบเลียบทุ่งหญ้าแห้ง ไปทางตะวันออกจนถึงเมืองหลวง มีหมาป่าวายุครามขั้น 5 เดินวนอยู่ตลอดทาง ระวังตัว')},1200)}},700);
+   let seenRd=0;setInterval(()=>{if(mode!=='play'||seenRd)return;const z=zoneAt(S.x,S.y);if(z&&z.id==='rd'){seenRd=1;setTimeout(()=>{if(zoneAt(S.x,S.y)===z)say('ทุ่งดินแห้งกว้างใหญ่ทอดไปทางตะวันออกจนถึงเมืองหลวง มีหมาป่าวายุครามขั้น 5 เดินวนอยู่ทั่วทุ่ง ระวังตัว')},1200)}},700);
    try{TIPS.push('ทางจากหมู่บ้านไปเมืองหลวงมีหมาป่าวายุครามชุกชุม ควรถึงหลอมรวมขั้น 5 และพกโอสถสมานแผล')}catch(e){}
    /* บันทึกการอัพเดท (F5) */
    try{const nx=()=>Math.max(...NEWS.map(n=>n.id))+1;
@@ -3594,6 +3686,136 @@ try{
   }
  }
 }catch(e){console.error('FOR7',e)}
+
+/* ===== PATCH 36 (รอบที่ 9, 6 พ.ย. 2569) ขยายและเปิดแผนที่ทั้งหมด + แผนที่แก่นทองคำ 6 แห่ง =====
+ ปัญหาเดิม: ป่าไผ่ (b) หุบเขาหมาป่า (w) เทือกเขา (m) เป็นแถบเล็ก 109 x 16 / 92 x 31 และไม่มีทางเข้าเลย (ไม่อยู่ในรายการวาร์ป ทางเดินถูกลบไปตั้งแต่ PATCH 15) อสูรสองถึงสามชนิดปนกันในโซนเดียว ผิดกฎ 9.11
+ สิ่งที่ทำ:
+  1) b w m ถูกสร้างใหม่เป็นโซน 500 x 500 ช่อง วางต่อเนื่องจากป่างูเขียว (fs) ลงใต้: ป่าไผ่ -> หุบเขาหมาป่า -> หุบเขาหมี และเทือกเขา 3 ตอน (เสือดาว วานร วิหคเพลิง) แต่ละโซนอสูรชนิดเดียว
+     เดินต่อกันได้จริง ถึงขอบกด Enter เข้า (ต้องถึงขั้นที่โซนรับ) และวาร์ปจากวงเวทย์ได้ทุกแห่ง
+  2) แผนที่แก่นทองคำ 6 แห่ง (ขั้น 21 ถึง 29) ใช้เฉพาะอสูรที่มีเสียงในคลังเสียงอยู่แล้ว (ตัวแปร GV ด้านบน)
+  3) ทางหมาป่าสู่เมืองหลวง (rd) จากแถบ 749 x 26 ขยายเป็น 749 x 501
+  4) ผู้เล่นที่เซฟไว้ในแผนที่เก่าถูกย้ายมาที่ทางเข้าโซนใหม่ (หรือกลับหมู่บ้านถ้าขั้นยังไม่ถึง) ของที่ตกพื้นย้ายตามไปด้วย
+ ไม่มีตัวแปรใหม่ใน S จึงไม่กระทบเซฟเก่า */
+try{(()=>{
+ const S9=window.__SAFE9,inR9=(r,x,y)=>x>=r[0]&&x<=r[2]&&y>=r[1]&&y<=r[3],OLD9=['b','w','m'],f9=v=>typeof v==='number'&&isFinite(v);
+ const ov9=(a,b)=>!(a[2]<b[0]||a[0]>b[2]||a[3]<b[1]||a[1]>b[3]);
+ if(Z.some(a=>a.id==='g1'))return;
+ const mkZ=g=>{const z={id:g.id,n:g.n,r:g.r.slice(),b:g.b,min:g.min,mons:g.mons.slice(),cnt:g.cnt};if(g.boss)z.boss=[g.boss,g.r[0]+250,g.r[1]+250];return z};
+ const arr9=g=>[g.r[0]+8,g.r[1]+250];
+ /* ตรวจก่อนทำอะไร: ห้ามทับโซนอื่น พิกัดต้องบวก ขนาดไม่ต่ำกว่า 400 */
+ const hit=[];G9.forEach((g,i)=>{if(g.r.some(v=>!Number.isFinite(v)||v<0))hit.push(g.id+' พิกัด');if(g.r[2]-g.r[0]<400||g.r[3]-g.r[1]<400)hit.push(g.id+' เล็ก');
+  Z.forEach(a=>{if(!OLD9.includes(a.id)&&ov9(g.r,a.r))hit.push(g.id+'/'+a.id)});G9.forEach((h,j)=>{if(j>i&&ov9(g.r,h.r))hit.push(g.id+'/'+h.id)})});
+ if(hit.length){console.error('MAP9 ยกเลิกการสร้างแผนที่',hit);return}
+ const oldR={};OLD9.forEach(id=>{const z=Z.find(a=>a.id===id);if(z)oldR[id]=z.r.slice()});
+ const zOld=(x,y)=>OLD9.find(id=>oldR[id]&&inR9(oldR[id],x,y));
+ /* 1) ย้ายผู้เล่นและของตกพื้นที่อยู่ในแผนที่เก่า */
+ const dstOf=id=>{const g=G9.find(a=>a.id===id);return(g&&S.step>=g.min)?arr9(g):[SP0[0],SP0[1]]};
+ let mig=0;
+ if(f9(S.x)&&f9(S.y)){const o=zOld(S.x,S.y);if(o){const t=dstOf(o);S.x=t[0];S.y=t[1];S.alt=0;mig=1}}
+ if(Array.isArray(S.ground))S.ground.forEach(g=>{if(g&&f9(g.x)&&f9(g.y)){const o=zOld(g.x,g.y);if(o){const t=dstOf(o);g.x=t[0];g.y=t[1]}}});
+ /* 2) ลบของเก่าของ b w m */
+ for(let i=Z.length-1;i>=0;i--)if(OLD9.includes(Z[i].id))Z.splice(i,1);
+ for(let i=MS.length-1;i>=0;i--)if(OLD9.includes(MS[i].z))MS.splice(i,1);
+ for(let i=ND.length-1;i>=0;i--)if(OLD9.includes(ND[i].z))ND.splice(i,1);
+ for(let i=W.length-1;i>=0;i--)if(OLD9.includes(W[i].z))W.splice(i,1);
+ for(let i=PEAKS.length-1;i>=0;i--)if(OLD9.includes(PEAKS[i].z))PEAKS.splice(i,1);
+ for(let i=ARR9.length-1;i>=0;i--)if(OLD9.includes(ARR9[i].z))ARR9.splice(i,1);
+ const DST=(window.__T11&&window.__T11.DEST)||[];for(let i=DST.length-1;i>=0;i--)if(DST[i].id==='m')DST.splice(i,1);
+ /* 3) สร้างโซนใหม่ */
+ const addW=o=>{if(!W.some(a=>a.z===o.z&&a.n===o.n))W.push(o)};
+ const mk=(z,k,n,lairX)=>{let made=0;for(let i=0;i<n;i++){for(let t=0;t<500;t++){const x=z.r[0]+8+Math.floor(Math.random()*(z.r[2]-z.r[0]-15)),y=z.r[1]+8+Math.floor(Math.random()*(z.r[3]-z.r[1]-15));
+   if(lairX!=null&&Math.abs(x-lairX)<=12)continue;/* ถิ่นบอสถูกตัดออกจากอาณาเขตอสูรทั้งแถบ (buildTerr) ห้ามเกิดในแถบนั้น */
+   if(!S9||S9.homeOK9(z.id,x,y)){spawn(z,k,x,y);made++;break}}}return made};
+ const bsp=z=>{if(!z.boss)return;spawn(z,z.boss[0],z.boss[1],z.boss[2]);const m=MS[MS.length-1];if(S.bd&&S.bd[z.boss[0]]&&Date.now()-S.bd[z.boss[0]]<BOSS_MS)m.dead=S.bd[z.boss[0]]};
+ const made9={};
+ G9.forEach(g=>{const z=mkZ(g);Z.push(z);if(S9&&S9.ZM9)S9.ZM9[g.id]=5;
+  NP[g.id]=NP[g.npk].slice();
+  const ax=arr9(g);ARR9.push({z:g.id,x:ax[0],y:ax[1]});
+  DST.push({id:g.id,t:g.n,x:ax[0],y:ax[1],min:g.min,c:g.c});
+  if(g.eyes)g.eyes.forEach((e,i)=>addW({z:g.id,n:'ตาน้ำวิญญาณจุดที่ '+(i+1)+' (นั่งสมาธิ +120%)',x:e[0],y:e[1],eye:1}));
+  (g.peaks||[]).forEach(p=>PEAKS.push({z:g.id,n:p[0],x:g.r[0]+p[1],y:g.r[1]+p[2],h:p[3],r:p[4]}));
+  (g.lm||[]).forEach(l=>addW({z:g.id,n:l[0],x:g.r[0]+l[1],y:g.r[1]+l[2],lm:l[3]}));
+  if(z.boss)addW({z:g.id,n:'ถิ่น'+MD[z.boss[0]].n.replace(/ \(บอส\)$/,'')+' (บอส)',x:z.boss[1],y:z.boss[2]});
+  if(g.circle)addW({z:g.id,n:'วงเวทย์เคลื่อนย้าย'+g.n,x:ax[0],y:ax[1]+4,npc:'circle'});
+  try{if(window.__ZB7)window.__ZB7(g.id,ax[0]+4,ax[1]-4)}catch(e){}
+  for(let i=0;i<g.herb;i++)ND.push({z:g.id,id:NP[g.id][i%NP[g.id].length],x:z.r[0]+3+Math.floor(Math.random()*(z.r[2]-z.r[0]-5)),y:z.r[1]+3+Math.floor(Math.random()*(z.r[3]-z.r[1]-5)),dead:0});
+  made9[g.id]=mk(z,g.mons[0],g.cnt,z.boss?z.boss[1]:null);bsp(z)});
+ /* ทางเดินต่อระหว่างโซน: จุดทางไปที่ขอบที่ติดกัน (เดินต่อได้เลย ถึงขอบกด Enter เข้า) */
+ const edge9=(A,B)=>{const a=A.r,b=B.r,ox0=Math.max(a[0],b[0]),ox1=Math.min(a[2],b[2]),oy0=Math.max(a[1],b[1]),oy1=Math.min(a[3],b[3]);
+  if(a[3]+1===b[1]&&ox1-ox0>=20)return[Math.round((ox0+ox1)/2),a[3]-4];
+  if(b[3]+1===a[1]&&ox1-ox0>=20)return[Math.round((ox0+ox1)/2),a[1]+4];
+  if(a[2]+1===b[0]&&oy1-oy0>=20)return[a[2]-4,Math.round((oy0+oy1)/2)];
+  if(b[2]+1===a[0]&&oy1-oy0>=20)return[a[0]+4,Math.round((oy0+oy1)/2)];
+  return null};
+ G9.forEach(g=>{const A=Z.find(a=>a.id===g.id);Z.forEach(B=>{if(B===A||/^bd_/.test(B.id)||/^k\d$/.test(B.id))return;
+   if(!G9.some(h=>h.id===B.id)&&B.id!=='fs'&&B.id!=='rd')return;const p=edge9(A,B);if(p)addW({z:A.id,n:'ทางไป'+B.n+(B.min?' (ต้องถึง'+realmName(B.min)+')':''),x:p[0],y:p[1]});if(!G9.some(h=>h.id===B.id)){const q=edge9(B,A);if(q)addW({z:B.id,n:'ทางไป'+A.n+(A.min?' (ต้องถึง'+realmName(A.min)+')':''),x:q[0],y:q[1]})}})});
+ /* ทางหมาป่าสู่เมืองหลวง ขยายจากแถบ 26 ช่องเป็นทุ่งกว้าง 501 ช่อง (ขอบเหนือสุดแผนที่ y 0 ถึงขอบบนของป่าหมูป่า) ถ้าทับโซนอื่นไม่ขยาย */
+ let rdN=0;const rd=Z.find(a=>a.id==='rd');
+ if(rd){const nr=[501,0,1249,500],bad=Z.filter(a=>a!==rd&&ov9(nr,a.r)).map(a=>a.id);
+  if(bad.length)console.error('MAP9 ขยายทางหมาป่าไม่ได้ ทับ',bad);
+  else{rd.r=nr;rd.cnt=100;for(let i=MS.length-1;i>=0;i--)if(MS[i].z==='rd')MS.splice(i,1);rdN=mk(rd,'wolf',rd.cnt,null)}}
+ /* เสียงเท้าและดนตรี (ตารางหลักอยู่ที่ FZ musWant ZBED ในระบบเสียง) */
+ (window.__FA=window.__FA||{});window.__FA.wb='w';window.__FA.g3='w';window.__FA.g4='b';window.__FA.g5='b';
+ /* อธิบายเขตครั้งแรกที่เดินเข้า */
+ const seen9={};let last9='';
+ setInterval(()=>{try{if(mode!=='play')return;const z=zoneAt(S.x,S.y);if(!z||z.id===last9)return;last9=z.id;const g=G9.find(a=>a.id===z.id);if(g&&!seen9[z.id]){seen9[z.id]=1;setTimeout(()=>{if(zoneAt(S.x,S.y)===z)say(g.intro)},1200)}}catch(e){}},700);
+ if(mig)setTimeout(()=>{try{say('แผนที่เก่าถูกขยายและย้ายตำแหน่งใหม่ เจ้าถูกย้ายมายืนที่ทางเข้า '+(zoneAt(S.x,S.y)||{n:'หมู่บ้าน'}).n)}catch(e){}},4000);
+ /* ตัวตรวจเบื้องหลัง (ทุก 4 วินาที) */
+ CHK.push(()=>{const o=[];
+  G9.forEach(g=>{const z=Z.find(a=>a.id===g.id);if(!z){o.push('แผนที่รอบ 9: ไม่พบโซน '+g.id);return}
+   if(z.r.some(v=>!Number.isFinite(v)||v<0))o.push('พิกัดโซน '+z.id+' ผิดปกติ');
+   if(z.r[2]-z.r[0]<400||z.r[3]-z.r[1]<400)o.push('โซน '+z.id+' เล็กกว่า 400 ช่อง');
+   const L=MS.filter(m=>m.z===z.id&&!(z.boss&&m.k===z.boss[0]));if(L.length<z.cnt*.5)o.push('อสูรในโซน '+z.id+' เหลือน้อยผิดปกติ '+L.length);
+   if(L.some(m=>m.k!==z.mons[0]))o.push('อสูรปนชนิดในโซน '+z.id);
+   if(z.boss&&!MS.some(m=>m.z===z.id&&m.k===z.boss[0]))o.push('ไม่พบบอส '+z.boss[0]+' ในโซน '+z.id);
+   if(!DST.some(d=>d.id===z.id))o.push('วงเวทย์ไม่มีปลายทาง '+z.id);
+   if(g.eyes&&W.filter(w=>w.eye&&w.z===z.id).length!==3)o.push('ตาน้ำวิญญาณในโซน '+z.id+' ไม่ครบ 3 จุด')});
+  const rz=Z.find(a=>a.id==='rd');if(rz&&rz.r[3]-rz.r[1]>=400&&MS.filter(m=>m.z==='rd').length<rz.cnt*.5)o.push('หมาป่าในทางหมาป่าเหลือน้อยผิดปกติ');
+  Z.forEach((a,i)=>{for(let j=i+1;j<Z.length;j++){const b=Z[j];if(!/^bd_/.test(a.id)&&!/^bd_/.test(b.id)&&(G9.some(g=>g.id===a.id)||G9.some(g=>g.id===b.id)||a.id==='rd'||b.id==='rd')&&ov9(a.r,b.r))o.push('โซน '+a.id+' ทับ '+b.id)}});
+  return o});
+ /* ตัวซ่อมของ watchdog: เติมอสูรและบอสที่หายไป */
+ (window.__R5FXH=window.__R5FXH||[]).push(fx=>{G9.forEach(g=>{const z=Z.find(a=>a.id===g.id);if(!z)return;
+   const n=MS.filter(m=>m.z===z.id&&m.k===z.mons[0]).length;if(n<z.cnt*.5){mk(z,z.mons[0],z.cnt-n,z.boss?z.boss[1]:null);fx.push(['map9','อสูรในโซน '+z.id+' หายไป เติมใหม่แล้ว'])}
+   if(z.boss&&!MS.some(m=>m.z===z.id&&m.k===z.boss[0])){bsp(z);fx.push(['map9','บอสในโซน '+z.id+' หายไป เติมใหม่แล้ว'])}})});
+ /* ตัวตรวจข้อมูลตอนเริ่มเกม (selfCheck / Shift+F8): ความสมดุลของอสูรเทียบขั้นพลังที่โซนรับเข้า */
+ (window.__R5DGH=window.__R5DGH||[]).push(is=>{
+  G9.forEach(g=>{const z=Z.find(a=>a.id===g.id),p=R[g.min];if(!z||!p)return is.push('แผนที่รอบ 9: ไม่พบโซนหรือขั้นพลัง '+g.id);
+   g.mons.forEach(k=>{const d=MD[k];if(!d)return is.push('แผนที่รอบ 9: ไม่พบอสูร '+k);
+    if(GV[k]){const kh=d.hp/p[0],dh=p[1]/d.atk;if(!(kh>=5&&kh<=18))is.push('สมดุล '+g.id+': ผู้เล่นต้องฟัน '+kh.toFixed(1)+' ครั้งจึงล้ม '+k+' (ควร 5 ถึง 18)');if(!(dh>=3&&dh<=9))is.push('สมดุล '+g.id+': '+k+' ตีผู้เล่นล้มใน '+dh.toFixed(1)+' ครั้ง (ควร 3 ถึง 9)')}});
+   if(z.boss&&GV[z.boss[0]]){const d=MD[z.boss[0]],kh=d.hp/p[0],dh=p[1]/d.atk;if(!(kh>=60&&kh<=150))is.push('สมดุลบอส '+g.id+': เลือดบอส '+kh.toFixed(0)+' เท่าของพลังโจมตี (ควร 60 ถึง 150)');if(!(dh>=2.5))is.push('สมดุลบอส '+g.id+': บอสตีผู้เล่นล้มเร็วเกินไป '+dh.toFixed(1)+' ครั้ง')}
+   if(g.min!==(g.mons.map(k=>MRM[k]).reduce((a,b)=>Math.max(a,b),0))&&GV[g.mons[0]])is.push('โซน '+g.id+': ขั้นที่รับเข้าไม่ตรงระดับอสูร')});
+  Object.keys(GV).forEach(k=>{if(!MD[k]||!MRM[k]||!BOSS_DROP[k]||!COIN[k])is.push('อสูรแก่นทอง '+k+' ข้อมูลไม่ครบ');if(!GV[k].hear||(GV[k].base&&GV[k].hear<100))is.push('อสูรแก่นทอง '+k+' ระยะได้ยินไม่ถูกต้อง')})});
+ try{TIPS.push('แผนที่ป่าไผ่ หุบเขาหมาป่า หุบเขาหมี และเทือกเขาสามตอน อยู่ใต้ป่างูเขียว เดินต่อกันลงไปได้ ส่วนแผนที่แก่นทองคำ 6 แห่งอยู่ถัดจากเทือกเขาไปทางตะวันออก ใช้วงเวทย์ในหมู่บ้านหรือเมืองหลวงวาร์ปไปได้')}catch(e){}
+ try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-06',c:[C_MAP],h:'เปิดและขยายแผนที่ทั้งหมด พร้อมแผนที่แก่นทองคำ 6 แห่ง',t:'ป่าไผ่ หุบเขาหมาป่า และเทือกเขาอสูรบรรพกาล ขยายเป็น 500 x 500 ช่อง เดินเข้าได้แล้ว และเพิ่มแผนที่แก่นทองคำ 6 แห่งสำหรับขั้น 21 ถึง 30',x:[
+   'ป่าไผ่เขียวขจี (ขั้น 3 ขึ้นไป) หุบเขาหมาป่าวายุ (ขั้น 4) หุบเขาหมีเกราะศิลา (ขั้น 7) เรียงต่อกันลงไปทางใต้ของป่างูเขียว เดินต่อได้ ถึงขอบกด Enter เข้า',
+   'เทือกเขาอสูรบรรพกาลแยกเป็น 3 ตอน เสือดาวสายฟ้า (ขั้น 11) วานรแขนเหล็ก (ขั้น 13) วิหคเพลิงและราชสีห์เพลิงสวรรค์ (ขั้น 15) แต่ละตอนมีอสูรชนิดเดียวและมีตาน้ำวิญญาณ 3 จุด',
+   'แผนที่แก่นทองคำ 6 แห่ง ขั้น 21 ทุ่งสายฟ้าแก่นทอง ขั้น 23 ธารผลึกหมีศิลาทอง ขั้น 25 หุบเขาอสนีหมาป่าทอง ขั้น 26 ป่าวานรพันชั่ง ขั้น 28 บึงมรกตพญางูพันปี ขั้น 29 ลานเพลิงสวรรค์ผู้อมตะ อสูรธรรมดาตกหินวิญญาณระดับกลางและมีโอกาสตกหินสูง ส่วนบอสสามตัวต้องรวมตี้จึงล้มได้',
+   'ทางหมาป่าสู่เมืองหลวงขยายเป็นทุ่งกว้าง วงเวทย์ในหมู่บ้านและเมืองหลวงวาร์ปไปได้ทุกแผนที่ใหม่ ค่าวาร์ปเป็นหินกลาง ผู้เล่นที่ออกเกมในแผนที่เก่าถูกย้ายมาที่ทางเข้าแผนที่ใหม่แล้ว']})}catch(e){}
+ console.log('MAP9 สร้างแผนที่',JSON.stringify(made9),'ทางหมาป่า',rdN)
+})()}catch(e){console.error('MAP9',e)}
+
+/* ===== PATCH 37 (รอบที่ 10, 6 พ.ย. 2569) ระบบตรวจ: ช่องว่างระดับพลังและบอสต้องรวมตี้ (ตัวคำนวณอยู่ที่ต้นฉบับ hitMon / monMul ไม่ได้ห่อทับ) ===== */
+try{
+ CHK.push(()=>{const o=[];
+  BOSSES.forEach(k=>{if(!(BOSSREQ[k]>=2))o.push('บอส '+k+' ไม่มีเงื่อนไขรวมตี้ (ต้องอย่างน้อย 2 คน)');if(!Number.isFinite(MRM[k]))o.push('บอส '+k+' ไม่มีระดับพลัง')});
+  Object.keys(BOSSREQ).forEach(k=>{if(!MD[k])o.push('BOSSREQ มีบอสที่ไม่มีข้อมูล '+k)});
+  if(typeof partyNear!=='function')o.push('ตัวนับตี้หาย');
+  const t=monMul({k:'rab',hp:1});if(!Number.isFinite(t)||t<=0)o.push('ตัวคูณความเสียหายต่ออสูรผิดปกติ '+t);
+  return o});
+ (window.__R5FXH=window.__R5FXH||[]).push(fx=>{if(typeof partyNear!=='function'){partyNear=(m,lo)=>partyCount([],'',m,lo,0);fx.push(['party','ตัวนับตี้หาย ตั้งใหม่แล้ว'])}});
+ (window.__R5DGH=window.__R5DGH||[]).push(is=>{
+  Object.keys(MD).forEach(k=>{const mr=MRM[k];if(!Number.isFinite(mr))return;
+   for(let ps=0;ps<R.length;ps++){const mg=majorOf(mr)-majorOf(ps),u=gapMulAt(k,ps);if(mg>0&&u>.01+1e-12){is.push('ช่องว่างระดับพลัง: ผู้เล่นขั้น '+(ps+1)+' ต่ำกว่าขั้นใหญ่ของ '+k+' แต่ยังทำความเสียหายเต็ม '+u);break}if(mg<=0&&ps>=mr&&u!==1){is.push('ช่องว่างระดับพลัง: ผู้เล่นระดับเท่าหรือสูงกว่า '+k+' ไม่ควรถูกลดความเสียหาย');break}}
+   if(mr>=20){const d=MD[k],best=(R[19][0]+1000)*6*gapMulAt(k,19),h=d.hp/best;if(!(h>=500))is.push('สมดุล: ผู้เล่นสร้างรากฐานขั้นสูงสุดสวมอาวุธดีที่สุดฟัน '+k+' ได้ในราว '+h.toFixed(0)+' ครั้ง ต้องไม่ต่ำกว่า 500')}});
+  BOSSES.forEach(k=>{const q=BOSSREQ[k];if(!q)return;if(partyMulAt(k,true,q-1)>BARRIER)is.push('บอส '+k+': ตี้ไม่ครบแต่ยังทำความเสียหายได้');if(partyMulAt(k,false,q+3)>BARRIER)is.push('บอส '+k+': ผู้เล่นระดับต่ำเกินไปแต่ยังทำความเสียหายได้');if(partyMulAt(k,true,q)<q)is.push('บอส '+k+': ตี้ครบแต่พลังรวมตี้ไม่ถึง x'+q);
+   if(!(MRM[k]-NEAR_LO>=0))is.push('บอส '+k+': เกณฑ์ระดับใกล้เคียงบอสผิด')})});
+ try{TIPS.push('บอสทุกตัวต้องรวมตี้ ต้องมีผู้ฝึกตนที่ขั้นไม่ต่ำกว่าบอส 3 ขั้นอยู่ใกล้ตัวบอสภายใน 30 ก้าวตามจำนวนที่กำหนด (บอสต้น 2 คน บอสสร้างรากฐานและแก่นทองคำ 3 ถึง 4 คน) ถ้าคนไม่ครบ ปราณคุ้มกันบอสจะสะกดพลังโจมตีของเจ้า กด T ข้างบอสเพื่อฟังสถานะตี้')}catch(e){}
+ try{TIPS.push('ผู้ฝึกตนขั้นใหญ่ต่ำกว่าอสูร เช่น สร้างรากฐานสู้อสูรแก่นทองคำ ทำความเสียหายได้แค่ 1 ใน 100 ไม่มีทางชนะ ต้องฝึกให้ถึงขั้นของโซนก่อนจึงเข้าสู้ได้')}catch(e){}
+ try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-06',c:[C_MAP],h:'บอสทุกตัวต้องรวมตี้ และข้ามขั้นใหญ่สู้อสูรไม่ได้',t:'ผู้ฝึกตนขั้นใหญ่ต่ำกว่าอสูรทำความเสียหายได้น้อยมาก และบอสทุกตัวต้องรวมตี้ผู้ฝึกตนระดับใกล้เคียงบอสจึงล้มได้',x:[
+   'ขั้นใหญ่ที่ต่ำกว่าอสูร (เช่น สร้างรากฐานสู้แก่นทองคำ) ความเสียหายเหลือ 1 ใน 100 ต่อหนึ่งขั้นใหญ่ ขั้นใหญ่เดียวกันแต่ต่ำกว่าอสูรเกิน 3 ขั้น ความเสียหายลดลงตามช่องว่าง',
+   'บอสทุกตัวต้องมีผู้ฝึกตนที่ขั้นไม่ต่ำกว่าบอส 3 ขั้นอยู่ใกล้ตัวบอสภายใน 30 ก้าว บอสต้น 2 คน ราชาหมาป่า ราชสีห์ และบอสแก่นทองคำ 3 ถึง 4 คน ตี้ไม่ครบ ปราณคุ้มกันบอสสะกดพลังโจมตี',
+   'ตี้ครบ ได้พลังรวมตี้คูณตามจำนวนคน สูงสุด 5 เท่า กด T ใกล้บอสเพื่อฟังว่าตี้พร้อมหรือยัง ผู้เล่นขั้นต่ำกว่าเกณฑ์ตีบอสไม่เข้าและไม่นับเป็นสมาชิกตี้']})}catch(e){}
+}catch(e){console.error('PATCH37',e)}
 
 /* ===== PATCH 22 (เพิ่มต่อท้าย ไม่ลบโค้ดเดิม) ความเร็วเดินด้วยแป้นพิมพ์: กดทีละครั้งเดินทันทีตามความเร็วนิ้ว กดค้างเดินคงที่ 10 ก้าวต่อวินาที ไม่ขึ้นกับความเร็วรีพีทของเครื่อง ถ้าต้องการย้อนกลับ ใช้ไฟล์สำรอง index.backup-before-walk-speed.html ===== */
 try{
@@ -3946,10 +4168,11 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
  const unsubAll=()=>{Object.keys(LV.subs).forEach(c=>{try{LV.subs[c]()}catch(e){}});LV.subs={};LV.data={};LV.k=''};
  const subNear=()=>{try{const cells=cellsNow(),k=cells.join(',');if(k===LV.k)return;
   Object.keys(LV.subs).forEach(c=>{if(!cells.includes(c)){try{LV.subs[c]()}catch(e){}delete LV.subs[c];delete LV.data[c]}});
-  cells.forEach(c=>{if(LV.subs[c])return;LV.subs[c]=MP.rt.onValue(MP.rt.ref(MP.rdb,'presence/'+c),sn=>{const m={};sn.forEach(us=>{const v=us.val();if(v&&typeof v.x==='number'&&typeof v.y==='number'&&typeof v.t==='number')m[us.key]={id:us.key,n:String(v.n||'ผู้ฝึกตน').slice(0,20),x:v.x,y:v.y,t:v.t,c,a:typeof v.a==='string'?v.a.slice(0,48):''}});
+  cells.forEach(c=>{if(LV.subs[c])return;LV.subs[c]=MP.rt.onValue(MP.rt.ref(MP.rdb,'presence/'+c),sn=>{const m={};sn.forEach(us=>{const v=us.val();if(v&&typeof v.x==='number'&&typeof v.y==='number'&&typeof v.t==='number')m[us.key]={id:us.key,n:String(v.n||'ผู้ฝึกตน').slice(0,20),x:v.x,y:v.y,t:v.t,c,a:typeof v.a==='string'?v.a.slice(0,48):'',lv:typeof v.lv==='number'?v.lv:-1,z:typeof v.z==='string'?v.z.slice(0,20):''}});
     if(LV.subs[c]){LV.data[c]=m;LV.t=Date.now();onLive()}},e=>{LV.err++;if(isPerm(e)){MP.failed=true;MP.err=e}devErr('MP live',e)})});
   LV.k=k}catch(e){LV.err++;devErr('MP sub',e)}};
  const liveList=()=>{const n0=srvNow(),L=[];Object.keys(LV.data).forEach(c=>{const m=LV.data[c];Object.keys(m).forEach(id=>{if(m[id].t>n0-FRESH)L.push(m[id])})});return dedupe(L)};
+ partyNear=(m,lo)=>{try{const u=MP.auth&&MP.auth.currentUser;if(!u||window.__MP_OFF||window.__DUP)return partyCount([],'',m,lo,0);return partyCount(liveList(),u.uid,m,lo,srvNow())}catch(e){return partyCount([],'',m,lo,0)}};/* รอบที่ 10: นับผู้ฝึกตนใกล้บอสจาก presence ที่ฟังอยู่แล้ว ไม่ต้องแก้กฎ */
  const onLive=()=>{try{const u=MP.auth&&MP.auth.currentUser;if(!u)return;const L=liveList().filter(v=>v.id!==u.uid);spOthers(L,u.uid);nbUpdate(L,u.uid);ownCheck(u.uid)}catch(e){}};
  /* ตำแหน่งของตัวเองในช่องอื่น: เก่าแล้ว (ไม่อัปเดตเกิน 20 วินาที) ลบทิ้งทันที ถ้ายังใหม่แปลว่าบัญชีนี้เปิดเล่นอยู่อีกเครื่อง
     กติกา: เครื่องที่เดินล่าสุดเป็นตัวจริง ถ้าอีกเครื่องเขียนตำแหน่งใหม่กว่า และเครื่องนี้ไม่ได้เดินเกิน 10 วินาที เครื่องนี้หยุดแสดงตำแหน่ง (yieldNow) จนกว่าจะเดิน */
@@ -4882,7 +5105,7 @@ try{
  const ok2=(x,y)=>x+','+y;
  const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
  /* ความเร็ว (มิลลิวินาทีต่อก้าวตอนไล่) ตามชนิด เดินเล่นช้ากว่า 1.7 เท่า */
- const MSPD={rab:600,fox:420,boar:480,snake:620,wolf:360,bear:560,king:380,leo:380,ape:520,phx:420,lion:420,bsnake:520,pboar:480};
+ const MSPD={rab:600,fox:420,boar:480,snake:620,wolf:360,bear:560,king:380,leo:380,ape:520,phx:420,lion:420,bsnake:520,pboar:480};Object.keys(GV).forEach(k=>{MSPD[k]=MSPD[GV[k].b]});
  const isBoss=k=>BOSSES.includes(k);
  const passiveMon=k=>k==='rab';
  /* อาณาเขตของแต่ละชนิด: แบ่งตามแนวยาวของแผนที่ ตัดถิ่นบอส (ห่างบอส 11 ช่อง) ออก */
@@ -4942,7 +5165,7 @@ try{
  const BSK={king:{n:'พายุวายุคลั่ง',warn:'ราชาหมาป่าวายุตั้งท่า ลมพายุหมุนรอบตัวมัน ถอยออกไป 3 ก้าว',hit:'พายุวายุคลั่งฟาดโดนเจ้า',m:1.8},
   bsnake:{n:'พ่นพิษมรกต',warn:'งูมรกตราชินีชูคอพองแม่เบี้ย เตรียมพ่นพิษ ถอยออกไป 3 ก้าว',hit:'พิษมรกตโดนเจ้า ติดพิษ 5 วินาที',m:1.4,poison:1},
   pboar:{n:'พุ่งชนเขี้ยวทอง',warn:'หมูป่าเขี้ยวทองตะกุยดิน เตรียมพุ่งชน หลบออกไป 3 ก้าว',hit:'เขี้ยวทองพุ่งชนเจ้า',m:1.8},
-  lion:{n:'เพลิงสวรรค์',warn:'ราชสีห์เพลิงสวรรค์สูดลมหายใจ ไฟลุกในปาก ถอยออกไป 3 ก้าว',hit:'เพลิงสวรรค์เผาเจ้า',m:1.9}};
+  lion:{n:'เพลิงสวรรค์',warn:'ราชสีห์เพลิงสวรรค์สูดลมหายใจ ไฟลุกในปาก ถอยออกไป 3 ก้าว',hit:'เพลิงสวรรค์เผาเจ้า',m:1.9}};Object.keys(GV).forEach(k=>{if(GV[k].sk)BSK[k]=GV[k].sk});
  const bossFx=(k,m,o)=>{try{if(HOOK.bossFx)HOOK.bossFx(k,m,o||{})}catch(e){bugLog('เสียงบอส',e.message)}};
  function bossAbilities(m,now,d){const a=m.ai;if(a.st!=='chase')return;const B=BSK[m.k]||BSK.king;
   if(!a.roarT)a.roarT=now+ri(4000,8000);if(!a.skT)a.skT=now+ri(6000,10000);
@@ -5052,7 +5275,7 @@ try{
   (window.__R5FXH||[]).forEach(h=>{try{h(fx)}catch(e){fx.push(['hook','ตัวซ่อมย่อยพัง '+e.message])}});/* ตัวซ่อมของระบบที่เพิ่มทีหลัง ลงทะเบียนในอาร์เรย์ __R5FXH (ไม่ห่อฟังก์ชันซ้อน) */
   return fx};
  /* 5) ตัวตรวจข้อมูลรอบที่ 5 (selfCheck ตอนเริ่มเกม และ Shift+F8) */
- const BASEB={pboar:[6000,65,20],bsnake:[13000,150,40],king:[26000,400,60],lion:[130000,5300,120]};
+ const BASEB={pboar:[6000,65,20],bsnake:[13000,150,40],king:[26000,400,60],lion:[130000,5300,120]};Object.keys(GV).forEach(k=>{if(GV[k].base)BASEB[k]=GV[k].base});
  window.__R5DIAG=()=>{const is=[];
   if(JSON.stringify(REACH)!==JSON.stringify([1.5,3,5,8,12,13,14,15]))is.push('ระยะโจมตีตามขั้นไม่ตรงคำสั่ง');
   [['qifist',5],['skysword',8],['thpalm',10],['qiblast',3]].forEach(([id,r])=>{if(!SK[id]||SK[id].rng!==r)is.push('วิชา '+id+' ระยะไม่ใช่ '+r+' ก้าว')});
