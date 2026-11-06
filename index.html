@@ -83,11 +83,11 @@ pill_xp:{n:'โอสถเพิ่มปราณ (เพิ่มแต้ม
 const SHOP={herb:['pill_hp','pill_qi','pill_xp','herb_sp','mush_sp','talis','pill_f','sc_shield'],smith:['sw_iron','sw_bamboo','sc_sword','sw_wind','sc_fly']};
 const DX=[0,1,1,1,0,-1,-1,-1],DY=[-1,-1,0,1,1,1,0,-1];
 const DN=['ทิศเหนือ','ตะวันออกเฉียงเหนือ','ทิศตะวันออก','ตะวันออกเฉียงใต้','ทิศใต้','ตะวันตกเฉียงใต้','ทิศตะวันตก','ตะวันตกเฉียงเหนือ'];
-const CATS=['ทั้งหมด','โลก','แผนที่','สำนัก/ปาร์ตี้','ส่วนตัว','ระบบ'];
+const CATS=['ทั้งหมด','โลก','แผนที่','สำนัก/ปาร์ตี้','ส่วนตัว','ระบบ','ผู้เล่น','ของที่ได้'];/* รอบที่ 11: เพิ่มหมวด ผู้เล่น (ออนไลน์ ออฟไลน์ เข้าใกล้ ออกห่าง) และ ของที่ได้ (ของตกจากอสูร ของขวัญ ซื้อขาย แลก ตกปลา เก็บเกี่ยว) อ่านย้อนหลังด้วย จุด/จุลภาค เปลี่ยนหมวด และ วงเล็บเหลี่ยม เลื่อนข้อความ */
 /* ===== CORE ===== */
 const $=id=>document.getElementById(id);
 var SP0=[27,46];let S={x:27,y:46,f:0,step:0,exp:0,hp:100,qi:50,gold:10000,coin:1000,inv:[{id:'sw_wood',q:1},{id:'robe',q:1},{id:'badge',q:1},{id:'pill_hp',q:3},{id:'herb_sp',q:2},{id:'mush_sp',q:2},{id:'jujube',q:2},{id:'talis',q:1}],wpn:null,known:['fist','finger','skysword'],slots:['fist','finger','skysword',null,null,null,null,null,null,null],
-med:false,t:Date.now(),q:{k:0,got:0},chat:[[],[],[],[],[],[]],ground:[],alt:0,bgmLv:5,sfxLv:5,tribDay:'',tribPend:0,tribCd:0,tribPrep:0,hideLv:false,svClrT:0};/* รอบที่ 6: tribDay วันที่ล้มเหลวทัณฑ์สายฟ้าล่าสุด tribPend กำลังรับทัณฑ์ hideLv ผู้พัฒนาซ่อนขั้นพลัง svClrT เวลาคำสั่งล้างพื้นล่าสุดที่รับ เซฟเก่าไม่มีค่าเหล่านี้จึงใช้ค่าเริ่มต้นนี้ *//* alt = ชั้นที่ปีนเขาอยู่ (0 = ยืนบนพื้น) bgmLv = ระดับเสียงดนตรี 0 ถึง 10 เซฟเก่าไม่มีสองค่านี้จึงใช้ค่าเริ่มต้นนี้ */
+med:false,t:Date.now(),q:{k:0,got:0},chat:[[],[],[],[],[],[],[],[]],ground:[],alt:0,bgmLv:5,sfxLv:5,tribDay:'',tribPend:0,tribCd:0,tribPrep:0,hideLv:false,svClrT:0,pvp:1};/* รอบที่ 6: tribDay วันที่ล้มเหลวทัณฑ์สายฟ้าล่าสุด tribPend กำลังรับทัณฑ์ hideLv ผู้พัฒนาซ่อนขั้นพลัง svClrT เวลาคำสั่งล้างพื้นล่าสุดที่รับ เซฟเก่าไม่มีค่าเหล่านี้จึงใช้ค่าเริ่มต้นนี้ *//* alt = ชั้นที่ปีนเขาอยู่ (0 = ยืนบนพื้น) bgmLv = ระดับเสียงดนตรี 0 ถึง 10 เซฟเก่าไม่มีสองค่านี้จึงใช้ค่าเริ่มต้นนี้ */
 /* เซฟสำรองอัตโนมัติ (รอบที่ 8): คีย์ ipo_bak2|บัญชี|เวลา|a (อัตโนมัติ) หรือ m (สำรองด้วยมือจากเมนูผู้พัฒนา) เก็บ 5 ชุดล่าสุดต่อบัญชี สำรองทุก 20 นาที ประกาศไว้ก่อนโหลดเซฟเพราะใช้กู้เซฟหลักที่อ่านไม่ได้ */
 const SAVEH=window.__SAVEH={fail:0,okT:0,warnT:0,bakT:0,err:'',recov:0},BAK_MAX=5,BAK_GAP=1200000;
 const bakPre=()=>'ipo_bak2|'+(window.__KEY||'ipo1')+'|';
@@ -101,9 +101,14 @@ const okSave=o=>!!o&&typeof o==='object'&&!Array.isArray(o)&&Number.isFinite(Num
  if(l&&typeof l==='object')S=Object.assign(S,l)}
 const stepFix=()=>{const n=Math.floor(Number(S.step));S.step=Number.isFinite(n)?Math.max(0,Math.min(R.length-1,n)):0};stepFix();/* รอบที่ 8: ขั้นพลังในเซฟเสีย (ติดลบ ข้อความ เกินตาราง) เคยทำให้เกมเริ่มไม่ขึ้น เพราะตารางขั้นอ่านก่อน watchdog ทำงาน ปรับเข้าช่วงที่ถูกต้องตั้งแต่โหลด */
 if(SAVEH.recov)setTimeout(()=>{try{bugLog('บันทึกเซฟ','เซฟหลักอ่านไม่ได้ กู้จากเซฟสำรองอัตโนมัติ');say('เซฟหลักอ่านไม่ได้ เกมกู้จากเซฟสำรองอัตโนมัติล่าสุดให้แล้ว',1)}catch(e){}},4000);
+if(S.pvp!==0&&S.pvp!==1)S.pvp=1;/* รอบที่ 11: โหมดสู้ผู้เล่นนอกสนาม 1 = เปิด (เซฟเก่าไม่มีค่านี้ เริ่มต้นเปิด) */
 delete S.fp;/* รอบที่ 5: ยกเลิกพลังเหาะ ใช้ลมปราณหลอดเดียวทุกอย่าง ค่า fp ในเซฟเก่าลบทิ้ง */
 let mode='play',mn=null,cbk=null,prevMode='play',tts=false,spd=1,auto=false,lastSlot=-1,goal=null,target=null,buff=0,cd={},warned=0,rl=null,rlT=0,lastTurn=1,ci=0,mi={},MS=[],AC=null;
 const zoneAt=(x,y)=>Z.find(z=>x>=z.r[0]&&x<=z.r[2]&&y>=z.r[1]&&y<=z.r[3]);
+/* รอบที่ 11: สนามประลองผู้เล่นจริง = ห้องภายในอาคาร ลานประลองยุทธ์ (โซน bd_arena กว้าง 40 ยาว 22 สร้างตอนเริ่มเกมโดยระบบอาคาร) ใครอยู่ในห้องนี้เป็นศัตรูกันหมด */
+const arenaZone=()=>Z.find(z=>z.id==='bd_arena')||null;
+const inArenaAt=(x,y)=>{try{const a=arenaZone();return !!a&&zoneAt(x,y)===a}catch(e){return false}};
+const inArena=()=>inArenaAt(S.x,S.y);
 const mhp=()=>Math.round(R[S.step][1]*sectB('hp')),mqi=()=>Math.round(R[S.step][2]*sectB('qi')),atk=()=>Math.round((R[S.step][0]+(S.wpn?I[S.wpn].atk:0))*sectB('atk'));
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 /* CHK = รายชื่อตัวตรวจเบื้องหลัง (กฎเหล็กหมวด 1) ทุกระบบเพิ่มตัวตรวจของตัวเองด้วย CHK.push(()=>[ข้อความปัญหา]) ถ้าปกติให้คืนรายการว่าง
@@ -127,11 +132,17 @@ function beep(){}/* เสียงปี๊บสังเคราะห์เ
 var lastSay='',lastSayT=0,_sayW=[];let sayCue=()=>{},sayAgg=()=>false;let monVoices=()=>{},spOthers=()=>{},posCue=()=>{};/* ตะขอเสียงเชิงพื้นที่ (กฎเหล็กหมวด 2) ระบบเสียงกำหนดค่าให้ภายหลัง monVoices = เสียงอสูรตามระยะและทิศ spOthers = เสียงผู้เล่นอื่นตามระยะ posCue = เสียงกระแทกและเสียงเท้าอสูรตามตำแหน่ง *//* ตะขอเสียงประกอบข้อความ และตัวสรุปข้อความตอนออโต้ ถูกกำหนดค่าภายหลัง */
 function say(t,sys){try{sayCue(t,sys)}catch(e){}let ag=false;try{ag=sayAgg(t,sys)}catch(e){}if(ag)return;return sayRaw(t,sys)}
 function sayRaw(t,sys){if(!sys&&t===lastSay&&Date.now()-lastSayT<1500)return;lastSay=t;lastSayT=Date.now();setTimeout(renderMob,0);const _n=Date.now();_sayW=_sayW.filter(x=>_n-x<1000);_sayW.push(_n);const L=$('log');if(sys||_sayW.length<=6||window.__NOTTS){const d=document.createElement('div');d.textContent=t;L.appendChild(d);while(L.children.length>60)L.removeChild(L.firstChild);L.scrollTop=L.scrollHeight}
- if(histKeep(t)){S.chat[5].push(t);S.chat[0].push(t);if(S.chat[5].length>60)S.chat[5].shift();if(S.chat[0].length>100)S.chat[0].shift()}
+ if(histKeep(t))histPush(t);
  if(tts&&window.speechSynthesis&&!window.__NOTTS){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='th-TH';speechSynthesis.speak(u)}}
 /* ประวัติข้อความ (หมวด ทั้งหมด/ระบบ) เก็บเฉพาะเรื่องสำคัญ ส่วนข้อความตอบสนองปุ่ม เช่น เปิดกระเป๋า เลื่อนเมนู หยิบของ ถูกอ่านและแสดงในหน้าจอตามปกติ แต่ไม่เก็บลงประวัติและเซฟ */
-var HK=/^(สังหาร |ได้รับ: |ได้เศษตำราลับ|ปลดล็อก|ฝึกฝนจากการต่อสู้|ข่าวลือ |เช็กอินวันที่|วงล้อหยุดที่|พรโชค|จมูกหาสมบัติ|เข้าสังกัด|ประมูลสำเร็จ|ประกาศ |ข้อความประจำวัน|ของใหม่ในเกม|ระบบตรวจ|ตรวจระบบ|เตือน |มีการเปิดเกม|ระหว่างออฟไลน์|ยืนยันบัญชี|ล็อกสิทธิ์|สวนสมุนไพร แปลงที่|ผู้ใหญ่บ้านหลี่: เก่งมาก|เรียน .* สำเร็จ|เรียนรู้ )|ทะลวง(สำเร็จ|ล้มเหลว)|ฟื้นที่ลานเกิด|เกิดใหม่แล้ว$|จะเกิดใหม่ในอีก/;
+var HK=/^(สังหาร |ได้รับ: |ได้เศษตำราลับ|ปลดล็อก|ฝึกฝนจากการต่อสู้|ข่าวลือ |เช็กอินวันที่|วงล้อหยุดที่|พรโชค|จมูกหาสมบัติ|เข้าสังกัด|ประมูลสำเร็จ|ประกาศ |ข้อความประจำวัน|ของใหม่ในเกม|ระบบตรวจ|ตรวจระบบ|เตือน |มีการเปิดเกม|ระหว่างออฟไลน์|ยืนยันบัญชี|ล็อกสิทธิ์|สวนสมุนไพร แปลงที่|ผู้ใหญ่บ้านหลี่: เก่งมาก|เรียน .* สำเร็จ|เรียนรู้ |ต่อสู้ผู้เล่น: |ผู้ฝึกตน .*(ออนไลน์แล้ว|ออฟไลน์แล้ว|เข้ามาใกล้|ออกจากพื้นที่ใกล้ตัวแล้ว)|ได้รับของขวัญ|ซื้อแล้ว|ขายแล้ว|แลกแล้ว|แลกเหรียญ|ได้ปลา |เก็บเกี่ยว|เก็บได้|ดูดซับหิน|รับเงิน|รับค่าชม|วันนี้รับ)|ทะลวง(สำเร็จ|ล้มเหลว)|ฟื้นที่ลานเกิด|เกิดใหม่แล้ว$|จะเกิดใหม่ในอีก/;
 function histKeep(t){return typeof t==='string'&&HK.test(t)}
+/* รอบที่ 11: จัดข้อความประวัติเข้าหมวด 5 ระบบ / 6 ผู้เล่น / 7 ของที่ได้ แล้วเก็บซ้ำในหมวดทั้งหมด (0) ข้อความสังหารที่มีของตกลงทั้งหมวดระบบและของที่ได้ */
+function histCats(t){if(/^ต่อสู้ผู้เล่น: /.test(t))return[6];if(/^ผู้ฝึกตน /.test(t)&&/(ออนไลน์แล้ว|ออฟไลน์แล้ว|เข้ามาใกล้|ออกจากพื้นที่ใกล้ตัวแล้ว)/.test(t))return[6];
+ if(/^สังหาร /.test(t)&&/ได้รับ: /.test(t))return[5,7];
+ if(/^(ซื้อแล้ว|ขายแล้ว|แลกแล้ว|แลกเหรียญ|ได้ปลา |เก็บเกี่ยว|เก็บได้|ดูดซับหิน|รับเงิน|รับค่าชม|วันนี้รับ|ได้รับของขวัญ|ได้รับ: |ได้เศษตำรา|พรโชค|จมูกหาสมบัติ)/.test(t))return[7];return[5]}
+function histPush(t){try{const A=S.chat;if(!Array.isArray(A))return;histCats(t).concat(0).forEach(i=>{if(!Array.isArray(A[i]))A[i]=[];A[i].push(t);if(A[i].length>100)A[i].shift()})}catch(e){}}
+try{if(!Array.isArray(S.chat))S.chat=[];while(S.chat.length<CATS.length)S.chat.push([]);S.chat=S.chat.map(c=>Array.isArray(c)?c:[])}catch(e){S.chat=CATS.map(()=>[])}/* เซฟเก่ามี 6 หมวด เติมเป็น 8 */
 try{[0,5].forEach(i=>{if(Array.isArray(S.chat[i]))S.chat[i]=S.chat[i].filter(t=>typeof t==='string'&&(t[0]==='['||histKeep(t)))})}catch(e){}
 function rel(dx,dy){const fx=DX[S.f],fy=DY[S.f],rx=-fy,ry=fx;const a=Math.round((dx*fx+dy*fy)/(fx*fx+fy*fy)),b=Math.round((dx*rx+dy*ry)/(rx*rx+ry*ry));
  const p=[];if(a)p.push((a>0?'ข้างหน้า ':'ด้านหลัง ')+Math.abs(a)+' ก้าว');if(b)p.push((b>0?'ทางขวา ':'ทางซ้าย ')+Math.abs(b)+' ก้าว');return p.join(' และ ')||'อยู่ตรงนี้'}
@@ -210,6 +221,10 @@ CHK.push(()=>{const o=[];
  return o});
 (window.__R5FXH=window.__R5FXH||[]).push(fx=>{if(bakKeys('a').length>BAK_MAX){bakPrune(BAK_MAX);fx.push(['bakmax','เซฟสำรองอัตโนมัติเกินจำนวน ล้างชุดเก่าให้แล้ว'])}});
 addEventListener('pagehide',()=>save());document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
+window.__SAVEFN=()=>save();/* รอบที่ 9: ให้ตัวซิงก์ออนไลน์ (อยู่นอกบล็อกเกม) สั่งบันทึกล่าสุดก่อนส่งขึ้นเซิร์ฟเวอร์ตอนปิดหน้า */
+SAVEH.step=S.step;setInterval(()=>{try{if(S.step!==SAVEH.step){SAVEH.step=S.step;if(window.__CSYNC)window.__CSYNC.urgent=Date.now();save()}}catch(e){}},500);/* ขั้นพลังเปลี่ยนจากทุกทาง (ทะลวง ทัณฑ์สายฟ้า ผู้พัฒนา) บันทึกและส่งขึ้นเซิร์ฟเวอร์ทันที ไม่รอรอบ 5 วินาที */
+CHK.push(()=>{const o=[],C=window.__CSYNC;if(C&&C.on){if(C.pend&&!document.hidden&&Date.now()-C.pendT>150000)o.push('ซิงก์เซฟออนไลน์: ค้างส่งเกิน 2.5 นาที');if(C.fail>=5)o.push('ซิงก์เซฟออนไลน์: ส่งล้มเหลวติดกัน '+C.fail+' ครั้ง')}return o});
+(window.__R5FXH=window.__R5FXH||[]).push(fx=>{const C=window.__CSYNC;if(C&&C.on&&!document.hidden&&((C.pend&&Date.now()-C.pendT>150000)||C.fail>=5)&&typeof window.__CLOUD_FLUSH==='function'){C.pendT=Date.now();C.fail=0;window.__CLOUD_FLUSH(true);fx.push(['csync','ซิงก์เซฟออนไลน์ค้าง ส่งใหม่ให้แล้ว'])}});
 {const TABID=Math.random().toString(36).slice(2),LK='ipo_lock_'+(window.__KEY||'ipo1');try{localStorage.setItem(LK,TABID)}catch(e){}
 addEventListener('storage',e=>{if(e.key===LK&&e.newValue&&e.newValue!==TABID&&!window.__DUP){window.__DUP=1;auto=false;walk=false;say('มีการเปิดเกมบัญชีนี้ในแท็บอื่น แท็บนี้หยุดบันทึกเพื่อไม่ให้เซฟทับกัน ปิดแท็บนี้ หรือรีเฟรชหน้าเพื่อใช้แท็บนี้แทน',1)}})}
 /* ===== world ===== */
@@ -251,7 +266,7 @@ function tribPlan(T,rnd){rnd=rnd||Math.random;const n=T.b,a=[];
 function tribSay(t){
  try{const L=$('log'),d=document.createElement('div');d.textContent=t;Node.prototype.appendChild.call(L,d);while(L.children.length>60)L.removeChild(L.firstChild);L.scrollTop=L.scrollHeight}catch(e){}
  try{const Rg=window.__SR&&window.__SR.RA;if(Rg){while(Rg.firstChild)Rg.removeChild(Rg.firstChild);const d=document.createElement('div');d.textContent=t;Rg.appendChild(d)}else say(t,1)}catch(e){}
- try{if(histKeep(t)){S.chat[5].push(t);S.chat[0].push(t);if(S.chat[5].length>60)S.chat[5].shift();if(S.chat[0].length>100)S.chat[0].shift()}}catch(e){}
+ try{if(histKeep(t))histPush(t)}catch(e){}
  try{if(tts&&window.speechSynthesis&&!window.__NOTTS){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='th-TH';speechSynthesis.speak(u)}}catch(e){}}
 /* แสงวาบตอนสายฟ้าฟาด (ผู้เล่นที่มองเห็น) วาบครั้งเดียวต่อสาย ห่างกันอย่างน้อย 12 วินาที ปิดเองถ้าเครื่องตั้งลดการเคลื่อนไหว */
 function trFlash(){try{
@@ -579,7 +594,7 @@ function effRng(k){if(!k||k.heal||k.buff||k.passive)return 0;return k.basic?reac
 const qiCost=k=>Math.max(1,Math.round(Number(k&&k.c)||0));
 const CAST={on:false,id:null,slot:-1,t0:0,t1:0,x:0,y:0,z:'',tg:null,tm:0};
 const skFx=(ph,id,k,o)=>{try{if(HOOK.skFx)HOOK.skFx(ph,id,k,o||{})}catch(e){bugLog('เสียงวิชา',e.message)}};
-const noFightAt=()=>{try{if(typeof noFight9==='function')return noFight9()}catch(e){}const z=zoneAt(S.x,S.y);return !!(z&&z.safe)};
+const noFightAt=()=>{if(inArena())return false;/* สนามประลอง: สู้กันได้แม้อยู่ในเมืองหลวง */try{if(typeof noFight9==='function')return noFight9()}catch(e){}const z=zoneAt(S.x,S.y);return !!(z&&z.safe)};
 const monDef=m=>{const d=MD[m.k];return d&&Number.isFinite(d.def)?d.def:0};
 /* ===== รอบที่ 10 (6 พ.ย. 2569): ระดับพลังของผู้เล่นต้องสัมพันธ์กับอสูรและบอสจริง =====
    1) ช่องว่างขั้นใหญ่ (gapMulAt): ผู้เล่นขั้นใหญ่ต่ำกว่าอสูร (เช่น สร้างรากฐานสู้แก่นทองคำ) ความเสียหายที่ทำได้เหลือ 1 ใน 100 ต่อหนึ่งขั้นใหญ่ที่ต่ำกว่า (นิยายเซียน: ข้ามขั้นใหญ่สู้ไม่ได้)
@@ -614,7 +629,7 @@ function useSlot(i,quiet){
  if(CAST.on){if(!quiet)say('กำลังรวมพลัง '+((SK[CAST.id]||{}).n||'')+' อยู่ รอปล่อยพลังก่อน');return 0}
  const atkSk=!k.buff&&!k.heal;
  if(atkSk&&S.fear>now){if(!quiet)say('หวาดกลัวอยู่ ใช้วิชาโจมตีไม่ได้อีก '+Math.ceil((S.fear-now)/1000)+' วินาที');return 0}
- if((S.fl||altFix()>0)&&atkSk){if(!quiet)say(S.fl?'ลงจากกระบี่ก่อน (กด X) จึงจะโจมตีได้':'ปีนลงถึงพื้นก่อน (กด Page Down) จึงจะโจมตีได้');return 0}/* ขี่กระบี่หรือเกาะหน้าผาอยู่ ใช้วิชาโจมตีไม่ได้ วิชารักษาและเกราะปราณยังใช้ได้ */
+ if(altFix()>0&&atkSk){if(!quiet)say('ปีนลงถึงพื้นก่อน (กด Page Down) จึงจะโจมตีได้');return 0}if(S.fl&&atkSk&&effRng(k)<3){if(!quiet)say('บินอยู่บนฟ้า วิชาประชิดตัวใช้ไม่ได้ ใช้วิชาระยะไกลโจมตีจากฟ้าได้ หรือกด X ลงจากกระบี่');return 0}/* รอบที่ 11: เกาะหน้าผาอยู่ใช้วิชาโจมตีไม่ได้ ส่วนขี่กระบี่เหาะอยู่โจมตีได้ด้วยวิชาระยะไกล (ตั้งแต่ 3 ก้าว) วิชาประชิดใช้ไม่ได้ วิชารักษาและเกราะปราณใช้ได้เสมอ */
  if(cd[id]&&now<cd[id])return 0;
  const cost=qiCost(k);
  if(S.qi<cost){if(!quiet||!warned){say('ลมปราณไม่พอ '+k.n+' ใช้ '+cost+' มี '+Math.floor(S.qi)+' กด Z นั่งสมาธิฟื้นฟู');warned=1}return 0}
@@ -634,6 +649,8 @@ function strike(id,k,quiet){const now=Date.now(),z=zoneAt(S.x,S.y);if(!z||!k)ret
  if(noFightAt()){skFx('air',id,k);if(!quiet)say('ฝึกท่า '+k.n+' ในเขตปลอดภัย ไม่มีผู้ใดบาดเจ็บ');return 1}
  const R=effRng(k);
  const t=(target&&!target.dead&&target.z===z.id&&dist(S,target)<=R)?target:nearest(R);
+ let pv=null;try{if(HOOK.pvpPick)pv=HOOK.pvpPick(R)}catch(e){bugLog('ต่อสู้ผู้เล่น',e.message)}/* รอบที่ 11: ผู้เล่นที่เป็นศัตรูอยู่ในระยะและใกล้กว่าอสูร = โจมตีผู้เล่นแทน */
+ if(pv&&(!t||pv.d<dist(S,t))){try{HOOK.pvpHit(pv,id,k)}catch(e){bugLog('ต่อสู้ผู้เล่น',e.message)}return 1}
  if(!t){const lk=(target&&!target.dead&&target.z===z.id)?target:null;skFx('air',id,k,lk?{x:lk.x,y:lk.y}:{});
   if(!quiet)say(lk?'พลาด '+MD[lk.k].n+' อยู่ห่าง '+Math.round(dist(S,lk))+' ก้าว เกินระยะ '+k.n+' '+R+' ก้าว':k.n+' ฟันลม');return 1}
  target=t;const d=hitMon(t,k,1);skFx('hit',id,k,{mon:t});
@@ -646,7 +663,7 @@ function strike(id,k,quiet){const now=Date.now(),z=zoneAt(S.x,S.y);if(!z||!k)ret
 /* รวมพลังเสร็จ: ตรวจสถานะอีกครั้ง แล้วปล่อยพลัง เป้าเดิมเดินออกนอกระยะ = หลบได้ */
 function castRelease(){const c=CAST;if(!c.on)return;c.on=false;clearTimeout(c.tm);const k=SK[c.id];if(!k)return;
  const z=zoneAt(S.x,S.y);
- if(!(S.hp>0)||!z||z.id!==c.z||S.x!==c.x||S.y!==c.y||S.fl||S.alt>0){skFx('cancel',c.id,k);return}
+ if(!(S.hp>0)||!z||z.id!==c.z||S.x!==c.x||S.y!==c.y||S.alt>0){skFx('cancel',c.id,k);return}
  if(S.fear>Date.now()){skFx('cancel',c.id,k);say('หวาดกลัวจนพลังสลาย '+k.n+' ล้มเหลว');return}
  const R=effRng(k),tg=c.tg;
  if(tg&&!tg.dead&&tg.z===z.id){if(dist(S,tg)>R){const cost=qiCost(k);if(S.qi>=cost){S.qi-=cost;cd[c.id]=Date.now()+k.cd*1000}skFx('air',c.id,k,{x:tg.x,y:tg.y});say(MD[tg.k].n+' หลบได้ ออกนอกระยะ '+k.n+' อยู่ห่าง '+Math.round(dist(S,tg))+' จาก '+R+' ก้าว');return}target=tg}
@@ -700,10 +717,10 @@ equip(){menu('อุปกรณ์',[{t:'อาวุธ: '+(S.wpn?I[S.wpn].n:'
 help(){const L=['ลูกศรเดิน Q E หัน W รีเซ็ตทิศ','M เมนูแผนที่ N เช็กระยะ A เช็คคนรอบตัว P เช็คคนออนไลน์ใกล้ตัว K เช็กจำนวนคนออนไลน์ Shift F1 รายชื่อคนออนไลน์','I กระเป๋า Enter เก็บหรือใช้ของ Delete ทิ้ง','S จัดทักษะ เลข 1 ถึง 0 ใช้ทักษะ Space ออโต้','H เลือดปราณ L ข้อมูลตัวละคร Z สมาธิ B ทะลวง F คุยหรือซื้อของ','C อุปกรณ์ G เควสต์ X ขี่กระบี่','ข้ามเขตแผนที่ ต้องกด Enter ที่ทางเข้าเพื่อยืนยัน','ซื้อของและสร้างของที่ร้าน กด F คุยกับเจ้าของร้าน X ขี่กระบี่เหาะ (ไม่ต้องติดตั้งทักษะ ตั้งแต่ขั้นแก่นทองคำขึ้นไปบินได้เองไม่ต้องใช้กระบี่)','A เช็คคนรอบตัว ไกล 39 ก้าว O เช็คสมุนไพร ไกล 29 ก้าว Shift O เช็คอสูร บอสมาก่อน Shift M เมนูสมุนไพรและของที่เก็บได้ เดินไปเก็บให้เอง U คู่มือเกม F4 ประกาศล่าสุดและข้อความประจำวัน F5 บันทึกการอัพเดท F10 ออกจากระบบ เดินชนคนได้ และแต่ละคนมีเสียงประจำตัว','แชท: ทับ \\ โลก / แผนที่ จุด คอมมา เปลี่ยนหมวด วงเล็บเหลี่ยม อ่านข้อความ','F2 เปิดปิดเสียงพูดของเกม','F3 เปิดปิดเสียงบรรยากาศ Shift N เดินอัตโนมัติไปเป้าหมายที่ล็อกไว้ใน M ถึงสมุนไพรกด Enter เก็บ','Page Up ปีนขึ้นภูเขาหรือหน้าผาทีละชั้น Page Down ปีนลง ปีนอยู่สูงกว่าพื้นแล้วอสูรบนพื้นโจมตีไม่ถึง แต่ต้องปีนลงก่อนจึงจะสู้ได้','Shift ค้างไว้แล้วกด Page Up เพิ่มเสียงดนตรี Shift ค้างไว้แล้วกด Page Down ลดเสียงดนตรี ระดับ 0 ถึง 10 ระดับ 0 คือปิดดนตรี','Shift ค้างไว้แล้วกด Home เพิ่มเสียงรอบข้าง คือเสียงบรรยากาศ สัตว์ อาวุธ เอฟเฟกต์ และของใช้ Shift ค้างไว้แล้วกด End ลดเสียงรอบข้าง ระดับ 0 ถึง 10 ระดับ 5 คือมาตรฐาน เสียงเท้ากับดนตรีไม่เปลี่ยนตาม','Shift A ติดตามอสูรที่ใกล้ที่สุดในระยะ 20 ก้าว เดินอัตโนมัติไปถึงตัวแล้วล็อกเป้าให้','R บอกพิกัด ทิศที่หัน และชั้นที่ปีนอยู่','M เมนูแผนที่ ล็อกเป้าได้เฉพาะสถานที่ที่ไปได้ จุดสังเกตอย่างต้นไม้หรือหุ่นไล่กา เกมบอกเองตอนเดินผ่าน','F10 ออกจากระบบ เกมถามยืนยันก่อน','เลข 1 ถึง 0 ใช้ทักษะได้ตลอดเวลาแม้ไม่มีอสูร (ฟันลม) ทุกท่าใช้ลมปราณ ลมปราณหมดกด Z นั่งสมาธิ ขั้น 2 ขึ้นไปฟื้นเร็วขึ้น 20%','ระยะโจมตีตามขั้น ขั้น 1 ประชิด 1.5 ก้าว ขั้น 2 3 ก้าว ขั้น 3 5 ก้าว ขั้น 4 8 ก้าว ขั้น 5 ขึ้นไป 12 ถึง 15 ก้าว ขั้นแก่นทองคำ 24 ก้าว วิญญาณแรกเริ่ม 33 ก้าว เทพแปลงกาย 45 ก้าว กด S ฟังระยะของแต่ละวิชา กด L ฟังระยะพื้นฐาน','ทัณฑ์สายฟ้า ทะลวงขั้นแก่นทองคำและวิญญาณแรกเริ่มด้วย B ต้องออกไปที่โล่งนอกเขตปลอดภัย มีเวลาเตรียมตัว 5 นาทีและประกาศทั่วเกม ระหว่างเตรียมตัวขยับไม่ได้ กด B ยกเลิกได้ ระหว่างสายฟ้ารวมพลังใช้เลข 1 ถึง 0 ปล่อยวิชาโจมตีสู้สายฟ้า ลดความแรงได้','วิชารวมพลัง เช่น ฝ่ามืออัสนี ต้องยืนนิ่งจนปล่อยพลัง เดินหรือนั่งสมาธิ = ยกเลิก ไม่เสียลมปราณ เป้าเดินออกนอกระยะระหว่างรวมพลัง = เป้าหลบได้','บอสคำราม = หวาดกลัว 3 วินาที ใช้วิชาโจมตีไม่ได้ ได้ยินบอสตั้งท่า ให้เดินหลบออกไป 3 ก้าว กด H ฟังเลือด ลมปราณ หวาดกลัว และพิษ','กระเป๋า I: Enter ใช้หรือกิน ของกินหรือหินวิญญาณที่มีหลายชิ้นจะถามจำนวน กดตัวเลข 0 ถึง 9 ใส่จำนวนได้เลย หรือเลือก 1 จนเลือดเต็ม ครึ่งหนึ่ง ทั้งหมด พิมพ์เอง แล้วกด Enter Esc กลับเข้ากระเป๋า','กระเป๋า I: Delete ทิ้งของ เลือกจำนวน แล้วกด Enter ยืนยัน ของวางไว้ตรงที่ยืน กด Enter ตรงนั้นเก็บคืนได้'];menu('คู่มือปุ่ม',L.map(t=>({t})))},
 go(){if(goal&&goal.mon&&(goal.mon.dead||!MS.includes(goal.mon)))goal=null;if(!goal)return say('ยังไม่ได้เลือกเป้าหมาย กด M');walk=true;say('เริ่มเดินอัตโนมัติไป '+goal.n+' กดปุ่มใดก็ได้เพื่อหยุด')},ambT(){ambOn=!ambOn;say('เสียงบรรยากาศ '+(ambOn?'เปิด':'ปิด'))},tts(){tts=!tts;say('เสียงพูดของเกม '+(tts?'เปิด':'ปิด'))},spd(){if(!isGM())return;spd=spd===1?60:1;say('ตัวคูณแต้มสมาธิทดสอบ '+spd+' เท่า')},esc(){},
 chatW(){ask('พิมพ์แชทโลก',v=>{endAsk();if(v)msg(1,'[โลก] คุณ: '+v)})},chatM(){ask('พิมพ์แชทแผนที่',v=>{endAsk();if(v)msg(2,'[แผนที่] คุณ: '+v)})},
-catN(){cat(1)},catP(){cat(-1)},catF(){ci=0;cat(0)},catL(){ci=5;cat(0)},
+catN(){cat(1)},catP(){cat(-1)},catF(){ci=0;cat(0)},catL(){ci=CATS.length-1;cat(0)},
 msgN(){rd(1)},msgP(){rd(-1)},msgNew(){mi[ci]=S.chat[ci].length-1;rd(0)},msgOld(){mi[ci]=0;rd(0)}};
 function msg(c,t){S.chat[c].push(t);S.chat[0].push(t);say('ส่งแล้ว')}
-function cat(d){ci=(ci+d+6)%6;say('หมวด '+CATS[ci]+' '+S.chat[ci].length+' ข้อความ')}
+function cat(d){ci=(ci+d+CATS.length)%CATS.length;say('หมวด '+CATS[ci]+' '+S.chat[ci].length+' ข้อความ')}
 function rd(d){const L=S.chat[ci];if(!L.length)return say('ไม่มีข้อความ');let i=(mi[ci]==null?L.length-1:mi[ci])+d;i=Math.max(0,Math.min(L.length-1,i));mi[ci]=i;const t=document.createElement('div');t.textContent=L[i];const lg=$('log');lg.appendChild(t);lg.scrollTop=lg.scrollHeight;
  if(tts&&window.speechSynthesis&&!window.__NOTTS){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(L[i]);u.lang='th-TH';speechSynthesis.speak(u)}if(i===(d>0?L.length-1:0)&&d)beep(150,.1)}
 function cyc(d){if(!rl||!rl.length)return;let i=rl.indexOf(target);i=(i+d+rl.length)%rl.length;target=rl[i];rlT=Date.now()+8000;say('เป้า '+MD[target.k].n+' '+rel(target.x-S.x,target.y-S.y))}
@@ -1178,7 +1195,7 @@ Object.assign(NPC7,{
  alch:n=>craftMenu('herb',n),forge:n=>craftMenu('smith',n),royalarm:n=>craftMenu('tailor',n),
  vwarp:n=>menu(n.n+' (มีหินกลาง '+S.sm+' ก้อน)',[warpTo('เคลื่อนย้ายไปเมืองหลวงเมฆาคราม (ต้องถึงหลอมรวมขั้น 5)',54,70,5,4)].map(s=>({t:s.t,s})),{ent:x=>x.s.f()}),
  warp:n=>menu(n.n+' (มีหินกลาง '+S.sm+' ก้อน)',[warpTo('กลับหมู่บ้านลำธารใส',27,46,0,0),warpTo('ไปสำนักกระบี่ชิงหยุน',17,96,0,4),warpTo('ไปหุบเขาโอสถพฤกษา',54,96,0,4),warpTo('ไปอารามวัชระกายา',90,96,0,4),warpTo('ไปเทือกเขาอสูรบรรพกาล (ต้องถึงสร้างรากฐาน)',110,20,10,10)].map(s=>({t:s.t,s})),{ent:x=>x.s.f()}),
- arena:n=>{const L=S.known.filter(id=>SK[id]&&!SK[id].passive&&!SK[id].heal&&!SK[id].buff&&SK[id].m).map(id=>({t:SK[id].n+' ดาเมจโดยประมาณ '+Math.round(atk()*SK[id].m)+(SK[id].aoe?' ต่อตัว (กลุ่ม)':'')}));L.unshift({t:'ลานประลองยุทธ์: พลังโจมตีพื้นฐานของเจ้า '+atk()+' ป้องกัน '+defn()+' (การประลองกับผู้เล่นจริงรอแพตช์ออนไลน์)'});menu(n.n,L.concat(window.__ARENA7?window.__ARENA7.items():[]),{ent:x=>{if(x.a7&&window.__ARENA7)window.__ARENA7.act(x.a7,n)}})},
+ arena:n=>{const L=S.known.filter(id=>SK[id]&&!SK[id].passive&&!SK[id].heal&&!SK[id].buff&&SK[id].m).map(id=>({t:SK[id].n+' ดาเมจโดยประมาณ '+Math.round(atk()*SK[id].m)+(SK[id].aoe?' ต่อตัว (กลุ่ม)':'')}));L.unshift({t:'ไปยืนประจำตำแหน่งเผชิญหน้าผู้เล่นจริงในสนามประลอง เข้าได้ไม่จำกัดรอบ ไม่เสียลมปราณ แพ้ในสนามไม่เสียอะไร',pva:1},{t:'ออกจากสนามประลองไปที่เมืองหลวง',pvx:1},{t:'ลานประลองยุทธ์: พลังโจมตีพื้นฐานของเจ้า '+atk()+' ป้องกัน '+defn()+' รายการด้านล่างคือท้าประลองคู่ต่อสู้จำลอง'});menu(n.n,L.concat(window.__ARENA7?window.__ARENA7.items():[]),{ent:x=>{if(x.pva)return HOOK.arenaEnter?HOOK.arenaEnter():0;if(x.pvx)return HOOK.arenaExit?HOOK.arenaExit():0;if(x.a7&&window.__ARENA7)window.__ARENA7.act(x.a7,n)}})},
  guide:n=>menu(n.n,[{t:'ผู้ตรวจการ: เข้าสำนักได้เมื่อถึงหลอมรวมขั้น 5 เลือกได้ 1 สำนัก ห้องโถงชีพจรปราณให้นั่งสมาธิ +100% เฉพาะศิษย์'},{t:'ผู้ตรวจการ: ใช้แท่นเคลื่อนย้ายไปสำนัก เทือกเขาอสูร (ต้องถึงสร้างรากฐาน) หรือกลับหมู่บ้าน'},{t:'ผู้ตรวจการ: ร้านค้า สมาคมปรุงยา สมาคมหลอมอาวุธ ร้านเกราะหลวง และโรงประมูลอยู่ในเมืองนี้'}]),
  elder1:sectElder('k1',['sw_wave','sw_thrust']),elder2:sectElder('k2',['heal_s','mist']),elder3:sectElder('k3',['iron_body','vajra'])});
 W.push({z:'v',n:'ค่ายกลเคลื่อนย้ายสู่เมืองหลวง',x:19,y:36,npc:'vwarp'},
@@ -1219,7 +1236,7 @@ setInterval(()=>{if(!S.med||!S.sect)return;const h=W.find(w=>w.hall&&w.hall===S.
   if(walk&&mode==='play'&&goal&&goal.mon&&((goal.mon.dead&&Date.now()-goal.mon.dead>1500)||!MS.includes(goal.mon))){walk=false;goal=null;fx('trk','ยังเดินตามอสูรที่ตายหรือหายไปแล้ว หยุดให้แล้ว')}/* ติดตามอสูร */
   if(mobGrp&&!MOBG.some(x=>x[0]===mobGrp)){mobGrp=null;mobSig='';fx('mobg','หมวดเมนูโทรศัพท์ผิดปกติ กลับหน้าหลักให้แล้ว')}/* เมนูโทรศัพท์ */
   if(auto&&!(S.slots[lastSlot]&&SK[S.slots[lastSlot]])){auto=false;fx('auto','ออโต้ไม่มีทักษะ ปิดให้แล้ว')}
-  if(!Array.isArray(S.chat)||S.chat.length<6||S.chat.some(c=>!Array.isArray(c))){const oc=Array.isArray(S.chat)?S.chat:[];S.chat=Array.from({length:6},(_,i)=>Array.isArray(oc[i])?oc[i]:[]);fx('chat0','โครงแชทเสีย ซ่อมแล้ว')}
+  if(!Array.isArray(S.chat)||S.chat.length<CATS.length||S.chat.some(c=>!Array.isArray(c))){const oc=Array.isArray(S.chat)?S.chat:[];S.chat=Array.from({length:CATS.length},(_,i)=>Array.isArray(oc[i])?oc[i]:[]);fx('chat0','โครงแชทเสีย ซ่อมแล้ว')}
   if(S.giftAllT!=null&&typeof S.giftAllT==='number'&&(!fin(S.giftAllT)||S.giftAllT<0)){S.giftAllT=Date.now();fx('gat','ค่าเวลารับของขวัญผิดปกติ ตั้งใหม่เป็นตอนนี้')}
   if(S.fl&&!canFly()){S.fl=false;fx('fl','สถานะเหาะไม่ตรงกับขั้นพลังหรือวิชา ลงพื้นให้แล้ว')}/* กฎเหล็กหมวด 3: อยู่บนฟ้าได้เฉพาะขั้นสร้างรากฐานที่เรียนวิชาขี่กระบี่แล้ว เสียงเดินจึงตรงกับสถานะจริง */
   if(S.fp!=null){delete S.fp;fx('fp2','พบค่าพลังเหาะเก่า ลบทิ้งแล้ว ใช้ลมปราณหลอดเดียว')}
@@ -1233,11 +1250,11 @@ setInterval(()=>{if(!S.med||!S.sect)return;const h=W.find(w=>w.hall&&w.hall===S.
   Object.keys(SHOP).forEach(k=>SHOP[k].forEach(id=>{if(!I[id]||typeof I[id].p!=='number')is.push('ร้าน '+k+' ไอเทม '+id)}));
   Object.keys(RECIPES).forEach(k=>RECIPES[k].forEach(r=>{if(!I[r.o])is.push('สูตร '+r.o);Object.keys(r.m).forEach(m=>{if(!I[m])is.push('วัตถุดิบ '+m)})}));
   Object.keys(BOSS_DROP).forEach(k=>{if(!MD[k])is.push('บอส '+k);BOSS_DROP[k].forEach(r=>{if(r.id&&!I[r.id])is.push('ดรอป '+r.id)})});
-  Object.keys(MD).forEach(k=>{const d=MD[k];if(!d.n||!fin(d.hp)||!fin(d.atk)||!Array.isArray(d.it))is.push('มอนสเตอร์ '+k)});
+  Object.keys(MD).forEach(k=>{const d=MD[k];if(!d.n||!fin(d.hp)||!fin(d.atk)||!Array.isArray(d.it))is.push('มอนสเตอร์ '+k);if(d.rng!=null&&!(d.rng>=1.5&&d.rng<=12))is.push('ระยะโจมตีอสูร '+k)});
   Object.keys(SK).forEach(k=>{const d=SK[k];if(!d.n||!(d.passive||d.heal||d.buff||fin(d.rng)))is.push('ทักษะ '+k)});
   Object.keys(LV).forEach(k=>{if(!I[k])is.push('ระดับไอเทม '+k)});
   W.forEach(w=>{const z=zoneAt(w.x,w.y);if(!z||z.id!==w.z)is.push('จุด '+w.n)});
-  if(!Array.isArray(S.chat)||S.chat.length<6)is.push('โครงแชท S.chat');
+  if(!Array.isArray(S.chat)||S.chat.length<CATS.length)is.push('โครงแชท S.chat');
   if(S.giftAllT!=null&&typeof S.giftAllT==='number'&&!fin(S.giftAllT))is.push('ค่า S.giftAllT');
   if(typeof window.__BGRUN!=='function')is.push('ตัวตรวจเบื้องหลัง __BGRUN หาย');
   try{const AU=window.__AUDIO,D=AU&&typeof AU.diag==='function'?AU.diag():null;if(!D)is.push('ระบบเสียง: ตัวตรวจ __AUDIO.diag หาย');else D.problems.forEach(p=>is.push(p))}catch(e){is.push('ระบบเสียง: ตรวจไม่ได้ '+e.message)}
@@ -4157,7 +4174,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
    const u=MP.auth.currentUser;if(!u)return;
    const z=zoneAt(S.x,S.y),rd=MP.rt;
    const nm=String(S.pname||'ผู้ฝึกตน').slice(0,20),ch0=String(S.title||'').slice(0,20);
-   const hide=!!(S.hideLv&&devAcct()),pl={n:nm,ch:ch0,x:S.x,y:S.y,z:z?String(z.id).slice(0,20):'',t:srvNow()},cell=cellOf(S.x,S.y),rf=rd.ref(MP.rdb,'presence/'+cell+'/'+u.uid);if(!hide)pl.lv=S.step|0;
+   const hide=!!(S.hideLv&&devAcct()),pl={n:nm,ch:ch0,x:S.x,y:S.y,z:z?String(z.id).slice(0,20):'',t:srvNow()},cell=cellOf(S.x,S.y),rf=rd.ref(MP.rdb,'presence/'+cell+'/'+u.uid);if(!hide)pl.lv=S.step|0;pl.pv=S.pvp===1?1:0;/* รอบที่ 11: เปิดโหมดสู้ผู้เล่นหรือไม่ */
    const as=actStr();if(ACT.ok!==false)pl.a=as;ACT.dirty=false;
    if(MP.rcell&&MP.rcell!==cell){MP.lastOld={c:MP.rcell,t:MP.myT,at:now};rd.remove(rd.ref(MP.rdb,'presence/'+MP.rcell+'/'+u.uid)).catch(()=>{})}
    MP.myT=pl.t;MP.rcell=cell;
@@ -4203,7 +4220,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
  const unsubAll=()=>{Object.keys(LV.subs).forEach(c=>{try{LV.subs[c]()}catch(e){}});LV.subs={};LV.data={};LV.k=''};
  const subNear=()=>{try{const cells=cellsNow(),k=cells.join(',');if(k===LV.k)return;
   Object.keys(LV.subs).forEach(c=>{if(!cells.includes(c)){try{LV.subs[c]()}catch(e){}delete LV.subs[c];delete LV.data[c]}});
-  cells.forEach(c=>{if(LV.subs[c])return;LV.subs[c]=MP.rt.onValue(MP.rt.ref(MP.rdb,'presence/'+c),sn=>{const m={};sn.forEach(us=>{const v=us.val();if(v&&typeof v.x==='number'&&typeof v.y==='number'&&typeof v.t==='number')m[us.key]={id:us.key,n:String(v.n||'ผู้ฝึกตน').slice(0,20),x:v.x,y:v.y,t:v.t,c,a:typeof v.a==='string'?v.a.slice(0,48):'',lv:typeof v.lv==='number'?v.lv:-1,z:typeof v.z==='string'?v.z.slice(0,20):''}});
+  cells.forEach(c=>{if(LV.subs[c])return;LV.subs[c]=MP.rt.onValue(MP.rt.ref(MP.rdb,'presence/'+c),sn=>{const m={};sn.forEach(us=>{const v=us.val();if(v&&typeof v.x==='number'&&typeof v.y==='number'&&typeof v.t==='number')m[us.key]={id:us.key,n:String(v.n||'ผู้ฝึกตน').slice(0,20),x:v.x,y:v.y,t:v.t,c,a:typeof v.a==='string'?v.a.slice(0,48):'',lv:typeof v.lv==='number'?v.lv:-1,pv:v.pv===1?1:0,z:typeof v.z==='string'?v.z.slice(0,20):''}});
     if(LV.subs[c]){LV.data[c]=m;LV.t=Date.now();onLive()}},e=>{LV.err++;if(isPerm(e)){MP.failed=true;MP.err=e}devErr('MP live',e)})});
   LV.k=k}catch(e){LV.err++;devErr('MP sub',e)}};
  const liveList=()=>{const n0=srvNow(),L=[];Object.keys(LV.data).forEach(c=>{const m=LV.data[c];Object.keys(m).forEach(id=>{if(m[id].t>n0-FRESH)L.push(m[id])})});return dedupe(L)};
@@ -4300,7 +4317,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
   if(me&&!cur[me])ONL.wT=0;/* โหนดของเราหาย (แท็บอื่นของเราปิด) เขียนใหม่ทันที */
   Object.keys(cur).forEach(id=>{if(id===me)return;
    if(ONL.pend[id]){delete ONL.pend[id];ONL.known[id]=cur[id];return}
-   if(!ONL.known[id]){ONL.known[id]=cur[id];JN.recentOn[id]=now;if(S.joinNote)jqPush('on',id,cur[id].n)}else ONL.known[id]=cur[id]});
+   if(!ONL.known[id]){ONL.known[id]=cur[id];JN.recentOn[id]=now;if(S.joinNote)jqPush('on',id,cur[id].n);else histPush('ผู้ฝึกตน '+cur[id].n+' ออนไลน์แล้ว')}else ONL.known[id]=cur[id]});
   Object.keys(ONL.known).forEach(id=>{if(id===me||cur[id]||ONL.pend[id])return;ONL.pend[id]={n:ONL.known[id].n,t:now}});
  }catch(e){}};
  const onlTick=()=>{
@@ -4327,7 +4344,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
   try{const AU=window.__AUDIO;if(AU&&typeof AU.play==='function'&&(by.on.length||by.off.length))AU.play(by.on.length?'online':'offline',.5)}catch(e){}};
  const jnTick=()=>{const now=Date.now();
   Object.keys(ONL.pend).forEach(id=>{const p=ONL.pend[id];if(now-p.t<HOLD_OFF)return;delete ONL.pend[id];
-   if(ONL.cur&&!ONL.cur[id]){if(ONL.known)delete ONL.known[id];JN.recentOff[id]=now;if(S.joinNote)jqPush('off',id,p.n)}});
+   if(ONL.cur&&!ONL.cur[id]){if(ONL.known)delete ONL.known[id];JN.recentOff[id]=now;if(S.joinNote)jqPush('off',id,p.n);else histPush('ผู้ฝึกตน '+p.n+' ออฟไลน์แล้ว')}});
   jnFlush()};
  window.__JN={JN,ONL,flush:jnFlush};/* ดูสถานะ (ผู้พัฒนาและตัวทดสอบ) */
  addEventListener('pagehide',()=>{try{if(MP.ready&&!MP.failed&&!window.__MP_OFF&&!window.__DUP&&MP.auth.currentUser&&!MP.yieldT)MP.rt.remove(MP.rt.ref(MP.rdb,'online/'+MP.auth.currentUser.uid)).catch(()=>{})}catch(e){}});
@@ -4425,7 +4442,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
    if(PM.unsubs.length>2)o.push('ออนไลน์: ตัวฟังข้อความส่วนตัวซ้อนกัน '+PM.unsubs.length);
    if(PM.on!==(PM.unsubs.length>0))o.push('ออนไลน์: สถานะข้อความส่วนตัวไม่ตรงตัวฟัง');
    if(PM.failed)o.push('ออนไลน์: ข้อความส่วนตัวหยุดทำงาน');
-   if(!Array.isArray(S.chat)||S.chat.length<6)o.push('ออนไลน์: โครงแชทใน S ผิด');
+   if(!Array.isArray(S.chat)||S.chat.length<CATS.length)o.push('ออนไลน์: โครงแชทใน S ผิด');
    return o});
  const attachPM=async()=>{
   if(PM.on||PM.busy||PM.failed||window.__MP_OFF)return;
@@ -4534,7 +4551,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
   if(x){S.sx+=x;parts.push('หินวิญญาณสุดยอด '+fmt9(x)+' ก้อน')}
   if(!parts.length)return false;
   const line='ได้รับของขวัญจาก'+String(v.f||'ผู้ดูแลเกม').slice(0,30)+': '+parts.join(', ')+(v.msg?' ข้อความ: '+String(v.msg).slice(0,100):'');
-  S.chat[5].push(line);S.chat[0].push(line);if(S.chat[5].length>100)S.chat[5].shift();if(S.chat[0].length>100)S.chat[0].shift();
+  histPush(line);
   alertIn('gift',line);try{save()}catch(e){}return true};
  const detachG=()=>{try{GF.unsubs.forEach(f=>f())}catch(e){}GF.unsubs=[];GF.on=false};
   CHK.push(()=>{const o=[];if(!online()||window.__MP_OFF)return o;
@@ -5073,6 +5090,126 @@ try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-10-29',c:[C_SYS],h:'�
    'การเปิดกระเป๋า เลื่อนเมนู หยิบของ เปลี่ยนทิศ และผลของปุ่มทั่วไป ยังอ่านออกเสียงตามปกติ แต่ไม่เก็บลงประวัติ จึงไม่รกและเซฟเล็กลง',
    'ประวัติเก่าในเซฟถูกล้างให้เหลือเฉพาะเรื่องสำคัญอัตโนมัติตอนเข้าเกม']})}catch(e){}
  }
+ /* ===== รอบที่ 11: ผู้เล่นสู้กันเอง และสนามประลองสู้ผู้เล่นจริง =====
+    ส่งความเสียหาย: ผู้โจมตีเขียนลง Realtime Database ที่ pvp/{ผู้ถูกตี}/{ผู้โจมตี}/{รหัสครั้งนี้} = {d: พลังโจมตีดิบ, s: ขั้นของผู้โจมตี, n: ชื่อ, t: เวลาเซิร์ฟเวอร์}
+    ผู้ถูกตีฟังเฉพาะกล่องของตัวเอง ตรวจเงื่อนไขเอง (อยู่ในสนามทั้งคู่ หรือเปิดโหมดสู้ผู้เล่นทั้งคู่และไม่ได้อยู่เขตปลอดภัย ผู้โจมตีต้องอยู่ใกล้ในข้อมูล presence) แล้วคิดป้องกัน เกราะปราณ และส่วนต่างขั้นพลังเอง แล้วลบรายการทิ้ง
+    ตัวใหญ่ตีตัวเล็กนอกสนามไม่ได้ถ้าห่างกัน 2 ขั้นใหญ่ขึ้นไป ตัวเล็กตีตัวใหญ่ดาเมจลดตามส่วนต่างขั้น (สูตรเดียวกับสู้อสูร)
+    ในสนามประลอง (ห้องภายในอาคารลานประลองยุทธ์ เมืองหลวง) ทุกคนที่อยู่ในห้องเป็นศัตรูกันหมด แพ้ไม่เสียอะไร ฟื้นเลือดเต็มและเกิดใหม่ในสนาม เข้าได้ไม่จำกัดรอบ
+    ต้องเพิ่มกฎ pvp ใน Realtime Database (ดู reports/rtdb-rules.json) ถ้าเซิร์ฟเวอร์ปฏิเสธ ระบบนี้เงียบเอง ลองใหม่ทุก 5 นาที ไม่กระทบระบบออนไลน์อื่น */
+ {
+  const PERM_PV='Realtime Database ยังไม่อนุญาตการต่อสู้ระหว่างผู้เล่น ต้องเพิ่มกฎ pvp ในหน้า Realtime Database > Rules ของ Firebase ก่อน (ดู reports/rtdb-rules.json)';
+  const PVP={in:false,sub:null,busy:false,failed:false,failT:0,seen:{},hits:[],win:0,lose:0,sent:0,got:0};
+  const meU=()=>MP.auth&&MP.auth.currentUser;
+  const pvpMul=(as,ts)=>{as=Math.max(0,Math.floor(Number(as))||0);ts=Math.max(0,Math.floor(Number(ts))||0);const mg=majorOf(ts)-majorOf(as);if(mg>0)return Math.pow(.01,mg);const g=ts-as;return g<=NEAR_LO?1:Math.max(.02,Math.pow(.6,g-NEAR_LO))};
+  /* v เป็นศัตรูของเราไหม (ตัวผู้โจมตีใช้เลือกเป้า) */
+  const hostile=(v,u)=>{try{
+   if(!v||v.id===u.uid||!Number.isFinite(v.x)||!Number.isFinite(v.y))return false;
+   const z0=zoneAt(S.x,S.y);if(!z0||v.z!==z0.id)return false;
+   if(!(v.t>srvNow()-20000))return false;
+   const ia=inArena(),va=inArenaAt(v.x,v.y);
+   if(ia||va)return ia&&va;/* ในสนามสู้ได้เฉพาะคนที่อยู่ในสนามด้วยกัน */
+   if(S.pvp!==1||v.pv!==1||noFightAt())return false;
+   const zv=zoneAt(v.x,v.y);if(!zv||zv.safe)return false;
+   if(v.lv>=0&&majorOf(S.step)-majorOf(v.lv)>=2)return false;/* กันรังแกผู้เล่นที่อ่อนกว่ามาก */
+   return true}catch(e){return false}};
+  const hostiles=()=>{const u=meU();if(!u||PVP.failed||window.__MP_OFF||window.__DUP||!online())return[];return liveList().filter(v=>hostile(v,u))};
+  const sendTo=(to,body)=>{try{const u=meU(),rd=MP.rt;if(!u||!rd)return;
+   const hid=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+   return rd.set(rd.ref(MP.rdb,'pvp/'+safeK(to)+'/'+u.uid+'/'+hid),Object.assign({n:String(S.pname||'ผู้ฝึกตน').slice(0,20),s:S.step|0,t:rd.serverTimestamp()},body)).then(()=>{PVP.sent++}).catch(e=>{if(isPerm(e)){PVP.failed=true;PVP.failT=Date.now();say(DEVM(PERM_PV),1)}devErr('MP pvp send',e)})}catch(e){devErr('MP pvp send2',e)}};
+  /* ตัวเลือกเป้า: ศัตรูที่ใกล้ที่สุดในระยะวิชา R (คืน null ถ้าไม่มี) */
+  HOOK.pvpPick=R=>{let best=null;hostiles().forEach(v=>{const d=Math.hypot(v.x-S.x,v.y-S.y);if(d<=R&&(!best||d<best.d))best=Object.assign({d},v)});return best};
+  /* โจมตีผู้เล่น: วิชากลุ่ม (aoe) โดนศัตรูรอบเป้าด้วย */
+  HOOK.pvpHit=(v,id,k)=>{
+   const L=[v];if(k.aoe){const r=aoeR(k);hostiles().forEach(o=>{if(o.id!==v.id&&Math.hypot(o.x-v.x,o.y-v.y)<=r)L.push(o)})}
+   skFx('air',id,k,{x:v.x,y:v.y});
+   L.forEach(o=>{const d=Math.max(1,Math.round(atk()*(Number(k.m)||1)*(.9+Math.random()*.2)));if(Number.isFinite(d))sendTo(o.id,{d})});
+   say(k.n+' โจมตี '+v.n+(L.length>1?' และอีก '+(L.length-1)+' คน':'')+' ห่าง '+Math.round(v.d)+' ก้าว');
+   PVP.last=Date.now()};
+  /* จุดยืนในสนาม: ฝั่งซ้ายหรือขวาของห้อง เลือกฝั่งที่คนน้อยกว่า หันหน้าเข้าหากัน */
+  const arenaSpot=()=>{const a=arenaZone();if(!a)return null;const u=meU(),r=a.r;
+   const occ=u&&online()?liveList().filter(v=>v.id!==u.uid&&inArenaAt(v.x,v.y)):[];
+   const mid=(r[0]+r[2])/2;let l=0,q=0;occ.forEach(v=>{if(v.x<mid)l++;else q++});
+   const left=l<q||(l===q&&Math.random()<.5);
+   for(let t=0;t<30;t++){const x=left?r[0]+3+Math.floor(Math.random()*5):r[2]-7+Math.floor(Math.random()*5),y=r[1]+8+Math.floor(Math.random()*7);
+    if(!occ.some(v=>v.x===x&&v.y===y))return{x,y,f:left?2:6,occ:occ.length}}
+   return{x:left?r[0]+5:r[2]-5,y:r[1]+11,f:left?2:6,occ:occ.length}};
+  const placeMe=(x,y,f)=>{if(CAST.on)castCancel('ย้ายตำแหน่ง');posAllow(3000);S.x=x;S.y=y;S.f=f;S.alt=0;S.fl=false;S.med=false;walk=false;target=null;posNote()};
+  /* ตัวบอกสถานะเข้า/ออกห้องสนามประลอง (เดินเข้าประตูอาคารก็นับว่าอยู่ในสนาม) */
+  const arenaWatch=()=>{try{const now=inArena();if(now&&!PVP.in){PVP.in=true;say('ต่อสู้ผู้เล่น: เจ้าอยู่ในสนามประลอง ทุกคนในห้องนี้เป็นศัตรูกัน ใช้วิชาโจมตีใส่ผู้เล่นที่ใกล้ที่สุดในระยะได้เลย แพ้แล้วฟื้นเลือดเต็มในสนามทันที ไม่เสียอะไร คุยกับผู้ดูแลเพื่อไปยืนประจำตำแหน่งเผชิญหน้าคู่ต่อสู้ หรือออกประตูด้านล่าง')}else if(!now&&PVP.in){PVP.in=false;say('ต่อสู้ผู้เล่น: ออกจากสนามประลองแล้ว')}}catch(e){}};
+  setInterval(arenaWatch,500);
+  HOOK.arenaEnter=()=>{
+   mode='play';
+   if(TB.on)return say('ทัณฑ์สายฟ้ากำลังดำเนินอยู่ เข้าสนามประลองไม่ได้');
+   if(!(S.hp>0))return say('เลือดหมด เข้าสนามประลองไม่ได้');
+   const sp=arenaSpot();if(!sp)return say('ไม่พบสนามประลอง',1);
+   PVP.in=true;placeMe(sp.x,sp.y,sp.f);
+   say('ต่อสู้ผู้เล่น: เจ้ายืนประจำตำแหน่งในสนามประลอง หันหน้า'+DN[sp.f]+' '+(sp.occ?'ในสนามมีผู้ฝึกตนอีก '+sp.occ+' คน ทุกคนเป็นศัตรูกัน เดินเข้าไปและใช้วิชาโจมตีได้เลย':'ตอนนี้ยังไม่มีคู่ต่อสู้ รอสักครู่หรือชวนเพื่อนเข้ามา')+' แพ้ไม่เสียอะไร เข้าได้ไม่จำกัดรอบ'+(PVP.failed?' (ระบบส่งความเสียหายยังไม่พร้อม)':''));
+   sfx('caparena');render()};
+  HOOK.arenaExit=()=>{mode='play';
+   if(TB.on)return say('ทัณฑ์สายฟ้ากำลังจะมา เข้าออกประตูไม่ได้');
+   const d=W.find(w=>w.go&&w.z==='bd_arena');if(!d)return say('ไม่พบประตูทางออกสนามประลอง',1);
+   if(!inArena())return say('เจ้าไม่ได้อยู่ในสนามประลอง');
+   placeMe(d.go.x,d.go.y,4);PVP.in=false;say('ต่อสู้ผู้เล่น: ออกจากสนามประลองแล้ว');render()};
+  /* รับความเสียหายจากผู้เล่น */
+  const applyHit=(from,hid,h)=>{
+   if(!h||typeof h!=='object'||PVP.seen[hid])return;PVP.seen[hid]=Date.now();
+   const now=srvNow(),ht=typeof h.t==='number'?h.t:now;if(ht<now-15000)return;
+   const nm=String(h.n||'ผู้ฝึกตน').slice(0,20);
+   if(h.k===1){PVP.win++;const ln='ต่อสู้ผู้เล่น: เจ้าเอาชนะ '+nm+' ได้ (ชนะสะสม '+PVP.win+' ครั้ง)';say(ln);sfx('capwin');return}
+   const d=Number(h.d);if(!Number.isFinite(d)||d<=0||d>1e7)return;
+   PVP.hits=PVP.hits.filter(t=>now-t<1000);if(PVP.hits.length>=8)return;PVP.hits.push(now);/* กันรัวเกินมนุษย์ */
+   if(!(S.hp>0)||window.__DUP||TB.on)return;
+   const att=liveList().find(v=>v.id===from);if(!att||Math.hypot(att.x-S.x,att.y-S.y)>40)return;
+   const ia=inArena();
+   if(ia){if(!inArenaAt(att.x,att.y))return}
+   else if(inArenaAt(att.x,att.y)||S.pvp!==1||att.pv!==1||noFightAt())return;
+   const dm=Math.max(1,Math.round(d*pvpMul(h.s,S.step)*100/(100+defn())*((buff&&Date.now()<buff)?.5:1)));if(!Number.isFinite(dm))return;
+   PVP.got++;if(!godOn())S.hp-=dm;S.med=false;walk=false;if(CAST.on)castCancel('ถูกโจมตี');sfx('hurt');
+   if(S.hp>0)return say(nm+' โจมตีเจ้า '+dm+' เหลือ '+Math.floor(S.hp)+' จาก '+mhp());
+   sendTo(from,{k:1});/* แจ้งผู้โจมตีว่าชนะ */
+   if(ia){PVP.lose++;S.hp=mhp();S.qi=mqi();S.fear=0;delete S.poison;const sp=arenaSpot();if(sp)placeMe(sp.x,sp.y,sp.f);
+    say('ต่อสู้ผู้เล่น: เจ้าพ่ายแพ้ให้ '+nm+' ในสนามประลอง ฟื้นเลือดและปราณเต็มและกลับเข้าสนามได้ทันที ไม่เสียอะไร (แพ้สะสม '+PVP.lose+' ครั้ง)');sfx('caplose')}
+   else die('เจ้าถูก'+nm+'สังหารในการต่อสู้ระหว่างผู้ฝึกตน')};
+  const onSnap=sn=>{try{const L=[];sn.forEach(fs=>{fs.forEach(hs=>{L.push({from:fs.key,hid:hs.key,h:hs.val(),ref:hs.ref})})});
+   L.forEach(x=>{try{MP.rt.remove(x.ref).catch(()=>{})}catch(e){}try{applyHit(x.from,x.hid,x.h)}catch(e){bugLog('ต่อสู้ผู้เล่น',e.message)}})}catch(e){}};
+  const attach=async()=>{
+   if(PVP.sub||PVP.busy||PVP.failed||window.__MP_OFF||window.__DUP)return;PVP.busy=true;
+   try{if(!(await init()))return;const u=meU();if(!u||PVP.sub)return;
+    PVP.sub=MP.rt.onValue(MP.rt.ref(MP.rdb,'pvp/'+u.uid),onSnap,e=>{PVP.sub=null;if(isPerm(e)){PVP.failed=true;PVP.failT=Date.now();say(DEVM(PERM_PV),1)}devErr('MP pvp listen',e)})}
+   catch(e){PVP.sub=null;devErr('MP pvp attach',e)}finally{PVP.busy=false}};
+  setInterval(()=>{try{
+   const n=Date.now();Object.keys(PVP.seen).forEach(k=>{if(n-PVP.seen[k]>60000)delete PVP.seen[k]});
+   if(PVP.failed&&n-PVP.failT>300000){PVP.failed=false}
+   if(online()&&!window.__MP_OFF)attach()}catch(e){}},3000);
+  /* เปิดปิดโหมดสู้ผู้เล่นนอกสนาม: Shift+F3 */
+  A.pvp=function(){S.pvp=S.pvp===1?0:1;MP.lastW=0;say('โหมดสู้ผู้เล่นนอกสนาม '+(S.pvp?'เปิด ผู้เล่นที่เปิดโหมดนี้เหมือนกันโจมตีกันได้ในเขตนอกเมือง ใช้วิชาโจมตีใส่ผู้เล่นที่ใกล้ที่สุดในระยะ ยกเว้นเขตปลอดภัย (สนามประลองสู้ได้เสมอ)':'ปิด เจ้าจะไม่ถูกผู้เล่นอื่นโจมตีและโจมตีผู้เล่นอื่นนอกสนามไม่ได้ (สนามประลองยังสู้ได้)'));save()};
+  if(KEYS['S+F3']&&KEYS['S+F3']!=='pvp')bugLog('ต่อสู้ผู้เล่น','ปุ่ม Shift+F3 ชนกับคำสั่งอื่น: '+KEYS['S+F3']);
+  KEYS['S+F3']='pvp';
+  MAIN.push(['สู้ผู้เล่นนอกสนาม เปิด/ปิด (Shift+F3)','S+F3']);
+  {const b=document.createElement('button');b.tabIndex=-1;b.onmousedown=e=>e.preventDefault();b.textContent='โหมดสู้ผู้เล่น';b.setAttribute('aria-label','ปุ่ม เปิดปิดโหมดสู้ผู้เล่นนอกสนาม');b.onclick=()=>{if(mode==='input')return;handle({code:'F3',shiftKey:true});render()};$('pad').appendChild(b)}
+  renderMob();
+  CHK.push(()=>{const o=[];
+   if(S.pvp!==0&&S.pvp!==1)o.push('ต่อสู้ผู้เล่น: ค่า S.pvp ผิดรูป');
+   if(KEYS['S+F3']!=='pvp')o.push('ต่อสู้ผู้เล่น: ปุ่ม Shift+F3 ไม่ได้ผูกกับคำสั่ง');
+   if(typeof HOOK.pvpPick!=='function'||typeof HOOK.pvpHit!=='function'||typeof HOOK.arenaEnter!=='function')o.push('ต่อสู้ผู้เล่น: ตัวโจมตีหรือประตูสนามประลองหาย');
+   if(!arenaZone())o.push('สนามประลอง: ไม่พบห้องสนามประลอง');
+   if(Object.keys(PVP.seen).length>2000)o.push('ต่อสู้ผู้เล่น: รายการกันซ้ำสะสมเกิน');
+   if(!online()||window.__MP_OFF)return o;
+   if(PVP.failed)o.push('ออนไลน์: ระบบต่อสู้ผู้เล่นหยุดทำงาน');
+   return o});
+  (window.__R5FXH=window.__R5FXH||[]).push(fx=>{
+   if(S.pvp!==0&&S.pvp!==1){S.pvp=1;fx.push(['pvp0','ค่าโหมดสู้ผู้เล่นผิดรูป ตั้งเป็นเปิดแล้ว'])}
+   if(Object.keys(PVP.seen).length>2000){PVP.seen={};fx.push(['pvps','รายการกันซ้ำของการต่อสู้ผู้เล่นสะสมเกิน ล้างให้แล้ว'])}
+   if(inArena()&&S.fl){S.fl=false;fx.push(['pvfl','ลงจากฟ้าในสนามประลองให้แล้ว'])}});
+  try{TIPS.push('กด Shift F3 เปิดหรือปิดโหมดสู้ผู้เล่นนอกสนาม เดินเข้าอาคารลานประลองยุทธ์ในเมืองหลวงเพื่อสู้กับผู้เล่นจริงได้ไม่จำกัดรอบ แพ้ไม่เสียอะไร')}catch(e){}
+  try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-06',c:[C_SYS],h:'ผู้เล่นสู้กันเอง สนามประลอง บินแล้วโจมตี',t:'ผู้เล่นโจมตีกันเองได้ สนามประลองเข้าไปสู้ผู้เล่นจริงได้ไม่จำกัด ขี่กระบี่เหาะโจมตีด้วยวิชาระยะไกลได้ อสูรระยะไกลยิงคนบนฟ้าได้',x:[
+   'สนามประลอง: เดินเข้าอาคารลานประลองยุทธ์ในเมืองหลวง ทุกคนในห้องเป็นศัตรูกัน คุยกับผู้ดูแลเลือกไปยืนประจำตำแหน่ง ระบบพาไปยืนหันหน้าเข้าหาคู่ต่อสู้ ใช้วิชาโจมตีใส่คนที่ใกล้ที่สุดในระยะ แพ้แล้วฟื้นเลือดเต็มในสนามทันที ไม่เสียอะไร เข้าได้ไม่จำกัดรอบ',
+   'สู้ผู้เล่นนอกสนาม: ผู้เล่นที่เปิดโหมดสู้ผู้เล่น (Shift+F3 เริ่มต้นเปิด) โจมตีกันเองได้นอกเขตปลอดภัย ดาเมจลดตามส่วนต่างขั้นพลัง และขั้นใหญ่ที่สูงกว่า 2 ขั้นขึ้นไปรังแกผู้เล่นที่อ่อนกว่านอกสนามไม่ได้ ตายนอกสนามเหมือนตายจากอสูร',
+   'ขี่กระบี่เหาะอยู่ใช้วิชาโจมตีระยะไกลตั้งแต่ 3 ก้าวได้ วิชาประชิดตัวต้องลงพื้นก่อน เกาะหน้าผาอยู่ยังโจมตีไม่ได้',
+   'อสูรระยะไกล (งูมรกตราชินี ราชสีห์เพลิงสวรรค์ วานร วิหคเพลิง) โจมตีผู้เล่นที่บินอยู่หรือปีนเขาได้จากระยะ 6 ถึง 8 ก้าว อสูรประชิดยังตีคนบนฟ้าไม่ได้',
+   'ประวัติข้อความมีหมวดใหม่ ผู้เล่น (ออนไลน์ ออฟไลน์ เข้าใกล้ ผลการต่อสู้) และ ของที่ได้ (ของตก ของขวัญ ซื้อขาย ตกปลา) กดจุดหรือจุลภาคเปลี่ยนหมวด กดวงเล็บเหลี่ยมเลื่อนอ่านย้อนหลัง']})}catch(e){}
+ }
+
 }
 
 /* ===== PATCH QUOTA แจ้งผู้เล่นเมื่อโควตาเซิร์ฟเวอร์ฟรีเต็ม (ตั้งโดยโค้ดล็อกอินหรือระบบเรดาร์) ===== */
@@ -5199,7 +5336,10 @@ try{
  /* ผู้เล่นอยู่ในแผนที่เดียวกันไหม (หมู่บ้านกับทุ่งกระต่ายทั้ง 4 ที่เดินถึงกันได้ นับเป็นแผนที่เดียวกัน) */
  const grpOf=id=>{const z=Z.find(a=>a.id===id);return z&&z.open?'v':id};
  /* ผู้เล่นโดนอสูรตีได้ไหม */
- const playerHittable=m=>!(S.fl||S.alt>0)||!!MD[m.k].fly;
+ /* รอบที่ 11: อสูรระยะไกล (rng > 1.5) ยิงใส่ผู้เล่นได้จากระยะ rng ก้าว รวมถึงผู้เล่นที่บินอยู่บนฟ้าหรือปีนเขา อสูรประชิดตีคนบนฟ้าไม่ได้เหมือนเดิม */
+ const MONRNG={bsnake:7,lion:8,ape:6,phx:6};Object.keys(MONRNG).forEach(k=>{if(MD[k])MD[k].rng=MONRNG[k]});
+ const monRng=m=>{const r=Number(MD[m.k]&&MD[m.k].rng);return Number.isFinite(r)&&r>1.5?Math.min(r,12):1.5};
+ const playerHittable=m=>!(S.fl||S.alt>0)||!!MD[m.k].fly||monRng(m)>1.5;
  const playerSafeFrom=m=>{try{if(gateSafe())return true;if(!isBoss(m.k)&&npcSafe())return true}catch(e){}return false};
  /* ก้าว 1 ช่องไปทางเป้า (กันชน: ถ้าช่องตรงมีตัวอื่น ลองทางเฉียงอื่น เรียงตามระยะถึงเป้า) */
  function stepToward(m,tx,ty,away,chase){const opts=[];for(let f=0;f<8;f++){const x=m.x+DX[f],y=m.y+DY[f],d=Math.hypot(tx-x,ty-y);opts.push({f,x,y,d:away?-d:d})}
@@ -5216,7 +5356,7 @@ try{
   else{a.st='turn';a.f=(a.f+(Math.random()<.5?-1:1)*ri(1,2)+8)%8;a.t=now+ri(2000,5000)}}
  function monAttack(m,now){const d0=MD[m.k],asp=d0.aspd||2000;if(now-(m.at||0)<asp)return;m.at=now;MAI.atk++;
   const dm=Math.max(1,Math.round(d0.atk*(.8+Math.random()*.4)*(buff?.5:1)*100/(100+defn())));if(!godOn())S.hp-=dm;S.med=false;walk=false;if(CAST.on)castCancel('ถูกโจมตี');sfx('hurt');posCue('mhit',m.x,m.y,{k:m.k,buff:!!buff,mon:m});
-  if(S.hp<=0)die('เจ้าถูก'+d0.n+'สังหาร');else say(d0.n+' โจมตี '+dm+' เหลือ '+Math.floor(S.hp))}
+  if(S.hp<=0)die('เจ้าถูก'+d0.n+'สังหาร');else say(d0.n+(d0.rng>1.5?' โจมตีระยะไกล ':' โจมตี ')+dm+' เหลือ '+Math.floor(S.hp))}
  /* ทักษะบอส: คำราม (หวาดกลัว) และท่าไม้ตายที่ตั้งท่าเตือนก่อน */
  const BSK={king:{n:'พายุวายุคลั่ง',warn:'ราชาหมาป่าวายุตั้งท่า ลมพายุหมุนรอบตัวมัน ถอยออกไป 3 ก้าว',hit:'พายุวายุคลั่งฟาดโดนเจ้า',m:1.8},
   bsnake:{n:'พ่นพิษมรกต',warn:'งูมรกตราชินีชูคอพองแม่เบี้ย เตรียมพ่นพิษ ถอยออกไป 3 ก้าว',hit:'พิษมรกตโดนเจ้า ติดพิษ 5 วินาที',m:1.4,poison:1},
@@ -5253,7 +5393,7 @@ try{
    if(a.st==='chase'){if(!can||d>(boss?14:16)||(!boss&&Math.hypot(m.x-m.home[0],m.y-m.home[1])>24)){a.st='ret';a.rs=now;a.tele=null;a.t=now+300;m.ag=boss?0:m.ag}}
    else if(can&&d<=aggR&&a.st!=='ret'){a.st='chase';a.chaseT=now;m.ag=1;a.t=now+100}}
   if(a.st==='chase'){
-   if(d<=1.5){if(playerHittable(m))monAttack(m,now);a.t=now+250}
+   if(d<=monRng(m)){if(playerHittable(m))monAttack(m,now);a.t=now+250}
    else{if(!stepToward(m,S.x,S.y,false,true)){a.t=now+Math.round(spd*.8)}else{a.t=now+spd;posCue('mstep',m.x,m.y,{k:m.k,m})}}
    if(boss)bossAbilities(m,now,d);return}
   if(a.st==='ret'){if(inTerr(m,m.x,m.y)&&Math.hypot(m.x-m.home[0],m.y-m.home[1])<=6){a.st='idle';a.t=now+ri(2000,5000);m.ag=0;return}
@@ -5290,6 +5430,7 @@ try{
    if(m.ai&&m.ai.st==='walk')walkers++;else stand++});
   ['re','rw','rn','rs'].forEach(id=>{const n=MS.filter(m=>m.z===id&&m.k==='rab').length;if(n!==100)o.push('ทุ่ง '+id+' มีกระต่าย '+n+' ตัว ต้องมี 100')});
   if(MAI.err)o.push('AI อสูร: เคยผิดพลาด '+MAI.err+' ครั้ง');if(Date.now()-MAI.last>3000)o.push('AI อสูร: ตัวคิดหยุดทำงาน');
+  MS.forEach(m=>{const r=MD[m.k]&&MD[m.k].rng;if(r!=null&&!(r>=1.5&&r<=12))o.push('AI อสูร: ระยะโจมตีผิดปกติ '+m.k)});
   if(S.fear&&S.fear-Date.now()>5000)o.push('หวาดกลัว: ค้างนานผิดปกติ');return o.slice(0,8)});
  HOOK.MAI=MAI;HOOK.aiReset=resetMon;HOOK.aiCanStand=canStand;HOOK.aiTerr=terrOf;HOOK.aiGrp=grpOf;
  window.__MAI=MAI;
@@ -5541,24 +5682,35 @@ async function cloudStart(email,name){
  const withDev=s=>{try{const o=JSON.parse(s);o.dev=DEV;return JSON.stringify(o)}catch(e){return s}};
  const noDev=s=>{try{const o=JSON.parse(s);delete o.dev;return JSON.stringify(o)}catch(e){return s}};
  const push=s=>{if(window.__SAVE_LOCK)return Promise.resolve();return FB.fs.setDoc(ref,{name:name,email:email,save:withDev(s),t:Date.now()},{merge:true})};
- if(cs&&(!ls||tOf(cs)>=tOf(ls))){ls=noDev(cs);try{localStorage.setItem(KEY,ls)}catch(e){}}
+ const stepOf=s=>{try{const n=Math.floor(Number((JSON.parse(s)||{}).step));return Number.isFinite(n)?n:-1}catch(e){return -1}};
+ const srvWins=!cs?false:!ls?true:(DBGM||stepOf(cs)===stepOf(ls))?tOf(cs)>=tOf(ls):stepOf(cs)>stepOf(ls);/* รอบที่ 9: เลือกเซฟด้วยขั้นพลังก่อน ไม่ใช่เวลาอย่างเดียว เครื่องที่นาฬิกาเพี้ยนหรือแท็บเก่าที่เซฟทับเวลาใหม่กว่าจะไม่ทำให้ขั้นพลังถอยหลัง */
+ if(srvWins){ls=noDev(cs);try{localStorage.setItem(KEY,ls)}catch(e){}}
  else if(ls){try{await push(ls)}catch(e){if(quotaErr(e)){window.__QUOTA_FULL=Date.now();window.__OFFLINE_SAVE=1;return}throw new Error('ส่งข้อมูลขึ้นเซิร์ฟเวอร์ไม่ได้ ลองใหม่อีกครั้ง')}}
- let last=null,sent=ls?body(ls):null,timer=null,lastP=0;
  const VOL=['x','y','f','hp','qi','med','fear','poison'];
  const core=s=>{try{const o=JSON.parse(s);delete o.t;VOL.forEach(k=>{delete o[k]});return JSON.stringify(o)}catch(e){return s}};
- let sentCore=ls?core(ls):null;
- const flush=force=>{if(last==null)return;const s=last,b=body(s);if(b===sent){last=null;return}
-  if(!force&&core(s)===sentCore)return;
-  if(window.__QUOTA_FULL&&Date.now()-window.__QUOTA_FULL<1800000)return;
-  last=null;sent=b;sentCore=core(s);lastP=Date.now();
-  return push(s).catch(e=>{sent=null;sentCore=null;if(last==null)last=s;if(quotaErr(e))window.__QUOTA_FULL=Date.now()})};
+ let latest=null,sent=ls?body(ls):null,timer=null,timerAt=0,sentCore=ls?core(ls):null,tok='';
+ const C=window.__CSYNC={on:true,pend:false,pendT:0,fail:0,okT:0,urgent:0,srv:Math.max(0,cs?stepOf(cs):0)};/* รอบที่ 9: C.srv = ขั้นพลังสูงสุดที่รู้ว่าอยู่บนเซิร์ฟเวอร์ C.urgent = เวลาที่ขั้นพลังเพิ่งเปลี่ยน (เกมตั้งให้) ใช้ให้ CHK และตัวซ่อมของเกมอ่านสถานะซิงก์ */
+ const canPush=s=>{if(window.__SAVE_LOCK)return false;if(window.__QUOTA_FULL&&Date.now()-window.__QUOTA_FULL<1800000)return false;const st=stepOf(s);if(!DBGM&&st>=0&&st<C.srv)return false;/* เครื่องนี้ขั้นพลังต่ำกว่าบนเซิร์ฟเวอร์ = เป็นเครื่องเก่า ห้ามส่งทับ */return true};
+ const flush=force=>{if(latest==null)return Promise.resolve();const s=latest,b=body(s);
+  if(b===sent&&force!=='retry')return Promise.resolve();
+  if(force!==true&&force!=='retry'&&core(s)===sentCore)return Promise.resolve();
+  if(!canPush(s))return Promise.resolve();
+  const st=stepOf(s);C.urgent=0;sent=b;sentCore=core(s);if(!C.pend){C.pend=true;C.pendT=Date.now()}
+  return push(s).then(()=>{C.pend=false;C.fail=0;C.okT=Date.now();if(st>C.srv)C.srv=st}).catch(e=>{sent=null;sentCore=null;C.pend=false;C.fail++;if(quotaErr(e))window.__QUOTA_FULL=Date.now()})};
+ /* ส่งตอนปิดหน้า: setDoc ของ SDK มักถูกตัดกลางทาง จึงยิงซ้ำด้วย fetch keepalive ไปที่ REST ของ Firestore (เบราว์เซอร์ส่งต่อให้แม้หน้าปิดแล้ว) ใช้โทเคนที่ต่ออายุไว้ล่วงหน้า ตัวเซฟใหญ่เกิน 60KB ข้ามไปใช้ setDoc อย่างเดียว */
+ const refreshTok=()=>{try{u.getIdToken().then(t=>{tok=t}).catch(()=>{})}catch(e){}};refreshTok();setInterval(refreshTok,600000);
+ const beacon=s=>{try{if(!tok)return;const j=JSON.stringify({fields:{save:{stringValue:withDev(s)},t:{integerValue:String(Date.now())}}});if(new TextEncoder().encode(j).length>60000)return;
+  fetch('https://firestore.googleapis.com/v1/projects/'+FIREBASE_CONFIG.projectId+'/databases/(default)/documents/users/'+u.uid+'?updateMask.fieldPaths=save&updateMask.fieldPaths=t',{method:'PATCH',keepalive:true,headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},body:j}).catch(()=>{})}catch(e){}};
+ const exitFlush=()=>{try{if(typeof window.__SAVEFN==='function')window.__SAVEFN()}catch(e){}/* สั่งเกมบันทึกค่าล่าสุดก่อนทุกครั้ง (ตัวฟังปิดหน้าของเกมลงทะเบียนทีหลังตัวนี้ เดิมจึงส่งค่าเก่า 5 วินาทีที่แล้วขึ้นไป) */
+  if(latest==null)return;const s=latest;if(body(s)===sent||!canPush(s))return;flush(true);beacon(s)};
+ const arm=()=>{const d=C.urgent?1500:30000,at=Date.now()+d;if(timer&&timerAt<=at)return;if(timer)clearTimeout(timer);timerAt=at;timer=setTimeout(()=>{timer=null;timerAt=0;flush(false)},d)};/* ขั้นพลังเปลี่ยนส่งภายใน 1.5 วินาที ความคืบหน้าอื่นส่งทุก 30 วินาที (เดิมหน่วง 3 นาที) */
  let seenSave=cs;/* ฟังเอกสารเซฟบนเซิร์ฟเวอร์: ถ้ามีเครื่องอื่นเขียนเซฟใหม่ (รหัสเครื่องไม่ใช่ของเรา) ล็อกเครื่องนี้ไม่ให้เขียนทับ อ่านเพิ่มเฉพาะตอนมีคนเขียน */
  window.__SAVE_LOCK=0;
- try{if(typeof FB.fs.onSnapshot==='function')FB.fs.onSnapshot(ref,sn=>{try{if(sn.metadata&&sn.metadata.hasPendingWrites)return;const d=sn.exists()?sn.data():null,sv=d&&typeof d.save==='string'?d.save:null;if(sv==null||sv===seenSave)return;seenSave=sv;let dv=null;try{dv=JSON.parse(sv).dev}catch(e){}if(dv&&dv!==DEV&&!window.__SAVE_LOCK)window.__SAVE_LOCK=Date.now()}catch(e){}},()=>{})}catch(e){}
- window.__CLOUD_FLUSH=()=>{try{return Promise.resolve(flush(true))}catch(e){return Promise.resolve()}};/* ใช้ตอนกดออกจากระบบ: ส่งเซฟล่าสุดขึ้นเซิร์ฟเวอร์ให้เสร็จก่อนค่อยออก */
+ try{if(typeof FB.fs.onSnapshot==='function')FB.fs.onSnapshot(ref,sn=>{try{if(sn.metadata&&sn.metadata.hasPendingWrites)return;const d=sn.exists()?sn.data():null,sv=d&&typeof d.save==='string'?d.save:null;if(sv==null||sv===seenSave)return;seenSave=sv;const n=stepOf(sv);if(n>C.srv)C.srv=n;let dv=null;try{dv=JSON.parse(sv).dev}catch(e){}if(dv&&dv!==DEV&&!window.__SAVE_LOCK)window.__SAVE_LOCK=Date.now()}catch(e){}},()=>{})}catch(e){}
+ window.__CLOUD_FLUSH=r=>{try{if(typeof window.__SAVEFN==='function')window.__SAVEFN()}catch(e){}try{return Promise.resolve(flush(r?'retry':true))}catch(e){return Promise.resolve()}};/* ใช้ตอนกดออกจากระบบ (ส่งเซฟล่าสุดให้เสร็จก่อนออก) และตัวซ่อมของเกม (r=true ส่งซ้ำแม้เนื้อเซฟเท่าเดิม) */
  const orig=Storage.prototype.setItem;
- Storage.prototype.setItem=function(k,v){let er=null;try{orig.call(this,k,v)}catch(e){er=e}/* เขียนในเครื่องล้มเหลว (พื้นที่เต็ม) ยังต้องส่งขึ้นเซิร์ฟเวอร์ แล้วค่อยโยนข้อผิดพลาดต่อให้เกมรู้ */if(this===localStorage&&k===KEY){last=v;if(!timer)timer=setTimeout(()=>{timer=null;flush(false)},180000)}if(er)throw er};
- addEventListener('pagehide',()=>flush(true));addEventListener('beforeunload',()=>flush(true));document.addEventListener('visibilitychange',()=>{if(document.hidden&&Date.now()-lastP>60000)flush(true)});
+ Storage.prototype.setItem=function(k,v){let er=null;try{orig.call(this,k,v)}catch(e){er=e}/* เขียนในเครื่องล้มเหลว (พื้นที่เต็ม) ยังต้องส่งขึ้นเซิร์ฟเวอร์ แล้วค่อยโยนข้อผิดพลาดต่อให้เกมรู้ */if(this===localStorage&&k===KEY){latest=v;arm()}if(er)throw er};
+ addEventListener('pagehide',exitFlush);addEventListener('beforeunload',exitFlush);document.addEventListener('visibilitychange',()=>{if(document.hidden)exitFlush()});
 }
 async function start(email,name){try{curMail=String(email||'').trim().toLowerCase();window.__ACC=email;window.__EMAIL=email;window.__NAME=name;window.__KEY='ipo1_'+email;try{sessionStorage.setItem('ipo_sess',email)}catch(e){}try{const rm=E('l_rem');if(!rm||rm.checked)localStorage.setItem('ipo_rem',JSON.stringify({m:email,n:name}));else localStorage.removeItem('ipo_rem');localStorage.setItem('ipo_pre',JSON.stringify({m:email,n:name}))}catch(e){}
  if(CLOUD)await cloudStart(email,name);
