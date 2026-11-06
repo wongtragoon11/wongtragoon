@@ -33,6 +33,15 @@ h1{font-size:18px;margin:0 0 6px}#stat{border:1px solid var(--bd);padding:6px;ma
 const KEYS={ArrowUp:'fwd',ArrowDown:'back',ArrowLeft:'left',ArrowRight:'right',q:'tl',e:'tr',w:'snap',m:'map',n:'nav',a:'radar',p:'pradar',i:'inv',Enter:'enter','S+Enter':'give',Delete:'del',' ':'auto',s:'skills',h:'hp',l:'info',z:'med',b:'brk',f:'talk',x:'fly',r:'pos',g:'quest',t:'party',c:'equip',F1:'help','S+/':'help','\\':'chatW','/':'chatM','.':'catN',',':'catP','S+.':'catF','S+,':'catL',']':'msgN','[':'msgP','S+]':'msgNew','S+[':'msgOld',Escape:'esc',F2:'tts',F3:'ambT','S+n':'go',F9:'spd',PageUp:'climbUp',PageDown:'climbDn','S+PageUp':'musUp','S+PageDown':'musDn','S+a':'trackNear'};
 /* ===== DATA: realms [dmg,hp,qi,need] ===== */
 const R=[[10,100,50,1000],[25,180,90,1500],[45,280,140,2200],[70,400,200,3200],[100,550,280,4800],[140,750,380,7000],[190,1000,500,10000],[250,1300,650,14500],[320,1700,850,21000],[400,2200,1100,30000],[600,3500,1800,45000]];
+/* รอบที่ 12: ขยายตารางขั้นพลังเป็น 50 ขั้นทันทีหลังประกาศตาราง (เดิมขยายท้ายสคริปต์ ทำให้ตอนโหลดเซฟ stepFix ตัดขั้นที่สูงกว่า 10 ลงเหลือสร้างรากฐานขั้น 1 ทุกครั้งที่เข้าเกม) */
+if(R.length===11)(()=>{const A0=[[600,3500,1800,45000],[1200,7000,3500,120000],[2200,13000,6500,250000]],P=[0,4,9];
+ for(let k=1;k<10;k++){const j=k<=4?0:1,t=(k-P[j])/(P[j+1]-P[j]);R.push(A0[j].map((v,c)=>{const w=A0[j+1][c],u=c===3?1000:10;return Math.round(v*Math.pow(w/v,t)/u)*u}))}
+ /* รอบที่ 7 (1 พ.ย. 2569): ขั้นใหญ่ตั้งแต่แก่นทองคำขึ้นไป ค้นคว้าตามนิยายเซียน (คัมภีร์วิถีเซียน ผนึกสวรรค์สยบมาร) ผู้ฝึกตนแต่ละขั้นใหญ่ห่างกันหลายเท่าตัว ไม่ใช่แค่ไล่ขึ้นทีละนิด
+    ตั้งแต่แก่นทองคำ (ขั้น 21 ถึง 30) วิญญาณแรกเริ่ม (31 ถึง 40) เทพแปลงกาย (41 ถึง 50) เป็นผู้อาวุโสของแวดวงฝึกตน
+    ค่าเริ่มต้นของขั้นใหญ่ = ค่าขั้นสูงสุดของขั้นใหญ่ก่อนหน้า x 8 (โจมตี เลือด ลมปราณ) และ x 10 (แต้มฝึกฝนที่ต้องใช้) ภายในขั้นใหญ่เดียวกันไล่ขึ้น x 3.5 (แต้มฝึกฝน x 6)
+    นั่งสมาธิยังได้แต้มตามสัดส่วนของแต่ละขั้น (medBase) จึงใช้เวลาต่อขั้นพอๆ เดิม แต่ผู้เล่นแข็งแกร่งขึ้นหลายเท่าเมื่อข้ามขั้นใหญ่ */
+ const B=[[[17600,104000,52000,2500000],[61600,364000,182000,15000000]],[[492800,2912000,1456000,150000000],[1724800,10192000,5096000,900000000]],[[13798400,81536000,40768000,9000000000],[48294400,285376000,142688000,54000000000]]];
+ B.forEach(b=>{for(let k=0;k<10;k++){const t=k/9;R.push(b[0].map((v,c)=>{const w=b[1][c],u=c===3?1000:10;return Math.round(v*Math.pow(w/v,t)/u)*u}))}})})();
 const REALM_N=['หลอมรวมลมปราณ','สร้างรากฐาน','แก่นทองคำ','วิญญาณแรกเริ่ม','เทพแปลงกาย'];/* รอบที่ 6: 5 ขั้นใหญ่ ขั้นละ 10 ขั้นย่อย รวม 50 ขั้น ผู้เล่นทั่วไปถึงแค่วิญญาณแรกเริ่ม (ดู PCAP) */
 const realmName=i=>{i=Math.max(0,Math.floor(+i)||0);const m=Math.min(4,Math.floor(i/10)),k=Math.min(9,i-m*10);return REALM_N[m]+' '+(k<9?'ขั้น '+(k+1):'ขั้นสูงสุด')};
 const dayKey=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};/* ย้ายมาไว้ต้นไฟล์ (รอบที่ 6) เพราะปุ่มทะลวงตามสถานการณ์เรียกใช้ตอนโหลดเกม */
@@ -223,7 +232,7 @@ CHK.push(()=>{const o=[];
 addEventListener('pagehide',()=>save());document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
 window.__SAVEFN=()=>save();/* รอบที่ 9: ให้ตัวซิงก์ออนไลน์ (อยู่นอกบล็อกเกม) สั่งบันทึกล่าสุดก่อนส่งขึ้นเซิร์ฟเวอร์ตอนปิดหน้า */
 SAVEH.step=S.step;setInterval(()=>{try{if(S.step!==SAVEH.step){SAVEH.step=S.step;if(window.__CSYNC)window.__CSYNC.urgent=Date.now();save()}}catch(e){}},500);/* ขั้นพลังเปลี่ยนจากทุกทาง (ทะลวง ทัณฑ์สายฟ้า ผู้พัฒนา) บันทึกและส่งขึ้นเซิร์ฟเวอร์ทันที ไม่รอรอบ 5 วินาที */
-CHK.push(()=>{const o=[],C=window.__CSYNC;if(C&&C.on){if(C.pend&&!document.hidden&&Date.now()-C.pendT>150000)o.push('ซิงก์เซฟออนไลน์: ค้างส่งเกิน 2.5 นาที');if(C.fail>=5)o.push('ซิงก์เซฟออนไลน์: ส่งล้มเหลวติดกัน '+C.fail+' ครั้ง')}return o});
+CHK.push(()=>{const o=[],C=window.__CSYNC;if(C&&C.on){if(C.pend&&!document.hidden&&Date.now()-C.pendT>150000)o.push('ซิงก์เซฟออนไลน์: ค้างส่งเกิน 2.5 นาที');if(C.fail>=5)o.push('ซิงก์เซฟออนไลน์: ส่งล้มเหลวติดกัน '+C.fail+' ครั้ง');if(C.err&&(C.fail>=2||C.err.indexOf('readback')===0)){o.push('ซิงก์เซฟออนไลน์: เซฟไม่เข้าเซิร์ฟเวอร์ รหัส '+C.err+(C.err==='permission-denied'?' (กฎ Firestore ปฏิเสธ ให้ตรวจกฎตาม reports/status.md)':''));if(!C.warned||Date.now()-C.warned>600000){C.warned=Date.now();try{say('เตือน เซฟไม่เข้าเซิร์ฟเวอร์ รหัส '+C.err+' แจ้งผู้ดูแลเกม',1)}catch(e){}}}}return o});
 (window.__R5FXH=window.__R5FXH||[]).push(fx=>{const C=window.__CSYNC;if(C&&C.on&&!document.hidden&&((C.pend&&Date.now()-C.pendT>150000)||C.fail>=5)&&typeof window.__CLOUD_FLUSH==='function'){C.pendT=Date.now();C.fail=0;window.__CLOUD_FLUSH(true);fx.push(['csync','ซิงก์เซฟออนไลน์ค้าง ส่งใหม่ให้แล้ว'])}});
 {const TABID=Math.random().toString(36).slice(2),LK='ipo_lock_'+(window.__KEY||'ipo1');try{localStorage.setItem(LK,TABID)}catch(e){}
 addEventListener('storage',e=>{if(e.key===LK&&e.newValue&&e.newValue!==TABID&&!window.__DUP){window.__DUP=1;auto=false;walk=false;say('มีการเปิดเกมบัญชีนี้ในแท็บอื่น แท็บนี้หยุดบันทึกเพื่อไม่ให้เซฟทับกัน ปิดแท็บนี้ หรือรีเฟรชหน้าเพื่อใช้แท็บนี้แทน',1)}})}
@@ -1020,14 +1029,6 @@ Object.assign(KEYS,{o:'mradar','S+o':'mradarB','S+m':'herbMenu',u:'guide',F4:'ne
 renderMob();
 setTimeout(()=>{say('สวัสดี '+(S.pname||'ผู้ฝึกตน')+' กด U อ่านคู่มือ F4 อ่านประกาศ F5 บันทึกการอัพเดท');autoNew();showNews(false);daily();save()},900);
 /* ===== PATCH 6 (เพิ่มต่อท้าย ไม่ลบโค้ดเดิม) ระดับสร้างรากฐาน ขั้น 1 ถึงขั้นสูงสุด ===== */
-if(R.length===11)(()=>{const A0=[[600,3500,1800,45000],[1200,7000,3500,120000],[2200,13000,6500,250000]],P=[0,4,9];
- for(let k=1;k<10;k++){const j=k<=4?0:1,t=(k-P[j])/(P[j+1]-P[j]);R.push(A0[j].map((v,c)=>{const w=A0[j+1][c],u=c===3?1000:10;return Math.round(v*Math.pow(w/v,t)/u)*u}))}
- /* รอบที่ 7 (1 พ.ย. 2569): ขั้นใหญ่ตั้งแต่แก่นทองคำขึ้นไป ค้นคว้าตามนิยายเซียน (คัมภีร์วิถีเซียน ผนึกสวรรค์สยบมาร) ผู้ฝึกตนแต่ละขั้นใหญ่ห่างกันหลายเท่าตัว ไม่ใช่แค่ไล่ขึ้นทีละนิด
-    ตั้งแต่แก่นทองคำ (ขั้น 21 ถึง 30) วิญญาณแรกเริ่ม (31 ถึง 40) เทพแปลงกาย (41 ถึง 50) เป็นผู้อาวุโสของแวดวงฝึกตน
-    ค่าเริ่มต้นของขั้นใหญ่ = ค่าขั้นสูงสุดของขั้นใหญ่ก่อนหน้า x 8 (โจมตี เลือด ลมปราณ) และ x 10 (แต้มฝึกฝนที่ต้องใช้) ภายในขั้นใหญ่เดียวกันไล่ขึ้น x 3.5 (แต้มฝึกฝน x 6)
-    นั่งสมาธิยังได้แต้มตามสัดส่วนของแต่ละขั้น (medBase) จึงใช้เวลาต่อขั้นพอๆ เดิม แต่ผู้เล่นแข็งแกร่งขึ้นหลายเท่าเมื่อข้ามขั้นใหญ่ */
- const B=[[[17600,104000,52000,2500000],[61600,364000,182000,15000000]],[[492800,2912000,1456000,150000000],[1724800,10192000,5096000,900000000]],[[13798400,81536000,40768000,9000000000],[48294400,285376000,142688000,54000000000]]];
- B.forEach(b=>{for(let k=0;k<10;k++){const t=k/9;R.push(b[0].map((v,c)=>{const w=b[1][c],u=c===3?1000:10;return Math.round(v*Math.pow(w/v,t)/u)*u}))}})})();
 Object.assign(I,{pill_hp5:{n:'โอสถคืนชีพบรรพกาล (ฟื้นเลือด 40,000)',u:'hp',v:40000,p:2500},pill_qi5:{n:'โอสถรวมปราณบรรพกาล (ฟื้นปราณ 6,000)',u:'qi',v:6000,p:1200},pill_xp5:{n:'โอสถเพิ่มปราณบรรพกาล (เพิ่มแต้มฝึกฝน 120,000)',u:'xp',v:120000,p:25000},
 sw_thunder:{n:'กระบี่สายฟ้าฟาด (ศาสตราวิญญาณเกรดสูง)',u:'eq',atk:600,p:60000},sw_lion:{n:'กระบี่ราชสีห์เพลิงสวรรค์ (ศาสตราวิญญาณเกรดสุดยอด)',u:'eq',atk:1000},
 arm_leo:{n:'เกราะเสือดาวสายฟ้า (ป้องกัน +120)',u:'arm',def:120},arm_ape:{n:'เกราะวานรแขนเหล็ก (ป้องกัน +220)',u:'arm',def:220},arm_lion:{n:'เกราะราชสีห์เพลิงสวรรค์ (ป้องกัน +380)',u:'arm',def:380},
@@ -5696,7 +5697,8 @@ async function cloudStart(email,name){
   if(force!==true&&force!=='retry'&&core(s)===sentCore)return Promise.resolve();
   if(!canPush(s))return Promise.resolve();
   const st=stepOf(s);C.urgent=0;sent=b;sentCore=core(s);if(!C.pend){C.pend=true;C.pendT=Date.now()}
-  return push(s).then(()=>{C.pend=false;C.fail=0;C.okT=Date.now();if(st>C.srv)C.srv=st}).catch(e=>{sent=null;sentCore=null;C.pend=false;C.fail++;if(quotaErr(e))window.__QUOTA_FULL=Date.now()})};
+  return push(s).then(()=>{C.pend=false;C.fail=0;C.err='';C.okT=Date.now();if(st>C.srv)C.srv=st;verify(st)}).catch(e=>{sent=null;sentCore=null;C.pend=false;C.fail++;C.err=String((e&&e.code)||(e&&e.message)||'unknown').slice(0,60);if(quotaErr(e))window.__QUOTA_FULL=Date.now()})};
+ const verify=st=>{if(C.vT)return;C.vT=setTimeout(async()=>{C.vT=0;try{const sn=await FB.fs.getDoc(ref),d=sn.exists()?sn.data():null;if(!d||typeof d.save!=='string'){C.err='readback-empty';return}const n=stepOf(d.save);if(n<st&&n<stepOf(latest||'')){C.err='readback-low:'+n+'<'+st}else if(C.err&&C.err.indexOf('readback')===0)C.err=''}catch(e){}},4000)};/* รอบที่ 12: อ่านย้อนจากเซิร์ฟเวอร์หลังส่งเซฟสำเร็จ ถ้าขั้นพลังบนเซิร์ฟเวอร์ต่ำกว่าที่เพิ่งส่ง = เซฟไม่เข้าจริง (กฎ Firestore หรือเครื่องอื่นทับ) บันทึกรหัสใน C.err ให้ตัวตรวจแจ้ง */
  /* ส่งตอนปิดหน้า: setDoc ของ SDK มักถูกตัดกลางทาง จึงยิงซ้ำด้วย fetch keepalive ไปที่ REST ของ Firestore (เบราว์เซอร์ส่งต่อให้แม้หน้าปิดแล้ว) ใช้โทเคนที่ต่ออายุไว้ล่วงหน้า ตัวเซฟใหญ่เกิน 60KB ข้ามไปใช้ setDoc อย่างเดียว */
  const refreshTok=()=>{try{u.getIdToken().then(t=>{tok=t}).catch(()=>{})}catch(e){}};refreshTok();setInterval(refreshTok,600000);
  const beacon=s=>{try{if(!tok)return;const j=JSON.stringify({fields:{save:{stringValue:withDev(s)},t:{integerValue:String(Date.now())}}});if(new TextEncoder().encode(j).length>60000)return;
