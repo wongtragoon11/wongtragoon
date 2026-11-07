@@ -2748,10 +2748,11 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
  const FT={grass:rsN('st_grass'),dirt:rsN('st_dirt'),leaves:rsN('st_leaves'),gravel:rsN('st_gravel'),stone:rsN('st_stone'),wood:rsN('st_wood'),mud:rsN('st_mud').concat(rsN('st_wet')),water:rsN('st_water'),sand:rsN('st_sand'),snow:rsN('st_snow'),wade:rsN('wade'),splash:rsN('splash')};
  const FSURF={er:{set:'dirt',r:.98,g:.56},cm:{set:'stone',r:1,g:.5},v:{set:'dirt',r:1,g:.55},vs:{set:'stone',r:1,g:.5,rv:.06},f:{set:'grass',r:1,g:.62},b:{set:'leaves',r:1,g:.6},w:{set:'gravel',r:.97,g:.56},rd:{set:'dirt',r:.98,g:.56},
   m:{set:'gravel',r:.93,g:.6,rv:.1},mr:{set:'stone',r:.96,g:.55,rv:.18},c:{set:'stone',r:.96,g:.6,rv:.24},k:{set:'stone',r:1,g:.55,rv:.18},in:{set:'wood',r:1,g:.56,rv:.08,cr:1},
+  dk:{set:'stone',r:.9,g:.58,rv:.3,pr:.9},k4:{set:'stone',r:.9,g:.55,rv:.28,pr:.86},tf:{set:'dirt',r:.99,g:.58,pr:1.04},
   mud:{set:'mud',r:1,g:.66},water:{set:'water',r:1,g:.72},sand:{set:'sand',r:1,g:.6},bridge:{set:'wood',r:1.04,g:.6,cr:1}};
  const VSQ=[245,278,355,318];/* ย่านตลาดและร้านค้ากลางหมู่บ้าน (x1,y1,x2,y2) ปูพื้นหิน นอกนั้นเป็นดินอัดแน่น */
- const FZ={e1:'er',tf:'f',cm:'cm',tw:'bridge',dk:'c',re:'f',rw:'f',rn:'f',rs:'b',rd:'rd',fb:'b',fs:'f',wb:'w',ma:'m',mp:'m',g1:'m',g2:'m',g3:'w',g4:'b',g5:'b',g6:'m',ew1:'b',ew2:'m'};const CSURF={ci:'in',cg:'f',cl:'vs'};/* PATCH 34 พื้นเฉพาะย่านในเมืองหลวง และป่าหมูป่า ป่างู *//* ทุ่งกระต่ายเป็นหญ้า ชายป่ากระต่ายใต้เป็นใบไม้แห้ง ทางหมาป่าเป็นดิน */
- const surfAt=(x,y)=>{const ws=waterSurf(x,y);if(ws)return ws;const z=zoneAt(x,y),id=z?z.id:'';if(/^bd_/.test(id))return 'in';if(/^k\d$/.test(id))return 'k';
+ const FZ={e1:'er',tf:'tf',cm:'cm',tw:'bridge',dk:'dk',re:'f',rw:'f',rn:'f',rs:'b',rd:'rd',fb:'b',fs:'f',wb:'w',ma:'m',mp:'m',g1:'m',g2:'m',g3:'w',g4:'b',g5:'b',g6:'m',ew1:'b',ew2:'m'};const CSURF={ci:'in',cg:'f',cl:'vs'};/* PATCH 34 พื้นเฉพาะย่านในเมืองหลวง และป่าหมูป่า ป่างู *//* ทุ่งกระต่ายเป็นหญ้า ชายป่ากระต่ายใต้เป็นใบไม้แห้ง ทางหมาป่าเป็นดิน */
+ const surfAt=(x,y)=>{const ws=waterSurf(x,y);if(ws)return ws;const z=zoneAt(x,y),id=z?z.id:'';if(/^bd_/.test(id)||id==='ps_in')return 'in';if(id==='k4')return 'k4';if(/^k\d$/.test(id))return 'k';
   if(id==='v'&&x>=VSQ[0]&&x<=VSQ[2]&&y>=VSQ[1]&&y<=VSQ[3])return 'vs';if(id==='c'&&window.__CAPD){const dk=window.__CAPD(x,y);if(dk&&CSURF[dk])return CSURF[dk]}const a=FZ[id]||id;return FSURF[a]?a:'v'};
  const surfOf=()=>S.alt>0?'mr':surfAt(S.x,S.y);/* ปีนเขาอยู่ = เกาะหน้าผาหิน */
  const footCut=c=>{const p=FOOT.cur;FOOT.cur=null;if(!p)return;try{p.g.gain.setTargetAtTime(0,c.currentTime,.012);p.s.stop(c.currentTime+.07)}catch(e){}};
@@ -2764,7 +2765,7 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
    if(!L.length){knWant(FT.dirt,1);if(play('steps',.7)){FOOT.html++;FOOT.played++}else FOOT.miss++;return}/* วินาทีแรกที่เสียงยังถอดรหัสไม่เสร็จ เล่นเสียงเท้าจริงจากไฟล์ในหน่วยความจำแทน ทุกก้าวจึงมีเสียง */
    let i=Math.floor(Math.random()*L.length);if(L.length>1&&L[i]===FOOT.lastN)i=(i+1)%L.length;
    const n=L[i],b=KN.buf[n],off=KN.off[n]||0;FOOT.lastN=n;KN.use[n]=now;footCut(c);
-   const s=c.createBufferSource(),g=c.createGain();s.buffer=b;s.playbackRate.value=1;g.gain.value=P.g*(run?1.15:.92);
+   const s=c.createBufferSource(),g=c.createGain();s.buffer=b;s.playbackRate.value=P.pr||1;g.gain.value=P.g*(run?1.15:.92);
    s.connect(g);g.connect(busIn(c,'foot'));if(P.rv)revSend(c,g,P.rv);const rec={s,g};
    s.onended=()=>{try{g.disconnect()}catch(e){}if(FOOT.cur===rec)FOOT.cur=null};
    s.start(0,off);FOOT.cur=rec;FOOT.played++;
@@ -2811,7 +2812,7 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
   land:'ลงจากกระบี่ (สำรอง)',fly:'ขี่กระบี่ลอยขึ้นฟ้า ลมหมุน',hurt:'เจ้าร้องเจ็บเมื่อถูกตี (สำรอง)',hurt2:'เจ้าร้องเจ็บตอนเลือดน้อย (สำรอง)',die:'เจ้าตาย (สำรองของไฟล์ sounds/lose)',revive:'ฟื้นที่ลานเกิด (สำรอง)',levelup:'เลื่อนขั้น (สำรอง)',qi:'พลังปราณ',heartbeat:'เลือดเหลือน้อย (สำรอง)',
   steps:'เสียงเท้าช่วงแรกที่เสียงยังถอดรหัสไม่เสร็จ',swoosh:'โจมตีทั่วไป',punch:'หมัดโดนตัว',clash:'ปะทะ',mdie:'อสูรตาย (สำรอง)',bosskill:'ปราบบอสสำเร็จ (สำรองของไฟล์ sounds/win)',bossSpawn:'บอสเกิดใหม่ (สำรอง)',bossnear:'บอสอยู่ใกล้ (สำรอง)',arena:'ลานประลอง (สำรอง)',gong:'ฆ้อง (สำรอง)',sectenter:'เข้าเขตสำนัก (สำรอง)',
   spell:'ใช้พลังทั่วไป',fire:'ไฟ',thunder:'ฟ้าร้อง',ice:'น้ำแข็ง',earth:'ศิลา',heal:'รักษา',buff:'พลังห่อหุ้มตัว',explosion:'ระเบิด'};
- const FSN={v:'บนดินในหมู่บ้าน',vs:'บนลานหินกลางหมู่บ้าน',f:'บนทุ่งหญ้า',b:'บนใบไม้แห้งในป่าไผ่และชายป่า',w:'บนกรวดในหุบเขาหมาป่า',rd:'บนดินทางหมาป่า',m:'บนกรวดหินในเทือกเขา',mr:'เกาะหน้าผาตอนปีนเขา',c:'บนพื้นหินเมืองหลวง',k:'บนลานหินสำนัก',in:'บนพื้นไม้ในอาคาร',mud:'บนโคลนริมน้ำ',water:'ในน้ำตื้น',sand:'บนทรายเปียกริมลำธาร',bridge:'บนสะพานไม้'};
+ const FSN={v:'บนดินในหมู่บ้าน',vs:'บนลานหินกลางหมู่บ้าน',f:'บนทุ่งหญ้า',b:'บนใบไม้แห้งในป่าไผ่และชายป่า',w:'บนกรวดในหุบเขาหมาป่า',rd:'บนดินทางหมาป่า',m:'บนกรวดหินในเทือกเขา',mr:'เกาะหน้าผาตอนปีนเขา',c:'บนพื้นหินเมืองหลวง',k:'บนลานหินสำนัก',dk:'บนท่าหินดำชื้นของเมืองตลาดมืด',k4:'บนลานหินดำของสำนักมารเงาโลหิต',tf:'บนดินอัดปนฟางของหมู่บ้านทุ่งรวงทอง',in:'บนพื้นไม้ในอาคาร',mud:'บนโคลนริมน้ำ',water:'ในน้ำตื้น',sand:'บนทรายเปียกริมลำธาร',bridge:'บนสะพานไม้'};
  const PLATH={kfire:'ใช้วิชาไฟ',kearth:'ใช้วิชาศิลา',kair:'ใช้วิชาลมหรือสายฟ้า',kwater:'ใช้วิชาน้ำหรือน้ำแข็ง',ksword:'ใช้วิชากระบี่',kfist:'ใช้วิชาหมัดฝ่ามือ',kqi:'ใช้ดัชนีปราณ',kheal:'ใช้วิชารักษา',kbuff:'ใช้เกราะปราณ',fly:'ขี่กระบี่ลอยขึ้น',land:'ลงจากกระบี่',med:'นั่งสมาธิ',up:'ลุกจากสมาธิ',pick:'เก็บของ',bag:'เปิดกระเป๋า',drink:'กินโอสถ',lvl:'เลื่อนขั้น',die:'ตาย',rev:'ฟื้น',climb:'ปีนเขา',door:'เข้าออกประตู',hurt:'ถูกตี',tp:'เคลื่อนย้าย',craft:'สร้างของ',fish:'ตกปลา',eq:'สวมอาวุธหรือเกราะ',coin:'ซื้อขาย',scroll:'เรียนคัมภีร์'};
  const knName=n=>{let m=/^r_(.+)_(\d+)$/.exec(n);if(m)return(RSTH[m[1]]||m[1])+' แบบ '+m[2]+' ('+n+')';
   m=/^([A-Za-z]+?)(\d*)$/.exec(n);let b=n,k='';if(m){b=m[1];k=m[2]}else{m=/^([A-Za-z_]+?)_(\d+)$/.exec(n);if(m){b=m[1];k=String(+m[2]+1)}}return(KNTH[b]||n)+(k?' แบบ '+k:'')+' ('+n+')'};/* ชื่อแบบ r_st_grass_3 แบบ Footstep3 และแบบ footstep_wood_002 */
@@ -3040,7 +3041,7 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
  /* ผู้เล่นอื่นก้าว 1 ก้าวที่ตำแหน่ง x y เสียงเท้าจริงตามพื้นตรงนั้น (หญ้า ดิน หิน ไม้ โคลน น้ำ ฯลฯ) */
  const plStep=(x,y)=>{const p=spOf(x,y,PL_R);if(!p||p.g*medCur<.03)return;const c=waCtx();if(!c)return;const P=FSURF[surfAt(x,y)]||FSURF.v,set=FT[P.set]||FT.dirt;
   let L=set.filter(n=>KN.buf[n]);if(!L.length){knWant(set);L=FT.dirt.filter(n=>KN.buf[n])}if(!L.length)return;
-  const n=L[Math.floor(Math.random()*L.length)],s=c.createBufferSource(),g=c.createGain();s.buffer=KN.buf[n];s.playbackRate.value=1;g.gain.value=.42*p.g*medCur;
+  const n=L[Math.floor(Math.random()*L.length)],s=c.createBufferSource(),g=c.createGain();s.buffer=KN.buf[n];s.playbackRate.value=P.pr||1;g.gain.value=.42*p.g*medCur;
   spNode(c,s,g,p,'pl');s.start(0,KN.off[n]||0);SPA.steps++;if(P.set==='water'&&Math.random()<.5)knSp(FT.wade,.2*p.g*medCur,p,1,.05)};/* เขาลุยน้ำ บางก้าวมีน้ำกระเซ็น */
  /* การกระทำของผู้เล่นอื่น (ช่อง a ในตำแหน่งออนไลน์: สถานะ G เดิน F เหาะ M นั่งสมาธิ C ปีนเขา ตามด้วยรหัสการกระทำล่าสุดและลำดับ) เล่นเสียงจริงที่ตำแหน่งของเขา */
  const PLA={kfire:[['cast_fire',.5,0],['fireball',.8,.13]],kearth:[['cast_earth',.5,0],['stoneshot',.8,.13]],kair:[['cast_air',.5,0],['shockbolt',.8,.13]],kwater:[['cast_water',.5,0],['waterbolt',.8,.13]],
@@ -3171,11 +3172,11 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
    if(n.raw<=W+(f.mud||0))return(f.sand&&f.sand.includes(n.si))?'sand':'mud'}return null};
  const waterAt=(x,y)=>{for(const f of WATERS){const B=f.bb;if(x<B[0]||x>B[2]||y<B[1]||y>B[3])continue;const n=wNear(f,x,y);if(n.raw<=(f.c?f.r:f.w)+(f.mud||0))return f}return null};
  /* PATCH 34 บอกชื่อพื้นที่เหยียบทุกครั้งที่พื้นเปลี่ยน และบอกตอนกด R เช็คพิกัด (ชื่อพื้นตรงกับชุดเสียงเท้าจริงที่เล่น) */
-  const SURFN={er:'ถนนดินอัดของพ่อค้า',cm:'พื้นหินปูตลาดหินเขียว',v:'ดินอัดแน่นในหมู่บ้าน',vs:'ลานหินปูพื้นกลางหมู่บ้าน',f:'ทุ่งหญ้า',b:'ใบไม้แห้งชายป่า',w:'กรวดหุบเขาหมาป่า',rd:'ทางดินสายหมาป่า',m:'กรวดหินร่วนบนเทือกเขา',mr:'ผาหินที่ปีนอยู่',c:'พื้นหินเมืองหลวง',k:'ลานหินสำนัก','in':'พื้นไม้',mud:'โคลนแฉะริมน้ำ',water:'น้ำตื้น',sand:'ทรายเปียกริมน้ำ',bridge:'สะพานไม้'};
+  const SURFN={er:'ถนนดินอัดของพ่อค้า',cm:'พื้นหินปูตลาดหินเขียว',v:'ดินอัดแน่นในหมู่บ้าน',vs:'ลานหินปูพื้นกลางหมู่บ้าน',f:'ทุ่งหญ้า',b:'ใบไม้แห้งชายป่า',w:'กรวดหุบเขาหมาป่า',rd:'ทางดินสายหมาป่า',m:'กรวดหินร่วนบนเทือกเขา',mr:'ผาหินที่ปีนอยู่',c:'พื้นหินเมืองหลวง',k:'ลานหินสำนัก',dk:'ท่าหินดำชื้นเค็มของเมืองตลาดมืด',k4:'ลานหินดำเปื้อนเลือดของสำนักมารเงาโลหิต',tf:'ดินอัดปนฟางข้าวในหมู่บ้านทุ่งรวงทอง','in':'พื้นไม้',mud:'โคลนแฉะริมน้ำ',water:'น้ำตื้น',sand:'ทรายเปียกริมน้ำ',bridge:'สะพานไม้'};
   const CSN={cm:'ถนนหินย่านตลาดเซียน',cl:'ลานหินเรียบหน้าหอคัมภีร์',ci:'พื้นไม้ระเบียงย่านโรงเตี๊ยม',cq:'ลานหินกว้างหน้าหอภารกิจ',cg:'ทางหญ้าในสวนศิลา',cs:'ลานหินกว้างใต้เมืองหลวง'};
   const surfName=(sf,x,y)=>{try{if(sf==='water'||sf==='mud'||sf==='sand'||sf==='bridge'){const f=waterAt(x,y);return SURFN[sf]+(f?' ของ'+f.n:'')}
    const z=zoneAt(x,y);if(z&&z.id==='c'&&window.__CAPD){const dk=window.__CAPD(x,y);if(dk&&CSN[dk])return CSN[dk]}
-   if(z&&/^bd_/.test(z.id))return 'พื้นไม้ในอาคาร';if(z&&z.id==='fb')return 'ใบไม้แห้งและรากไม้ในป่าหมูป่า';if(z&&z.id==='fs')return 'หญ้าชื้นและใบไม้เน่าในป่างู';
+   if(z&&(/^bd_/.test(z.id)||z.id==='ps_in'))return 'พื้นไม้ในอาคาร';if(z&&z.id==='fb')return 'ใบไม้แห้งและรากไม้ในป่าหมูป่า';if(z&&z.id==='fs')return 'หญ้าชื้นและใบไม้เน่าในป่างู';
    return SURFN[sf]||'พื้นดิน'}catch(e){return 'พื้นดิน'}};
   const SN={t:0,last:''};
   const surfNote=sf=>{try{const nm=surfName(sf,S.x,S.y),now=Date.now();if(nm===SN.last||now-SN.t<450)return;SN.last=nm;SN.t=now;say('เหยียบ'+nm)}catch(e){}};
@@ -3191,8 +3192,8 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
  /* บรรยากาศของแต่ละเขต [ลูป, ความดัง, ตัดเสียงแหลม] (เมืองหลวง: เสียงผู้คนตลาดที่อยู่ไกล ตัดเสียงแหลมจนฟังไม่ออกว่าพูดอะไร ในอาคาร: เสียงข้างนอกแผ่วๆ) */
  const ZBED={v:['r_lp_windopen_1',.08,0],re:['r_lp_windopen_1',.12,0],rw:['r_lp_windopen_1',.11,0],rn:['r_lp_windopen_1',.11,0],rs:['r_lp_windforest_1',.12,0],b:['r_lp_windforest_1',.15,0],
   w:['r_lp_windhigh_1',.12,0],rd:['r_lp_windopen_1',.11,0],m:['r_lp_windhigh_1',.15,0],c:['r_lp_market_1',.08,2200],k1:['r_lp_windhigh_1',.07,0],k2:['r_lp_windforest_1',.08,0],k3:['r_lp_windopen_1',.06,0],in:['r_lp_market_1',.03,1200]};/* รอบที่ 5: เลิกตัดเสียงแหลมจนอับ เหลือเฉพาะเสียงผู้คนในตลาดที่ไกล (2200) และเสียงข้างนอกผ่านผนังอาคาร (1200) */
- const CBED={cm:['r_lp_market_1',.12,2000],cl:['r_lp_windopen_1',.05,0],ci:['r_lp_market_1',.1,1500],cq:['r_lp_market_1',.07,2200],cg:['r_lp_windforest_1',.07,0],cs:['r_lp_windopen_1',.09,0]};ZBED.fb=['r_lp_windforest_1',.14,0];ZBED.fs=['r_lp_windforest_1',.13,0];Object.assign(ZBED,{wb:ZBED.w,ma:ZBED.m,mp:ZBED.m,g1:ZBED.m,g2:ZBED.m,g3:ZBED.w,g4:ZBED.b,g5:ZBED.b,g6:ZBED.m});/* PATCH 34 เสียงพื้นหลังเฉพาะย่านและป่าใหม่ */
-  const zbedOf=()=>{const z=zoneAt(S.x,S.y);if(!z)return null;if(z.id==='c'&&window.__CAPD){const k=window.__CAPD(S.x,S.y);if(k&&CBED[k])return CBED[k]}return ZBED[/^bd_/.test(z.id)?'in':z.id]||null};
+ const CBED={cm:['r_lp_market_1',.12,2000],cl:['r_lp_windopen_1',.05,0],ci:['r_lp_market_1',.1,1500],cq:['r_lp_market_1',.07,2200],cg:['r_lp_windforest_1',.07,0],cs:['r_lp_windopen_1',.09,0]};ZBED.fb=['r_lp_windforest_1',.14,0];Object.assign(ZBED,{cm:['r_lp_market_1',.12,2000],e1:['r_lp_windopen_1',.1,0],tf:['r_lp_windopen_1',.09,0],tw:['r_lp_lake_1',.07,0],dk:['r_lp_market_1',.09,1700],k4:['r_lp_windhigh_1',.08,0],ew1:['r_lp_windforest_1',.13,2600],ew2:['r_lp_windhigh_1',.14,0]});/* รอบ 15: บรรยากาศสถานที่ใหม่ทางตะวันออก */ZBED.fs=['r_lp_windforest_1',.13,0];Object.assign(ZBED,{wb:ZBED.w,ma:ZBED.m,mp:ZBED.m,g1:ZBED.m,g2:ZBED.m,g3:ZBED.w,g4:ZBED.b,g5:ZBED.b,g6:ZBED.m});/* PATCH 34 เสียงพื้นหลังเฉพาะย่านและป่าใหม่ */
+  const zbedOf=()=>{const z=zoneAt(S.x,S.y);if(!z)return null;if(z.id==='c'&&window.__CAPD){const k=window.__CAPD(S.x,S.y);if(k&&CBED[k])return CBED[k]}return ZBED[(/^bd_/.test(z.id)||z.id==='ps_in')?'in':z.id]||null};
  setInterval(()=>{try{const B=(ambOn&&!document.hidden&&!S.fl)?zbedOf():null;bedSet('zone',B?B[0]:null,B?B[1]*medCur:0,0,B&&B[2]?B[2]:20000,1,1.1)}catch(e){BED.err++}},400);
  const waterDiag=()=>{const pr=[];WATERS.forEach(f=>{const P=f.c?[f.c]:f.pts;P.forEach(p=>{if(!(p[0]>=0&&p[1]>=0))pr.push('แหล่งน้ำ '+f.n+' มีพิกัดติดลบ');if(!zoneAt(p[0],p[1]))pr.push('แหล่งน้ำ '+f.n+' อยู่นอกแผนที่')});
    if(KN.pack&&!KN.url[f.loop])pr.push('แหล่งน้ำ '+f.n+' ไม่มีลูปเสียง '+f.loop);if(!(f.R>0&&f.g>0))pr.push('แหล่งน้ำ '+f.n+' ตั้งระยะได้ยินหรือความดังผิด')});
@@ -3203,6 +3204,18 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
   const n=Object.keys(BED.L).length;if(n>7)o.push('ลูปเสียง: เปิดค้างพร้อมกัน '+n+' ชั้น');
   if(waCtx()&&ambOn&&!document.hidden&&WB.near.length&&WB.g>.05&&!BED.L.w1&&KN.done&&Object.keys(KQ.fail).length===0&&Date.now()-KQ.t>3000)o.push('เสียงน้ำ: อยู่ใกล้น้ำแต่ไม่มีเสียงน้ำ');
   const s=waterSurf(S.x,S.y);if(s&&!FSURF[s])o.push('เสียงเท้า: พื้นริมน้ำ '+s+' ไม่มีชุดเสียงเท้า');return o});
+ /* รอบ 15 ชุดที่ 9: ทุกเขตต้องมีบรรยากาศ พื้นของแต่ละเมืองต้องเป็นของเมืองนั้น ห้ามใช้ซ้ำกับเมืองหลวง */
+ CHK.push(()=>{const o=[];const sp=z=>z.inn||/^bd_/.test(z.id)||z.id==='ps_in';
+  Z.forEach(z=>{if(sp(z))return;if(!ZBED[z.id])o.push('บรรยากาศ: เขต '+z.id+' ไม่มีลูปพื้นหลัง');if(z.safe&&!SCN[z.id])o.push('บรรยากาศ: เขตปลอดภัย '+z.id+' ไม่มีเสียงชีวิต');
+   if(!z.safe&&!AMBP[z.id]&&!(z.cave||/^cave/.test(z.id)))o.push('บรรยากาศ: เขตล่า '+z.id+' ไม่มีระลอกลม');
+   if(!/^(v|c|k\d)$/.test(z.id)){const a=FZ[z.id]||z.id;if(!FSURF[a])o.push('พื้น: เขต '+z.id+' ไม่มีชุดเสียงเท้า ('+a+')')}});
+  ['er','cm','v','vs','f','b','w','rd','m','mr','c','k','in','dk','k4','tf'].forEach(k=>{if(!FSURF[k])o.push('พื้น: ขาดชุด '+k);else if(!SURFN[k])o.push('พื้น: ชุด '+k+' ไม่มีชื่อบอกผู้เล่น')});
+  const cf=['c',FZ.cm,FZ.dk];if(new Set(cf).size!==cf.length)o.push('พื้น: เมืองสามแห่งใช้พื้นซ้ำกัน '+cf.join(','));
+  const nm=['c','cm','dk','k','k4'].map(k=>SURFN[k]);if(new Set(nm).size!==nm.length)o.push('พื้น: ชื่อพื้นหินของเมืองหรือสำนักซ้ำกัน');
+  if(FSURF.dk&&FSURF.c&&FSURF.dk.pr===FSURF.c.pr&&FSURF.dk.g===FSURF.c.g&&FSURF.dk.rv===FSURF.c.rv)o.push('พื้น: พื้นหินเมืองตลาดมืดเสียงเหมือนเมืองหลวง');
+  if(FSURF.k4&&FSURF.k&&FSURF.k4.pr===FSURF.k.pr&&FSURF.k4.g===FSURF.k.g&&FSURF.k4.rv===FSURF.k.rv)o.push('พื้น: ลานหินสำนักมารเสียงเหมือนสำนักอื่น');
+  Object.keys(FSURF).forEach(k=>{const p=FSURF[k].pr;if(p!=null&&!(p>=.6&&p<=1.4))o.push('พื้น: อัตราเล่นของ '+k+' ผิดปกติ '+p)});
+  {const z=zoneAt(S.x,S.y);if(z){const sf=surfOf();if(!FSURF[sf])o.push('พื้น: ที่ยืนอยู่เป็นพื้น '+sf+' ที่ไม่มีชุดเสียง')}}return o});
  /* ===== เสียงจริงของการต่อสู้ อสูร ลม และชีวิตในเมือง (ไม่มีเสียงสังเคราะห์) =====
     (คำสั่งผู้บงการ 30 ตุลาคม 2569 รอบที่ 4: ตรวจทุกเสียง เสียงปลอมหรือสังเคราะห์ให้เอาออก ใช้เสียงจริงแทน อสูรทุกตัวต้องมีเสียงครบทุกแบบ ห้ามมีเสียงดังทับกัน)
     เสียงทั้งหมดเป็นการบันทึกเสียงจริง ใบอนุญาต CC0 และสาธารณสมบัติ (freesound, กรมอุทยานแห่งชาติสหรัฐ NPS, Versilian Studios, Kenney และอื่นๆ รายชื่อครบในคลังเสียงจริงของเมนูผู้พัฒนา และไฟล์ sound-credits.md ที่ส่งมาพร้อมกับเกม)
@@ -3289,7 +3302,7 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
   if(ok)SPA.seq=(SPA.seq||0)+1;return ok};
  HOOK.landFx=()=>{mpAct('land');landPlay()};/* แกนกลางเรียกตอนพลังเหาะหมดแล้วลงพื้นเอง */
  /* ลงจากกระบี่ถึงพื้น: เท้า 2 ข้างแตะพื้นจริงตามพื้นตรงนั้น (ลงในน้ำมีน้ำกระเซ็น) */
- const landPlay=()=>{try{const sf=surfOf(),P=FSURF[sf]||FSURF.v,set=FT[P.set]||FT.dirt;FOOT.surf=sf;surfNote(sf);let ok=knSp(set,.8,{pan:-.18,lp:0},1,0,{pri:1,bus:'foot'});knSp(set,.62,{pan:.18,lp:0},1,.1,{pri:1,bus:'foot'});
+ const landPlay=()=>{try{const sf=surfOf(),P=FSURF[sf]||FSURF.v,set=FT[P.set]||FT.dirt;FOOT.surf=sf;surfNote(sf);let ok=knSp(set,.8,{pan:-.18,lp:0},P.pr||1,0,{pri:1,bus:'foot'});knSp(set,.62,{pan:.18,lp:0},P.pr||1,.1,{pri:1,bus:'foot'});
    if(sf==='water')knSp(FT.splash,.5,{pan:0,lp:0},1,.03,{pri:1,bus:'foot'});if(!ok)ok=!!play('land',.9);return ok}catch(e){return false}};
  /* ===== เสียงอสูรครบทุกแบบ ===== */
  const MVOX={rab:{call:'rat_call',atk:'rat_atk',hurt:'rat_hurt',die:'rat_die',br:'rat_call',r:.9,g:.5},
@@ -3369,8 +3382,9 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
  const SCN={c:[['anvil',.22],['hammer',.14],['bellows',.07],['grind',.06],['coins',.18],['door',.13],['horse',.08],['drum',.1],['bell',.08]],v:[['chickens',.2],['rooster',.1],['dogbark',.15],['cow',.08],['sheep',.06],['bird',.18],['smith',.17],['frog',.08]],
   re:[['bird',.5],['crow',.2],['leaves',.3]],rw:[['bird',.4],['crow',.15],['leaves',.2],['frog',.25]],rn:[['bird',.6],['leaves',.4]],rs:[['bird',.4],['leaves',.35],['creak',.25]],b:[['leaves',.4],['creak',.25],['bird',.25],['crow',.1]],
   w:[['crow',.35],['leaves',.3],['creak',.2],['bat',.15]],rd:[['bird',.4],['crow',.35],['leaves',.25]],fb:[['bird',.5],['leaves',.35],['creak',.25]],fs:[['bird',.35],['leaves',.4],['frog',.25]],m:[['crow',.35],['wings',.25],['leaves',.25],['bat',.15]],k1:[['practice',.5],['bell',.3],['drum',.2]],k2:[['bird',.55],['bell',.3],['leaves',.15]],k3:[['muyu',.55],['bell',.3],['drum',.15]],cm:[['talk',.45],['coins',.3],['horse',.15],['whistle',.1],['door',.1]],cl:[['pageturn',.35],['quill',.3],['scroll',.2],['bell',.15],['leaves',.15]],ci:[['talk',.4],['pour',.25],['cork',.2],['drink',.2],['door',.2],['dogbark',.05]],cq:[['talk',.3],['drum',.2],['gate',.1],['swish',.15],['horse',.15],['practice',.2]],cg:[['bird',.4],['splash',.2],['plop',.15],['frog',.15],['leaves',.3],['creak',.1],['bell',.1]],cs:[['horse',.3],['gate',.2],['drum',.2],['talk',.2],['gong',.15],['wings',.1],['whistle',.1]]};
+  Object.assign(SCN,{e1:[['horse',.28],['bird',.28],['creak',.2],['coins',.12],['talk',.12],['dogbark',.08]],tf:[['rooster',.14],['chickens',.18],['cow',.18],['sheep',.1],['bird',.25],['rustle',.3],['dogbark',.08]],tw:[['gull',.4],['splash',.15],['creak',.25],['talk',.14],['whistle',.08],['bell',.1],['dogbark',.08]],dk:[['talk',.35],['coins',.25],['door',.15],['gate',.1],['bat',.12],['dogbark',.1],['gull',.1],['cork',.1],['drink',.12]],k4:[['crow',.3],['bat',.25],['gong',.2],['drum',.2],['creak',.1],['practice',.35]],ew1:[['owl',.2],['bat',.25],['creak',.3],['leaves',.3],['crow',.1]],ew2:[['crow',.4],['wings',.25],['bat',.15],['tick',.1],['leaves',.15]],ps_in:[['tick',.25],['bell',.15],['pageturn',.2],['quill',.2],['practice',.3]]});
   Object.assign(SCN,{wb:SCN.w,ma:SCN.m,mp:SCN.m,g1:SCN.m,g2:SCN.m,g3:SCN.w,g4:SCN.b,g5:SCN.b,g6:SCN.m});
-  const SCG={talk:['talk',.3,26],whistle:['whistle',.18,40],gong:['gong',.22,60],ring:['ring',.25,35],tick:['tick',.2,18],tap:['tap',.2,18],pageturn:['pageturn',.28,16],quill:['quill',.26,16],scroll:['scroll',.3,20],pour:['pour',.3,14],cork:['cork',.3,14],drink:['drink',.28,14],splash:['splash',.3,22],plop:['plop',.3,20],gate:['gate',.35,60],swish:['swish',.25,26],mapunfold:['mapunfold',.3,20]};/* PATCH 34 เสียงจริงเฉพาะย่านของเมืองหลวง */
+  const SCG={talk:['talk',.3,26],whistle:['whistle',.18,40],gong:['gong',.22,60],ring:['ring',.25,35],tick:['tick',.2,18],tap:['tap',.2,18],pageturn:['pageturn',.28,16],quill:['quill',.26,16],scroll:['scroll',.3,20],pour:['pour',.3,14],cork:['cork',.3,14],drink:['drink',.28,14],splash:['splash',.3,22],plop:['plop',.3,20],gate:['gate',.35,60],swish:['swish',.25,26],mapunfold:['mapunfold',.3,20],gull:['gull',.3,70],rustle:['rustle',.28,24],owl:['owl',.26,60]};/* PATCH 34 เสียงจริงเฉพาะย่านของเมืองหลวง */
   const zk=z=>{const k=z&&z.id==='c'&&window.__CAPD?window.__CAPD(S.x,S.y):null;return k||(z?z.id:'')};
  const SCNT={next:0,n:0,last:''};
  const ringPos=r=>{const a=Math.random()*Math.PI*2,d=r*(.4+.6*Math.random());return[S.x+Math.cos(a)*d,S.y+Math.sin(a)*d]};
@@ -3694,10 +3708,13 @@ const relPlay=(el,id,k,tp,air)=>{const pan=tp?tp.pan*.7:0,d=tp?tp.d:0,trv=Math.m
   b:{gust:['r_lp_windforest_1'],every:[8,15],gg:[.12,.19],att:[1.6,2.2],sus:[1,1.8],rel:[2.8,3.6],leaves:.9,creak:.35,ins:.03,canopy:3600},
   w:{gust:['r_lp_windhigh_1'],storm:1,every:[9,16],gg:[.3,.46],att:[.7,1.1],sus:[.8,1.5],rel:[3.5,4.5],leaves:.95,creak:.2},
   rd:{gust:['r_lp_windopen_1'],every:[10,19],gg:[.12,.2],att:[1.2,2],sus:[1,2],rel:[2.5,3.5],leaves:.5,ins:.03},m:{gust:['r_lp_windhigh_1'],storm:1,every:[8,14],gg:[.26,.4],att:[.8,1.2],sus:[.8,1.6],rel:[3.5,4.5],leaves:.3},
-  k2:{gust:['r_lp_windforest_1'],every:[12,20],gg:[.08,.13],att:[1.4,2],sus:[1,2],rel:[2.5,3.5],leaves:.7,ins:.025}};
- const ENVRV={b:{room:.5,damp:.4,wet:.09},k2:{room:.5,damp:.4,wet:.08},w:{room:.8,damp:.25,wet:.13},m:{room:.85,damp:.22,wet:.13},c:{room:.7,damp:.3,wet:.12},k1:{room:.68,damp:.3,wet:.12},k3:{room:.75,damp:.28,wet:.13},in:{room:.42,damp:.55,wet:.1},cave:{room:.88,damp:.2,wet:.17}};
+  k2:{gust:['r_lp_windforest_1'],every:[12,20],gg:[.08,.13],att:[1.4,2],sus:[1,2],rel:[2.5,3.5],leaves:.7,ins:.025},
+  e1:{gust:['r_lp_windopen_1'],every:[9,17],gg:[.1,.17],att:[1.2,2],sus:[1,2],rel:[2.5,3.5],leaves:.3},tf:{gust:['r_lp_windopen_1'],every:[8,15],gg:[.1,.17],att:[1.2,2],sus:[1,2],rel:[2.5,3.5],leaves:.2,ins:.02},tw:{gust:['r_lp_windopen_1'],every:[10,18],gg:[.1,.16],att:[1.2,2],sus:[1,2],rel:[2.5,3.5],leaves:.05},
+  k4:{gust:['r_lp_windhigh_1'],every:[9,15],gg:[.14,.22],att:[.9,1.4],sus:[1,2],rel:[3,4],leaves:.4,creak:.2},ew1:{gust:['r_lp_windforest_1'],every:[8,14],gg:[.12,.2],att:[1.6,2.2],sus:[1,1.8],rel:[2.8,3.6],leaves:.9,creak:.4,ins:.03,canopy:2800},ew2:{gust:['r_lp_windhigh_1'],storm:1,every:[8,14],gg:[.28,.42],att:[.8,1.2],sus:[.8,1.6],rel:[3.5,4.5],leaves:.3}};
+ const ENVRV={b:{room:.5,damp:.4,wet:.09},k2:{room:.5,damp:.4,wet:.08},w:{room:.8,damp:.25,wet:.13},m:{room:.85,damp:.22,wet:.13},c:{room:.7,damp:.3,wet:.12},k1:{room:.68,damp:.3,wet:.12},k3:{room:.75,damp:.28,wet:.13},in:{room:.42,damp:.55,wet:.1},dk:{room:.66,damp:.32,wet:.12},k4:{room:.78,damp:.26,wet:.15},ew1:{room:.5,damp:.4,wet:.09},ew2:{room:.85,damp:.22,wet:.13},cave:{room:.88,damp:.2,wet:.17}};
  /* วัดจริงด้วย OfflineAudioContext (เสียงฟัน เสียงกระบี่ เสียงคน เสียงเท้า): ป่าไผ่ก้องเบากว่าเสียงตรง 20 dB จางใน 1.2 วินาที (ก้องนิดๆ) หุบเขา 13 dB ภูเขา 12 dB จาง 2 ถึง 3 วินาที เมืองหลวงพื้นหิน 15 dB ในอาคาร 20 dB ถ้ำ (โซนที่มี cave:1 หรือรหัสขึ้นต้น cave) 10 dB จางราว 3 วินาที หมู่บ้านและทุ่งโล่งไม่ก้อง */
- const envKey=z=>!z?'':((z.cave||/^cave/.test(z.id))?'cave':/^bd_/.test(z.id)?'in':z.id);
+ Object.assign(AMBP,{fb:AMBP.b,fs:AMBP.rs,wb:AMBP.w,ma:AMBP.m,mp:AMBP.m,g1:AMBP.m,g2:AMBP.m,g3:AMBP.w,g4:AMBP.b,g5:AMBP.b,g6:AMBP.m});Object.assign(ENVRV,{fb:ENVRV.b,fs:ENVRV.b,wb:ENVRV.w,ma:ENVRV.m,mp:ENVRV.m,g1:ENVRV.m,g2:ENVRV.m,g3:ENVRV.w,g4:ENVRV.b,g5:ENVRV.b,g6:ENVRV.m,cm:{room:.66,damp:.3,wet:.1}});/* รอบ 15 ชุดที่ 9: เขตล่าเก่าที่เคยไม่มีลมและห้องก้อง ใช้ชุดของเขตพี่น้อง */
+ const envKey=z=>!z?'':((z.cave||/^cave/.test(z.id))?'cave':(/^bd_/.test(z.id)||z.id==='ps_in')?'in':z.id);
  const rvEnv=(z,tc)=>{try{const c=waCtx();if(!c)return;const M=mixInit(c),k=envKey(z);if(M.env===k)return;M.env=k;if(M.rv)M.rv.set(ENVRV[k]||null,tc||.6)}catch(e){R5.err++}};
  const AMB={next:0,tree:0,ins:{v:1,tg:1,t:0},err:0};
  const TREES=()=>W.filter(w=>w.lm&&/^ต้น.*ใหญ่/.test(w.n));
@@ -5019,7 +5036,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
  const ownCheck=uid=>{const n0=srvNow();Object.keys(LV.data).forEach(c=>{const v=LV.data[c][uid];if(!v)return;
    if(c===MP.rcell){if(MP.myT&&v.t>Math.max(MP.myT,MP.wt[c]||0)&&(v.x!==MP.lx||v.y!==MP.ly)){if(idleMe())yieldNow(true);else dupNote()}return}
    ownSeen(uid,c,v,n0)})};
- const liveTick=()=>{try{try{const u1=MP.auth&&MP.auth.currentUser;if(u1&&LV.k)nbUpdate(liveList().filter(v=>v.id!==u1.uid),u1.uid);onlTick();jnTick()}catch(e){}if(MP.px!==S.x||MP.py!==S.y){if(MP.px!=null)MP.lastMove=Date.now();MP.px=S.x;MP.py=S.y}/* จำเวลาที่ผู้เล่นขยับล่าสุด */
+ const liveTick=()=>{try{try{const u1=MP.auth&&MP.auth.currentUser;if(u1&&LV.k)nbUpdate(liveList().filter(v=>v.id!==u1.uid),u1.uid);onlTick();jnTick();psTick()}catch(e){}if(MP.px!==S.x||MP.py!==S.y){if(MP.px!=null)MP.lastMove=Date.now();MP.px=S.x;MP.py=S.y}/* จำเวลาที่ผู้เล่นขยับล่าสุด */
   if(MP.yieldT&&MP.ready&&!MP.failed&&!window.__MP_OFF&&!window.__DUP&&online()&&MP.scanT&&Date.now()-MP.scanT>20000){const u0=MP.auth&&MP.auth.currentUser;if(u0)ownScan(u0.uid)}/* หยุดแสดงตำแหน่งอยู่: ตรวจหาสำเนาของตัวเองทุก 20 วินาที เพื่อกลับมาแสดงเองเมื่ออีกเครื่องหายไป (ทำแม้หน้าจอดับ) */
   if(window.__MP_OFF||window.__DUP||MP.failed||!MP.ready||!online()||document.hidden){if(LV.k)unsubAll();return}subNear();if(LV.k===cellsNow().join(','))LV.okT=Date.now();
   const u=MP.auth&&MP.auth.currentUser;if(u&&!MP.yieldT&&MP.scanT&&Date.now()-MP.scanT>20000)ownScan(u.uid)}catch(e){}};
@@ -5111,6 +5128,26 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
   Object.keys(ONL.pend).forEach(id=>{const p=ONL.pend[id];if(now-p.t<HOLD_OFF)return;delete ONL.pend[id];
    if(ONL.cur&&!ONL.cur[id]){if(ONL.known)delete ONL.known[id];JN.recentOff[id]=now;jqPush('off',id,p.n,{at:p.t})}});
   jnFlush()};
+ /* ===== รอบ 15 ชุดที่ 9: สำนักส่วนตัวที่ผู้เล่นอื่นมองเห็น (โหนด sects/uid) =====
+    เจ้าของเขียนโหนดของตัวเองเมื่อสำนักเปลี่ยน (ตั้ง อัปเกรด ยุบ) และทุก 30 นาที ทุกคนฟังโหนด sects ทั้งก้อนแล้วส่งให้ window.__PSX.setForeign สร้างอาคารตันของคนอื่นในโลกของเรา
+    ไม่ได้เชื่อมต่อ หรือกฎเซิร์ฟเวอร์ยังไม่เปิดโหนดนี้ ระบบเงียบเอง (รอ 10 นาทีแล้วลองใหม่) เกมเล่นต่อได้ปกติ */
+ const PSY={uid:'',sub:null,att:0,perm:0,permT:0,err:0,sig:'',wT:0,wperm:0,wpermT:0,had:false,seen:null,cnt:0};
+ const psSync=(rd,rdb,uid,now)=>{
+  const X=window.__PSX;if(!X||typeof X.mine!=='function'||typeof X.setForeign!=='function')return;
+  if(PSY.uid!==uid){try{if(typeof PSY.sub==='function')PSY.sub()}catch(e){}PSY.uid=uid;PSY.sub=null;PSY.att=0;PSY.sig='';PSY.had=false;PSY.seen=null;PSY.wT=0;try{X.setForeign({},uid)}catch(e){}}
+  if(!PSY.sub&&!PSY.att&&(!PSY.perm||now-PSY.permT>600000)){PSY.perm=0;PSY.att=1;
+   try{PSY.sub=rd.onValue(rd.ref(rdb,'sects'),sn=>{try{const m={};sn.forEach(c=>{const v=c.val();if(v&&typeof v==='object')m[c.key]=v});PSY.seen=m;PSY.cnt++;
+     if(m[uid]&&!X.mine()&&!PSY.had)rd.remove(rd.ref(rdb,'sects/'+uid)).catch(()=>{});/* โหนดค้างของเราทั้งที่ไม่มีสำนักแล้ว */
+     X.setForeign(m,uid)}catch(e){PSY.err++}},e=>{PSY.err++;PSY.sub=null;PSY.att=0;if(isPerm(e)){PSY.perm=1;PSY.permT=Date.now()}devErr('MP sects',e)})}catch(e){PSY.att=0;PSY.err++}}
+  if(MP.yieldT)return;
+  const me=X.mine(),sig=me?JSON.stringify([me.n,me.o,me.x,me.y,me.z,me.l,me.g]):'';
+  if((sig!==PSY.sig||(me&&now-PSY.wT>1800000))&&(!PSY.wperm||now-PSY.wpermT>600000)&&now-PSY.wT>=3000){
+   PSY.wT=now;const rf=rd.ref(rdb,'sects/'+uid);
+   const bad=e=>{PSY.err++;if(isPerm(e)){PSY.wperm=1;PSY.wpermT=Date.now()}else devErr('MP sects write',e)};
+   if(me)rd.set(rf,{n:me.n,o:me.o,x:me.x,y:me.y,z:me.z,l:me.l,g:me.g?1:0,t:srvNow()}).then(()=>{PSY.sig=sig;PSY.had=true}).catch(bad);
+   else rd.remove(rf).then(()=>{PSY.sig='';PSY.had=false}).catch(bad)}};
+ const psTick=()=>{const now=Date.now();if(!(MP.ready&&!MP.failed&&!window.__MP_OFF&&!window.__DUP&&online()))return;const u=MP.auth&&MP.auth.currentUser;if(!u)return;psSync(MP.rt,MP.rdb,u.uid,now)};
+ window.__PSY={PSY,sync:psSync,tick:psTick};
  window.__JN={JN,ONL,flush:jnFlush};/* ดูสถานะ (ผู้พัฒนาและตัวทดสอบ) */
  addEventListener('pagehide',()=>{try{if(MP.ready&&!MP.failed&&!window.__MP_OFF&&!window.__DUP&&MP.auth.currentUser&&!MP.yieldT)MP.rt.remove(MP.rt.ref(MP.rdb,'online/'+MP.auth.currentUser.uid)).catch(()=>{})}catch(e){}});
  A.joinNote=function(){S.joinNote=S.joinNote?0:1;say('แจ้งผู้เล่นเข้า ออก '+(S.joinNote?'เปิด จะแจ้งเมื่อมีคนเข้ามาใกล้ ออกจากพื้นที่ใกล้ตัว และเมื่อมีผู้เล่นออนไลน์หรือออฟไลน์':'ปิด'));save()};
@@ -7481,6 +7518,7 @@ try{
   /* อาคารตัน */
   if(!Array.isArray(SOLID)||SOLID.length<8)o.push('อาคารตัน: ตารางอาคารไม่ครบ 8 หลัง มี '+(SOLID&&SOLID.length));
   else SOLID.forEach(s=>{
+   if(s.pso)return;/* สำนักส่วนตัวของผู้เล่นอื่น ตรวจโดย r15c */
    if(![s.x0,s.y0,s.x1,s.y1].every(Number.isFinite)||s.x0>s.x1||s.y0>s.y1||s.x0<0||s.y0<0){o.push('อาคารตัน: '+s.n+' ขนาดผิดปกติ');return}
    if(!Array.isArray(s.door)||s.door.length!==2||(s.door[0]>=s.x0&&s.door[0]<=s.x1&&s.door[1]>=s.y0&&s.door[1]<=s.y1))o.push('อาคารตัน: ประตู '+s.n+' ผิดตำแหน่งหรืออยู่ในตัวอาคาร');
    const hit=W.find(w=>w.x>=s.x0&&w.x<=s.x1&&w.y>=s.y0&&w.y<=s.y1);if(hit)o.push('อาคารตัน: '+s.n+' ทับ '+String(hit.n).slice(0,24));
@@ -7902,12 +7940,57 @@ try{
     const q=quota(p.lv);let e=0,d=0;p.npcs=p.npcs.filter(n=>n.r==='e'?++e<=q.e:++d<=q.d);ensureQuota(p);ok=validPS(p)}
    if(!ok){S.ps=null;if(cnt('ps_seal')<1)add('ps_seal',1);fx.push(['r15p','ข้อมูลสำนักส่วนตัวเสียซ่อมไม่ได้ ยุบสำนักและคืนตราก่อตั้งให้'])}}
   mkPS();evict();const left=guardPS();fx.push(['r15p','สร้างสำนักส่วนตัวและสิ่งปลูกสร้างคืนแล้ว'+(left.length?' ยังเหลือ '+left.length+' ข้อ':'')])});
+ /* ----- สำนักของผู้เล่นอื่น (ข้อมูลมาจากโหนด sects ผ่าน window.__PSX.setForeign) ----- */
+ let FM={},FU='',fsig='',lostMsg=0;
+ const cleanO=o=>String(o==null?'':o).replace(/[^\u0E00-\u0E7Fa-zA-Z0-9 ]/g,'').trim().slice(0,20)||'ผู้ฝึกตน';
+ const ov=(a,b,m)=>a.x0-m<=b.x1&&a.x1+m>=b.x0&&a.y0-m<=b.y1&&a.y1+m>=b.y0;
+ const myFoot=()=>{const p=S.ps;return p&&validPS(p)?rect(p.x,p.y,p.lv):null};
+ /* รายการสำนักผู้อื่นที่รับได้ เรียงเก่าก่อน ตัดอันที่ข้อมูลเสีย อยู่ผิดเขต ทับอาคารเดิม ทับกันเอง */
+ function foreignList(){const out=[],now=Date.now(),mf=myFoot(),mine=S.ps;let lost=false;
+  const keys=Object.keys(FM).filter(k=>k!==FU).sort((a,b)=>((+FM[a].t||0)-(+FM[b].t||0))||(a<b?-1:1));
+  for(const k of keys){if(out.length>=150)break;const v=FM[k];if(!v||typeof v!=='object')continue;
+   const x=v.x,y=v.y,l=v.l;if(!(Number.isInteger(x)&&Number.isInteger(y)&&x>=0&&y>=0&&Number.isInteger(l)&&l>=1&&l<=5))continue;
+   if(typeof v.n!=='string'||!NAME_RE.test(v.n)||typeof v.z!=='string')continue;const t=+v.t;if(!(t>0)||now-t>45*864e5||t-now>864e5)continue;
+   const z=Z.find(a=>a.id===v.z);if(!z||z.inn||/^(ps_|bd_)/.test(z.id)||(z.safe&&v.g!==1))continue;const zz=zoneAt(x,y);if(!zz||zz.id!==v.z)continue;
+   const R=rect(x,y,l),f={x0:R.x0,x1:R.x1,y0:R.y0,y1:R.y1};
+   if(![[f.x0,f.y0],[f.x1,f.y0],[f.x0,f.y1],[f.x1,f.y1],[x,y+1]].every(c=>{const q=zoneAt(c[0],c[1]);return q&&q.id===v.z}))continue;
+   if(SOLID.some(s=>!s.ps&&!s.pso&&ov(f,s,1)))continue;
+   if(out.some(o=>ov(f,o.f,1)))continue;
+   if(mf&&ov(f,mf,1)){if(mine.gm){continue}if(t<(mine.t||Infinity)){lost=true;continue}continue}
+   out.push({k,x,y,l,n:v.n,o:cleanO(v.o),z:v.z,f,t})}
+  return{out,lost}}
+ function clearForeign(){for(let i=W.length-1;i>=0;i--)if(W[i].pso)W.splice(i,1);for(let i=SOLID.length-1;i>=0;i--)if(SOLID[i].pso)SOLID.splice(i,1)}
+ function mkForeign(){const L=foreignList();clearForeign();
+  L.out.forEach(a=>{const P=PL[a.l],nm='สำนัก'+a.n;
+   const dw={z:a.z,n:'ป้ายสำนัก'+a.n+' ของ '+a.o+' ระดับ '+a.l+' (ปิดรับแขก)',x:a.x,y:a.y,pso:a.k,
+    lm:'ป้ายหน้าประตู'+nm+' เจ้าสำนักคือ '+a.o+' ระดับ '+a.l+' จาก 5 อาคารตัน กว้าง '+P.w+' ยาว '+P.h+' ช่อง ประตูปิด สำนักส่วนตัวไม่รับแขกจากภายนอก'};
+   W.push(dw);const sl=mkSolid(nm,dw,P.w,P.h,'S','pso_'+a.k.slice(0,8));sl.pso=a.k;SOLID.push(sl);
+   MS.forEach(m=>{if(m.z===a.z&&m.x>=a.f.x0-1&&m.x<=a.f.x1+1&&m.y>=a.f.y0-1&&m.y<=a.f.y1+1){m.y=a.y+4+Math.floor(Math.random()*3);m.x=a.x-3+Math.floor(Math.random()*7);if(m.home)m.home=[m.x,m.y]}});
+   const zp=zoneAt(S.x,S.y);if(zp&&zp.id===a.z&&S.x>=a.f.x0&&S.x<=a.f.x1&&S.y>=a.f.y0&&S.y<=a.f.y1){try{posAllow()}catch(e){}S.x=a.x;S.y=a.y+1;try{posNote()}catch(e){}}});
+  fsig=foreignSig();
+  if(L.lost&&S.ps&&!S.ps.gm&&!lostMsg){lostMsg=1;const nm=S.ps.name;S.ps=null;add('ps_seal',1);mkPS();evict();try{save()}catch(e){}say('พบว่าสำนักของผู้ฝึกตนอื่นตั้งทับที่เดียวกับสำนัก '+nm+' ก่อนเจ้า สำนักของเจ้าถูกยุบและคืนตราก่อตั้งให้ ใช้ตราตั้งใหม่ที่อื่นได้',1);setTimeout(()=>{lostMsg=0},5000);mkForeign()}}
+ const foreignSig=()=>JSON.stringify([FU,Object.keys(FM).sort().map(k=>[k,FM[k]&&FM[k].x,FM[k]&&FM[k].y,FM[k]&&FM[k].l,FM[k]&&FM[k].n,FM[k]&&FM[k].o,FM[k]&&FM[k].z]),S.ps&&[S.ps.x,S.ps.y,S.ps.lv]]);
+ window.__PSX={mine:()=>{const p=S.ps;if(!p||!validPS(p))return null;return{n:p.name,o:cleanO(S.pname),x:p.x,y:p.y,z:p.z,l:p.lv,g:p.gm?1:0}},
+  setForeign:(m,uid)=>{FM=(m&&typeof m==='object')?m:{};FU=String(uid||'');try{mkForeign()}catch(e){console.error('R15 สำนักผู้อื่น',e);bugLog('รอบที่ 15','สร้างสำนักผู้อื่นไม่สำเร็จ: '+e)}},
+  list:()=>SOLID.filter(s=>s.pso).map(s=>({k:s.pso,n:s.n,x0:s.x0,x1:s.x1,y0:s.y0,y1:s.y1}))};
+ setInterval(()=>{try{if(foreignSig()!==fsig)mkForeign()}catch(e){}},1500);
+ const chkForeign=()=>{const o=[],fs=SOLID.filter(s=>s.pso),ws=W.filter(w=>w.pso);
+  if(fs.length>150)o.push('สำนักผู้อื่น: มี '+fs.length+' หลัง เกินกำหนด 150');if(fs.length!==ws.length)o.push('สำนักผู้อื่น: อาคาร '+fs.length+' ไม่ตรงป้าย '+ws.length);
+  fs.forEach(s=>{if(![s.x0,s.y0,s.x1,s.y1].every(Number.isFinite)||s.x0<0||s.y0<0)o.push('สำนักผู้อื่น: ขนาดผิดปกติ');const zc=zoneAt(s.x0,s.y0),ze=zoneAt(s.x1,s.y1);if(!zc||!ze||zc!==ze)o.push('สำนักผู้อื่น: คร่อมหลายเขต '+s.n);
+   fs.forEach(b=>{if(b!==s&&ov(s,b,0))o.push('สำนักผู้อื่น: ทับกัน '+s.n+' / '+b.n)});SOLID.forEach(b=>{if(b!==s&&!b.pso&&ov(s,b,0))o.push('สำนักผู้อื่น: ทับอาคาร '+b.n)});
+   const mf=myFoot();if(mf&&ov(s,mf,0))o.push('สำนักผู้อื่น: ทับสำนักของเรา');
+   W.forEach(w=>{if(!w.pso&&!w.ps&&w.z&&w.x>=s.x0&&w.x<=s.x1&&w.y>=s.y0&&w.y<=s.y1&&zoneAt(w.x,w.y)&&zoneAt(w.x,w.y).id===zoneAt(s.x0,s.y0).id)o.push('สำนักผู้อื่น: จุด '+String(w.n).slice(0,24)+' อยู่ในตัวอาคาร')})});
+  ws.forEach(w=>{const q=zoneAt(w.x,w.y);if(!q||q.id!==w.z)o.push('สำนักผู้อื่น: ป้ายตกนอกโซน');if(w.go||w.npc)o.push('สำนักผู้อื่น: ป้ายเป็นประตูหรือผู้คน')});return o};
+ CHK.push(()=>{try{return chkForeign()}catch(e){return['ตัวตรวจสำนักผู้อื่นทำงานพลาด: '+e.message]}});
+ (window.__R5DGH=window.__R5DGH||[]).push(is=>{try{chkForeign().forEach(m=>is.push(m))}catch(e){}});
+ (window.__R5FXH=window.__R5FXH||[]).push(fx=>{try{if(!chkForeign().length)return;mkForeign();fx.push(['r15pf','สร้างสำนักผู้อื่นใหม่จากข้อมูลล่าสุด'])}catch(e){}});
  window.__R15C={PL,SEAL,REG,IN,siteErr,mkPS,validPS,chk:guardPS,npcStep,nameNext,boardMenu,regMenu,state:()=>S.ps,rect};
  try{GUIDE.r15c=()=>[{t:'สำนักส่วนตัว : ผู้ฝึกตนระดับแก่นทองคำขึ้นไปและไม่มีสังกัดตั้งสำนักของตัวเองได้ ไปหาผู้ดูแลทะเบียนก่อตั้งสำนักในเมืองตลาดมืด (เมืองท่าน้ำเงาทางตะวันออก) ซื้อตราก่อตั้งสำนัก ค่าธรรมเนียม '+F(SEAL.fee)+' หินต่ำ พร้อมวัตถุดิบ '+matTxt(SEAL.m)+' ของหายากเหล่านี้ตกจากบอสแดนตะวันออกและแดนแก่นทองคำ ต้องรวมตี้ล่า'},
-  {t:'วางสำนัก : ใช้ตราจากกระเป๋าบนที่โล่งกลางแจ้งนอกเขตปลอดภัย ต้องว่างรอบตัว 5 ช่อง ไม่มีอาคาร ผู้คน จุดสำคัญ น้ำ หรือถิ่นบอสใกล้ ๆ ห่างขอบเขต ตั้งชื่อสำนักแล้วยืนยัน ประตูอยู่ด้านเหนือของเจ้า สำนักเป็นอาคารตันเดินทะลุไม่ได้ กด Enter ที่ประตูเพื่อเข้า'},
+  {t:'วางสำนัก : ใช้ตราจากกระเป๋าบนที่โล่งกลางแจ้งนอกเขตปลอดภัย ต้องว่างรอบตัว 5 ช่อง ไม่มีอาคาร ผู้คน จุดสำคัญ น้ำ หรือถิ่นบอสใกล้ ๆ ห่างขอบเขต ตั้งชื่อสำนักแล้วยืนยัน ประตูอยู่ด้านเหนือของเจ้า สำนักเป็นอาคารตันเดินทะลุไม่ได้ กด Enter ที่ประตูเพื่อเข้า ผู้เล่นคนอื่นเห็นสำนักของเจ้าเป็นอาคารตันพร้อมป้ายอ่านชื่อ แต่เข้าไปข้างในไม่ได้'},
   {t:'ภายในสำนัก : มีกระดานสำนักสำหรับตั้งชื่อ NPC อัปเกรด ดูรายชื่อ และยุบสำนัก ห้องโถงชีพจรปราณนั่งสมาธิ +100 เปอร์เซ็นต์ ผู้อาวุโสและศิษย์ต้องตั้งชื่อให้ครบ ระดับพลังของ NPC ต่ำกว่าเจ้าสำนักเสมอ อัปเกรดได้ 5 ระดับ ใช้ขั้นพลัง เงิน และวัตถุดิบหายากมากขึ้นทุกระดับ อาคารใหญ่ขึ้นและได้ NPC เพิ่ม ผู้พัฒนาข้ามเงื่อนไขทั้งหมดได้'}];
   const _g=GUIDE.r15;if(typeof _g==='function'&&!GUIDE.__r15cLinked){GUIDE.__r15cLinked=1}}catch(e){}
  try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-08',c:[C_SYS,C_MAP],h:'สำนักส่วนตัว ตั้งสำนักของตัวเอง',t:'ผู้ฝึกตนระดับแก่นทองคำตั้งสำนักของตัวเองได้ ยากมาก ต้องใช้เงินก้อนใหญ่และของหายากจากบอส',x:['ซื้อตราก่อตั้งสำนักจากผู้ดูแลทะเบียนในเมืองตลาดมืด ต้องถึงแก่นทองคำ ไม่มีสังกัด จ่าย '+F(SEAL.fee)+' หินต่ำและวัตถุดิบหายาก','ใช้ตราบนที่โล่งนอกเขตปลอดภัย ต้องว่างรอบตัว 5 ช่อง สำนักเป็นอาคารตัน เดินทะลุไม่ได้ กด Enter ที่ประตูเพื่อเข้า','อัปเกรดได้ 5 ระดับ อาคารใหญ่ขึ้น มีผู้อาวุโสและศิษย์เพิ่ม ต้องตั้งชื่อให้ครบ ผู้พัฒนาข้ามเงื่อนไขทั้งหมดได้','เพิ่มตัวตรวจเบื้องหลังและตัวซ่อมคู่กัน และหัวข้อในคู่มือเกม']})}catch(e){bugLog('รอบที่ 15','ใส่ประกาศสำนักส่วนตัวไม่สำเร็จ '+e)}
+ try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-08',c:[C_SYS,C_MAP],h:'บรรยากาศสถานที่ใหม่ พื้นหินของแต่ละเมือง และสำนักที่คนอื่นเห็น',t:'ทุกสถานที่ทางตะวันออกมีเสียงบรรยากาศของตัวเอง พื้นหินของเมืองตลาดมืดกับสำนักมารไม่ใช่พื้นเมืองหลวงอีกแล้ว และผู้เล่นคนอื่นเห็นสำนักส่วนตัวของเรา',x:['ถนนพ่อค้า หมู่บ้านทุ่งรวงทอง หมู่บ้านท่าน้ำเงา เมืองตลาดมืด สำนักมารเงาโลหิต ป่าเงาไร้แสง ทุ่งกระดูกอสูร และห้องในสำนักส่วนตัว มีเสียงลม เสียงชีวิต และเสียงก้องของตัวเอง เขตล่าเก่าก็ได้ลมและเสียงก้องครบ','เมืองตลาดมืดมีพื้นท่าหินดำชื้น สำนักมารมีลานหินดำ หมู่บ้านทุ่งรวงทองมีดินอัดปนฟาง ห้องในสำนักส่วนตัวเป็นพื้นไม้ ไม่เหมือนพื้นหินเมืองหลวงแล้ว','สำนักส่วนตัวที่ตั้งแล้วจะปรากฏให้ผู้เล่นอื่นเห็นเป็นอาคารตันพร้อมป้ายหน้าประตู อ่านชื่อสำนัก เจ้าสำนัก และระดับได้ ประตูปิดไม่รับแขก ถ้าตั้งทับที่กันพร้อมกัน สำนักที่ตั้งก่อนได้ที่ อีกคนได้ตราคืน','เพิ่มตัวตรวจเบื้องหลังและตัวซ่อมคู่กัน']})}catch(e){bugLog('รอบที่ 15','ใส่ประกาศชุดที่ 9 ไม่สำเร็จ '+e)}
  try{TIPS.push('ถึงแก่นทองคำแล้วตั้งสำนักของตัวเองได้ ไปซื้อตราก่อตั้งสำนักที่ผู้ดูแลทะเบียนในเมืองตลาดมืด ใช้ตราบนที่โล่งนอกเขตปลอดภัย')}catch(e){}
 }
 }catch(e){console.error('R15 ชุดที่ 8',e);bugLog('รอบที่ 15','เริ่มสำนักส่วนตัวไม่สำเร็จ: '+e)}
