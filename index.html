@@ -493,8 +493,8 @@ function move(f){if(TB.on){moveBlocked=true;walk=false;blockSay(TB.ph==='prep'?'
  const nb=npcAt(nx,ny,z);if(nb){walk=false;moveBlocked=true;sfx('bump');sfx('npc_'+nb.npc,panOf(nb),1.01);blockSay('ชน '+nb.n+' ตรงนี้ กด F คุยได้');return}{const sb=solidAt(nx,ny);if(sb&&!solidAt(S.x,S.y)){walk=false;moveBlocked=true;sfx('bump');blockSay('ชนผนัง'+sb.n+' เดินอ้อมไปตามผนัง ประตูอยู่ทาง'+solidDoorHint(sb));return}}/* อาคารตัน: ออกจากในผนังได้เสมอ (กันติดถาวรกรณีโหลดเซฟเก่าที่ยืนอยู่ในรอยเท้า) */const oz=zoneAt(S.x,S.y);if(z!==oz&&!PASS&&!(z.open&&oz.open)){PEND={f};walk=false;moveBlocked=true;sfx('open');blockSay('ถึงทางเข้า '+z.n+(z.min>S.step?(z.safe?' (ขั้นยังไม่ถึง เข้าไม่ได้)':' (อันตราย เกินระดับของเจ้า)'):'')+' กด Enter เพื่อเข้า');return}if(z!==oz&&z.min>S.step&&!godOn()){moveBlocked=true;walk=false;sfx('bump');blockSay('ยังเข้า '+z.n+' ไม่ได้ ต้องถึง'+realmName(z.min)+'ก่อน (ตอนนี้ '+realmName(S.step)+')');return}S.x=nx;S.y=ny;posNote();sfx('step');climbNote(nx-DX[f],ny-DY[f]);const nd0=ND.find(a=>!a.dead&&a.x===nx&&a.y===ny);if(nd0){nd0.dead=Date.now();add(nd0.id,1);say('เก็บ '+I[nd0.id].n+' เข้ากระเป๋า');sfx('pick')}
  if(z!==oz){say('เข้าสู่ '+z.n+(z.safe?' เขตปลอดภัย':''));if(z.min>S.step&&!godOn())die('แรงกดดันปราณในหุบเขาทำให้เจ้าล้มลงทันที')}}
 let askO=null;/* ตัวเลือกช่องพิมพ์ {num: แป้นตัวเลข, ok: ชื่อปุ่มยืนยันบนโทรศัพท์} */
-function ask(p,cb,o){prevMode=mode;mode='input';cbk=cb;askO=o||null;const i=$('in');i.hidden=false;i.value='';i.setAttribute('aria-label',p);i.inputMode=askO&&askO.num?'numeric':'text';i.focus();say(p)}
-function endAsk(){const i=$('in');i.hidden=true;i.inputMode='text';askO=null;mode=prevMode;$('app').focus()}
+function ask(p,cb,o){prevMode=mode;mode='input';cbk=cb;askO=o||null;const i=$('in');i.hidden=false;i.value='';i.setAttribute('aria-label',p);i.inputMode=askO&&askO.num?'numeric':'text';if(askO&&askO.max)i.maxLength=askO.max;else i.removeAttribute('maxlength');/* จำกัดจำนวนตัวอักษรตอนพิมพ์แชท */i.focus();say(p)}
+function endAsk(){const i=$('in');i.hidden=true;i.inputMode='text';i.removeAttribute('maxlength');askO=null;mode=prevMode;$('app').focus()}
 function menu(t,items,o){if(!(mode==='menu'&&mn&&mn.t===t))sfx(t==='กระเป๋า'?'bagopen':'open');/*PATCH14*/if(!items.length){say(t+' ว่างเปล่า');return}mode='menu';mn=Object.assign({t,items,i:0},o||{});say(t+' '+items.length+' รายการ '+items[0].t)}
 function conf(t,cb){prevMode=mode;mode='confirm';cbk=cb;say(t+' กด Enter ยืนยัน หรือปุ่มอื่นยกเลิก')}
 /* ===== inventory ===== */
@@ -3298,7 +3298,7 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
  /* ===== เสียงจริงหลายจังหวะต่อกัน (SEQ) สำหรับเหตุการณ์ที่เสียงเดียวสั้นเกินหรือไม่ครบเรื่อง =====
     [ชุดเสียง, ความดัง, เวลาเริ่ม (วินาที)] เช่น เปิดกระเป๋า = ปลดหัวเข็มขัดถุงหนัง แล้วเปิดฝาถุง (ผ้าและหนังขยับ) แล้วล้วงหาของ ยาวราว 1 วินาที
     ถ้าเสียงจังหวะแรกยังถอดรหัสไม่เสร็จ ใช้เสียงเดียวของหน้าที่นั้นแทน (play) จึงไม่เงียบ */
- const SEQ={bagopen:[['packopen',.8,0],['rustle',.55,.17],['pickup',.42,.46]],bagclose:[['rustle',.45,0],['packclose',.8,.2]],
+ const SEQ={bagopen:[['MetalLatch',.55,0],['packopen',.85,.12],['rustle',.5,.3],['coinpick',.4,.52]],bagclose:[['rustle',.4,0],['packclose',.85,.14],['MetalLatch',.6,.4]],
   potion:[['cork',.75,0],['drink',.8,.34]],eat:[['eat',.85,0]],sip:[['drink',.8,0]],brew:[['pour',.6,0],['MetalPot2',.5,.8]],rod:[['swish',.6,0],['plop',.55,.5]],tankput:[['pour',.55,0],['wade',.45,.7]],
   teleport:[['tp_out',.7,0],['tp_in',.65,.6]],fishget:[['splash',.6,0],['pickup',.4,.5]],craft:[['anvil',.6,0],['anvil',.5,.42],['anvil',.55,.84]],
   die:[['hum_die',.85,0],['thud_b',.75,.42]],capdone:[['quill',.5,0],['coins',.7,.5],['questdone',.7,.95]],capinn:[['door',.6,.4],['eat',.6,1],['drink',.55,1.8],['wake',.5,2.8]],captea:[['pour',.7,.4],['cork',.35,1.1],['drink',.6,1.5]],caplib:[['bookopen',.7,0],['pageturn',.6,.8],['pageturn',.5,1.5],['quill',.4,2.1]],capshop:[['packopen',.55,.35],['coins',.6,.8],['tradedone',.5,1.2]],cappoi:[['pickup',.5,0],['tick',.3,.35]],caparena:[['gong',.6,0],['unsheathe',.7,.9],['sw_sword',.7,1.4],['hit_clash',.75,1.65],['sw_sword',.7,2],['hit_clash',.75,2.25]],capwin:[['ring',.6,0],['coins',.6,.45],['questdone',.6,.9]],caplose:[['discard',.55,0],['tap',.4,.5]]};
@@ -3447,7 +3447,7 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
  const fxMenuItems=()=>[{t:'รอบที่ 5 รวมพลังสายฟ้า 3 วินาที แล้วฟ้าผ่าเปรี้ยง 3 ชั้น เป้าทางขวา',r5:'thunder'},{t:'รอบที่ 5 รวมพลังไฟ 3 วินาที ไฟวิ่งวูบแล้วระเบิดบึ้ม เป้าทางขวา',r5:'fire'},{t:'รอบที่ 5 รวมพลังพายุหิมะ 2 วินาที แล้วน้ำแข็งแตก เป้าทางขวา',r5:'ice'},{t:'รอบที่ 5 ชักกระบี่ เช้งงง แล้วฟัน',r5:'sword'},{t:'รอบที่ 5 ลมพัดระลอกยาว 5 ถึง 8 วินาที ค่อยๆ จาง',r5:'gust'},{t:'รอบที่ 5 พายุหุบเขาหมาป่า แล้วเหลือใบไผ่เสียดสี',r5:'storm'},{t:'รอบที่ 5 บอสคำราม ฆ้องหวาดกลัว ทางซ้าย',r5:'roar'}].concat(Object.keys(SCNTH).map(k=>({t:'เสียงชีวิตในเขต '+SCNTH[k]+' ดังจากทิศสุ่มรอบตัว',sc:k}))).concat(['fire','earth','air','water','heal'].map(e=>({t:'เสียงวิชา 3 จังหวะ ธาตุ'+({fire:'ไฟ',earth:'ดินและศิลา',air:'ลมและสายฟ้า',water:'น้ำและน้ำแข็ง',heal:'รักษา'})[e],el:e})),
   Object.keys(MVOX).map(k=>({t:'เสียงอสูร '+((MD[k]&&MD[k].n)||k)+' ครบ 5 แบบ ร้อง จู่โจม เจ็บ ตาย หายใจ ทางขวา',mv:k})),
   Object.keys(SEQ).map(k=>({t:'เสียงหลายจังหวะ '+(SEQTH[k]||k),sq:k})));
- const SEQTH={bagopen:'เปิดกระเป๋า ปลดหัวเข็มขัด เปิดถุง ล้วงหาของ',bagclose:'ปิดกระเป๋า',potion:'เปิดจุกขวดแล้วดื่มโอสถ',eat:'กินผลไม้ สมุนไพร หรือของกิน',sip:'ดื่มน้ำค้างวิญญาณ',brew:'ปรุงโอสถ รินน้ำลงหม้อ',rod:'เหวี่ยงเบ็ดลงน้ำ',tankput:'ปล่อยปลาลงตู้',teleport:'เคลื่อนย้าย หายไปแล้วมาถึง',fishget:'ได้ปลา น้ำกระเซ็น',craft:'สร้างของ ตีเหล็ก 3 ครั้ง',die:'เจ้าตาย ร้องแล้วร่างล้มลง'};
+ const SEQTH={bagopen:'เปิดกระเป๋า ปลดกลอนโลหะ เปิดถุงหนัง ผ้าขยับ แล้วมีเสียงของกุกกัก',bagclose:'ปิดกระเป๋า ผ้าขยับ ผูกถุง แล้วล็อกกลอนโลหะ',potion:'เปิดจุกขวดแล้วดื่มโอสถ',eat:'กินผลไม้ สมุนไพร หรือของกิน',sip:'ดื่มน้ำค้างวิญญาณ',brew:'ปรุงโอสถ รินน้ำลงหม้อ',rod:'เหวี่ยงเบ็ดลงน้ำ',tankput:'ปล่อยปลาลงตู้',teleport:'เคลื่อนย้าย หายไปแล้วมาถึง',fishget:'ได้ปลา น้ำกระเซ็น',craft:'สร้างของ ตีเหล็ก 3 ครั้ง',die:'เจ้าตาย ร้องแล้วร่างล้มลง'};
  const fxMenuDo=x=>{if(!x||!(x.sc||x.el||x.mv||x.sq||x.r5))return false;const c=waCtx();if(!c){say('เสียงยังไม่พร้อม กดปุ่มใดก็ได้หนึ่งครั้งก่อน');return true}
   if(x.r5){const A5=HOOK.R5A;if(!A5)return true;const fake={k:'wolf',x:S.x+DX[(S.f+2)%8]*5,y:S.y+DY[(S.f+2)%8]*5,vt:0,hp:1,z:''};const ids={thunder:'thunderfall',fire:'firestorm',ice:'blizzard',sword:'skysword'};
    if(ids[x.r5]){const id=ids[x.r5],k=SK[id];skWant5(id,k);if(x.r5==='sword'){SKS.sw.out=false;HOOK.skFx('air',id,k,{x:fake.x,y:fake.y})}else{HOOK.skFx('charge',id,k,{dur:k.ct||2});setTimeout(()=>{try{HOOK.skFx('air',id,k,{x:fake.x,y:fake.y});setTimeout(()=>{try{const el=elOf(id,k);envPlay(one(el==='fire'?'imp_fire2':el==='ice'?'iceshat':'imp_air2'),{g:.8,pan:.7})}catch(e){}},350)}catch(e){}},(k.ct||2)*1000)}return true}
@@ -3840,7 +3840,7 @@ function gmPrompt(){if(!GMV.acct()){const w=GMV.why&&GMV.why();if(w)say(w,1);ret
   else{if(++gmFail>=5){gmFail=0;gmLock=Date.now()+60000}say('รหัสไม่ถูกต้อง')}});
  const i=$('in');i.type='password';i.setAttribute('autocomplete','off')}
 {const _ea=endAsk;endAsk=function(){const i=$('in');if(i.type!=='text')i.type='text';_ea()}}
-[['chatW',1,'โลก','พิมพ์แชทโลก'],['chatM',2,'แผนที่','พิมพ์แชทแผนที่']].forEach(([k,c,l,p])=>{A[k]=function(){ask(p,v=>{endAsk();if(v==='/gm')return gmPrompt();if(v==='/gmoff'&&gmOn)return gmRevoke();if(v)msg(c,'['+l+'] คุณ: '+v)})}});
+[['chatW',1,'โลก','พิมพ์แชทโลก'],['chatM',2,'แผนที่','พิมพ์แชทแผนที่']].forEach(([k,c,l,p])=>{A[k]=function(){ask(p,v=>{endAsk();if(v==='/gm')return gmPrompt();if(v==='/gmoff'&&gmOn)return gmRevoke();if(v)msg(c,'['+l+'] คุณ: '+v.slice(0,c===1?100:120))},{max:c===1?100:120})}});
 try{localStorage.removeItem(GMK)}catch(e){}/*ไม่จำการปลดล็อกข้ามรอบ ต้องกรอกรหัสลับทุกครั้ง*/
 /* บาลานซ์: บอสสู้คนเดียวได้เมื่อมีขั้น ศาสตรา เกราะ และโอสถพร้อม (ระบบปาร์ตี้ยังไม่เปิด) */
 MS.forEach(m=>{if(BOSSES.includes(m.k)&&!m.dead)m.hp=MD[m.k].hp});
@@ -5323,7 +5323,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
   const same=zid(v.x,v.y)===zid(S.x,S.y);
   menu(v.n,[{t:'ส่งข้อความส่วนตัวหา '+v.n,a:'pm'},{t:v.n+' '+lvTxt(v)+(v.ch?' ฉายา '+v.ch:'')+' อยู่ที่ '+zn(v.x,v.y)+(same?' '+rel(v.x-S.x,v.y-S.y):'')+' ตำแหน่งล่าสุดที่ส่งขึ้นเซิร์ฟเวอร์'},{t:'กลับไปรายชื่อ',a:'back'}],{ent:x=>{
    if(x.a==='back')return back();
-   if(x.a==='pm'){ask('พิมพ์ข้อความส่วนตัวถึง '+v.n,txt=>{mode='play';sendPM(v,txt)});return}
+   if(x.a==='pm'){ask('พิมพ์ข้อความส่วนตัวถึง '+v.n,txt=>{mode='play';sendPM(v,txt)},{max:120});return}
    say(x.t,1)}})};
  A.whoOn=async function(){
   if(window.__MP_OFF||!online())return say('ตอนนี้ออฟไลน์ มีเจ้าอยู่คนเดียว');
@@ -6016,7 +6016,7 @@ try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-10-29',c:[C_SYS],h:'�
   const _msg=msg;
   msg=function(c,t){
    if(c!==1&&c!==2)return _msg(c,t);
-   const w=c===1,st=w?W:CM,max=w?100:120;/* แชทไม่จำกัด: ส่งได้ตลอด ไม่มีเวลารอระหว่างข้อความ */
+   const w=c===1,st=w?W:CM,max=w?100:120;t=String(t);{const P=w?'[โลก] คุณ: ':'[แผนที่] คุณ: ';if(t.indexOf(P)===0&&t.length>P.length+max)t=P+t.slice(P.length,P.length+max)}/* ตัดข้อความของตัวเองที่ยาวเกินก่อนเก็บและอ่าน *//* แชทไม่จำกัด: ส่งได้ตลอด ไม่มีเวลารอระหว่างข้อความ */
    const text=String(t).replace(w?/^\[โลก\] คุณ: /:/^\[แผนที่\] คุณ: /,'').slice(0,max);
    const on=online()&&!window.__MP_OFF&&!st.failed;
    _msg(c,t);trimC();sendBlip();
