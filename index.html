@@ -551,6 +551,7 @@ function dropAsk(id){const s=S.inv.find(a=>a.id===id);if(!s||!I[id])return say('
 function dropN(id,n){const s=S.inv.find(a=>a.id===id);if(!s||!I[id])return say('ไม่มีของชิ้นนี้แล้ว');if(!(S.hp>0)||!zoneAt(S.x,S.y))return say('ตอนนี้ทิ้งของไม่ได้');
  n=Math.min(Math.floor(Number(n)),s.q);if(!(n>=1))return say('ยกเลิก จำนวนไม่ถูกต้อง');remN(id,n);if(!Array.isArray(S.ground))S.ground=[];
  const g=S.ground.find(a=>a&&a.mine&&a.id===id&&a.x===S.x&&a.y===S.y);if(g)g.q=Math.floor(Number(g.q)||0)+n;else S.ground.push({x:S.x,y:S.y,id,q:n,mine:1});
+ try{if(HOOK.xfDrop)HOOK.xfDrop()}catch(e){}/* ประกาศให้ผู้เล่นใกล้ๆ รู้ทันที ไม่รอรอบ */
  const left=(S.inv.find(a=>a.id===id)||{q:0}).q;say('ทิ้งแล้ว '+shortN(id)+' '+n+' '+unitOf(id)+(left?' เหลือ '+left:' หมดกระเป๋า')+' วางไว้ตรงนี้ กด Enter เก็บคืนได้ ผู้เล่นอื่นที่มายืนตรงนี้ก็เก็บได้ถ้าเจ้าออนไลน์อยู่');invMenu(id);return n}
 /* ดูดซับหินวิญญาณ: เลือกจำนวน หินเป็นเงินด้วย ตั้งแต่ 10 ก้อนขึ้นไปถามยืนยันก่อน */
 function stoneAsk(id){if(!(S.hp>0))return say('ตอนนี้ดูดซับไม่ได้');
@@ -845,7 +846,7 @@ setInterval(()=>{if(!walk){if(awHist.length)awHist.length=0;return}if(mode!=='pl
  const gm=goal.mon;if(gm){const z0=zoneAt(S.x,S.y);if(gm.dead||!MS.includes(gm)||!z0||gm.z!==z0.id){walk=false;goal=null;return say(gm.dead?'อสูรที่ติดตามตายแล้ว หยุดติดตาม':'อสูรที่ติดตามออกนอกเขตนี้แล้ว หยุดติดตาม')}
   if(dist(S,gm)<1.6){walk=false;goal=null;target=gm;return say('ถึงตัว '+MD[gm.k].n+' แล้ว ล็อกเป้าไว้ กดทักษะโจมตีได้เลย')}}/* ติดตามอสูร (Shift+A หรือปุ่มติดตามบนโทรศัพท์): เดินตามตำแหน่งปัจจุบันของอสูร ถึงตัวแล้วหยุดและล็อกเป้า */
  if(goal.nd){if(goal.nd.dead||!ND.includes(goal.nd)){const nr=dist(S,goal.nd)<1.5;walk=false;goal=null;return nr?undefined:say('สมุนไพรนี้ถูกเก็บไปแล้ว หยุดเดิน')}goal.x=goal.nd.x;goal.y=goal.nd.y}if(goal.gr&&!S.ground.includes(goal.gr)){const nr=dist(S,goal.gr)<1.5;walk=false;goal=null;return nr?undefined:say('ของชิ้นนี้ไม่อยู่แล้ว หยุดเดิน')}/* เป้าเป็นสมุนไพรหรือของตกพื้น (Shift M) */
- const dx=goal.x-S.x,dy=goal.y-S.y;if(Math.hypot(dx,dy)<1){walk=false;const pk=goal.nd||goal.gr;say('ถึง '+goal.n+' แล้ว'+(/^ทางไป/.test(goal.n)?' เดินข้ามเขตต่อแล้วกด Enter เพื่อเข้า':''));if(pk){goal=null;try{A.enter()}catch(e){bugLog('เก็บของ','เก็บอัตโนมัติผิดพลาด '+(e&&e.message))}}return}
+ const dx=goal.x-S.x,dy=goal.y-S.y;if(Math.hypot(dx,dy)<1){walk=false;const pk=goal.nd||goal.gr||goal.rd;say('ถึง '+goal.n+' แล้ว'+(/^ทางไป/.test(goal.n)?' เดินข้ามเขตต่อแล้วกด Enter เพื่อเข้า':''));if(pk){goal=null;try{A.enter()}catch(e){bugLog('เก็บของ','เก็บอัตโนมัติผิดพลาด '+(e&&e.message))}}return}
  {const zc=zoneAt(S.x,S.y),dd=Math.hypot(dx,dy);if(goal.npc&&zc&&zc.id===goal.z&&dd<=2){walk=false;say('ถึงตัว '+goal.n+' แล้ว อยู่ห่างประมาณ '+Math.max(1,Math.round(dd))+' ก้าว กด F คุยได้');return}}/* เป้าเป็นคน: หยุดในระยะคุย (คุยได้ไม่เกิน 2.5 ก้าว) ไม่เดินเข้าไปชนตัวคน เดิมเดินจนชนแล้วหยุดพร้อมเสียงกระแทก */
  const sx=Math.sign(dx),sy=Math.sign(dy);let ch=null;const free=(ax,ay)=>{const q=zoneAt(S.x+ax,S.y+ay);return !!q&&!npcAt(S.x+ax,S.y+ay,q)&&(!SOLID.length||!!solidAt(S.x,S.y)||!solidAt(S.x+ax,S.y+ay))};
  if(SOLID.length)ch=swNext(goal);/* รอบที่ 15: เส้นตรงถึงเป้าทะลุตัวอาคาร = คำนวณทางอ้อมรอบอาคาร (BFS ในเขตเดียวกัน) */
@@ -1129,7 +1130,7 @@ A.mradar=function(){const z=zoneAt(S.x,S.y);if(!z)return say('ไม่พบเ
 /* Shift O: เช็คอสูร บอสอยู่ลำดับแรก (บอสไกลแค่ไหนในเขตเดียวกันก็บอกตำแหน่ง) ตามด้วยอสูรทั่วไปในระยะ 29 ก้าว เรียงใกล้ไปไกล ล็อกเป้าตัวแรกที่อยู่ในระยะ */
 A.mradarB=function(){const z=zoneAt(S.x,S.y);if(!z)return say('ไม่พบเขตที่ยืนอยู่');const all=MS.filter(m=>m&&!m.dead&&m.z===z.id&&MD[m.k]&&Number.isFinite(m.x)&&Number.isFinite(m.y)),bo=all.filter(m=>isBossK(m.k)).sort((a,b)=>dist(S,a)-dist(S,b)),no=all.filter(m=>!isBossK(m.k)&&dist(S,m)<=29).sort((a,b)=>dist(S,a)-dist(S,b)),l=bo.concat(no);if(!l.length)return say('ไม่พบอสูรในเขตนี้ใน 29 ก้าว และไม่มีบอส');l.slice(0,6).forEach((m,i)=>say((i+1)+' '+(isBossK(m.k)&&!/บอส/.test(MD[m.k].n)?'บอส ':'')+MD[m.k].n+' ระดับพลัง '+mpw(m.k)+' ห่าง '+Math.round(dist(S,m))+' ก้าว '+rel(m.x-S.x,m.y-S.y)));if(!bo.length)say('ในเขตนี้ไม่มีบอสที่ยังมีชีวิต');const near=l.filter(m=>dist(S,m)<=29);rl=near;rlT=Date.now()+8000;if(near.length){target=near[0];say('ล็อกเป้า '+MD[near[0].k].n+' ลูกศรซ้ายขวาสลับเป้า กด Shift A ติดตาม')}else say('บอสอยู่ไกลเกิน 29 ก้าว ยังไม่ล็อกเป้า')};
 /* Shift M: เมนูสมุนไพรและของที่เก็บได้ในเขตนี้ เรียงใกล้ไปไกล กดลูกศรขึ้นลงเลือก Enter เดินอัตโนมัติไปเก็บให้ถึงที่แล้วเก็บเอง กดปุ่มใดก็ได้เพื่อหยุด */
-A.herbMenu=function(){const z=zoneAt(S.x,S.y);if(!z)return say('ไม่พบเขตที่ยืนอยู่');const L=[];ND.forEach(a=>{if(a&&!a.dead&&a.z===z.id&&I[a.id]&&Number.isFinite(a.x)&&Number.isFinite(a.y))L.push({nd:a,x:a.x,y:a.y,n:I[a.id].n})});(Array.isArray(S.ground)?S.ground:[]).forEach(g=>{if(!g||!Number.isFinite(g.x)||!Number.isFinite(g.y)||zoneAt(g.x,g.y)?.id!==z.id)return;const n=g.coin!=null?'เหรียญทอง '+g.coin:g.gold!=null?'หินต่ำ '+(g.gold/100).toFixed(2)+' ก้อน':I[g.id]?I[g.id].n+(g.q>1?' x'+g.q:''):null;if(n)L.push({gr:g,x:g.x,y:g.y,n:'ของตกพื้น '+n})});L.forEach(o=>{o.d=dist(S,o)});L.sort((a,b)=>a.d-b.d);const M=L.slice(0,60);if(!M.length)return say('ไม่มีสมุนไพรหรือของให้เก็บในเขตนี้');menu('สมุนไพรและของที่เก็บได้ '+z.n,M.map(o=>({t:o.n+' ห่าง '+Math.round(o.d)+' ก้าว '+rel(o.x-S.x,o.y-S.y),o})),{ent:x=>{const o=x.o;if(o.nd&&(o.nd.dead||!ND.includes(o.nd))){mode='play';return say('สมุนไพรนี้ถูกเก็บไปแล้ว')}if(o.gr&&!S.ground.includes(o.gr)){mode='play';return say('ของชิ้นนี้ไม่อยู่แล้ว')}goal={x:o.x,y:o.y,n:o.n,nd:o.nd||null,gr:o.gr||null};mode='play';say('ล็อกเป้าหมาย '+o.n+' เริ่มเดินอัตโนมัติ ถึงแล้วจะเก็บให้เอง กดปุ่มใดก็ได้เพื่อหยุด');walk=true}})};
+A.herbMenu=function(){const z=zoneAt(S.x,S.y);if(!z)return say('ไม่พบเขตที่ยืนอยู่');const L=[];ND.forEach(a=>{if(a&&!a.dead&&a.z===z.id&&I[a.id]&&Number.isFinite(a.x)&&Number.isFinite(a.y))L.push({nd:a,x:a.x,y:a.y,n:I[a.id].n})});(Array.isArray(S.ground)?S.ground:[]).forEach(g=>{if(!g||!Number.isFinite(g.x)||!Number.isFinite(g.y)||zoneAt(g.x,g.y)?.id!==z.id)return;const n=g.coin!=null?'เหรียญทอง '+g.coin:g.gold!=null?'หินต่ำ '+(g.gold/100).toFixed(2)+' ก้อน':I[g.id]?I[g.id].n+(g.q>1?' x'+g.q:''):null;if(n)L.push({gr:g,x:g.x,y:g.y,n:'ของตกพื้น '+n})});try{(HOOK.xfItems?HOOK.xfItems():[]).forEach(o=>L.push(o))}catch(e){}L.forEach(o=>{o.d=dist(S,o)});L.sort((a,b)=>a.d-b.d);const M=L.slice(0,60);if(!M.length)return say('ไม่มีสมุนไพรหรือของให้เก็บในเขตนี้');menu('สมุนไพรและของที่เก็บได้ '+z.n,M.map(o=>({t:o.n+' ห่าง '+Math.round(o.d)+' ก้าว '+rel(o.x-S.x,o.y-S.y),o})),{ent:x=>{const o=x.o;if(o.nd&&(o.nd.dead||!ND.includes(o.nd))){mode='play';return say('สมุนไพรนี้ถูกเก็บไปแล้ว')}if(o.gr&&!S.ground.includes(o.gr)){mode='play';return say('ของชิ้นนี้ไม่อยู่แล้ว')}if(o.r&&!(HOOK.xfAlive&&HOOK.xfAlive(o.r))){mode='play';return say('ของชิ้นนี้ถูกเก็บไปแล้วหรือไม่อยู่แล้ว')}goal={x:o.x,y:o.y,n:o.n,nd:o.nd||null,gr:o.gr||null,rd:o.r||null};mode='play';say('ล็อกเป้าหมาย '+o.n+' เริ่มเดินอัตโนมัติ ถึงแล้วจะเก็บให้เอง กดปุ่มใดก็ได้เพื่อหยุด');walk=true}})};
 Object.assign(KEYS,{o:'mradar','S+o':'mradarB','S+m':'herbMenu',u:'guide',F4:'news',F10:'logout'});
 {const r=MAIN.find(x=>x[1]==='KeyA');if(r)r[0]='เช็คคนรอบตัว (A)';MAIN.push(['เรดาร์สมุนไพร (O)','KeyO'],['เช็คอสูร บอสก่อน (Shift+O)','S+KeyO'],['เมนูสมุนไพรและของที่เก็บได้ (Shift+M)','S+KeyM'],['คู่มือเกม (U)','KeyU'],['ประกาศ (F4)','F4'],['ออกจากระบบ (F10)','F10']);
 [['O','KeyO'],['U','KeyU'],['F4','F4'],['F10','F10']].forEach(([l,c])=>{const b=document.createElement('button');b.tabIndex=-1;b.onmousedown=e=>e.preventDefault();b.textContent=l;b.setAttribute('aria-label','ปุ่ม '+l);b.onclick=()=>{if(mode==='input')return;handle({code:c,shiftKey:false});render()};$('pad').appendChild(b)})}
@@ -2281,7 +2282,7 @@ NEWS.push({id:17,d:'2026-10-25',c:[C_MAP,C_SYS],h:'วงเวทย์เค�
  sell:{bus:'ui',mode:'short',cap:2,vol:0.8,urls:["https://actions.google.com/sounds/v1/foley/coins_drop_multiple.ogg"]},
  coinpour:{bus:'ui',mode:'short',cap:2.5,vol:0.8,urls:["https://actions.google.com/sounds/v1/foley/coins_pouring.ogg"]},
  notify:{bus:'ui',mode:'short',cap:2.5,vol:0.7,urls:["https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg"]},
- chat:{bus:'ui',mode:'short',cap:2,vol:0.8,urls:["https://cdn.jsdelivr.net/gh/MozillaReality/hubs-sample-assets@master/audios/pop.mp3"]},
+ chat:{bus:'ui',mode:'short',cap:2.5,vol:1,urls:[]},/* เสียงแชทเดิม (pop.mp3 และ talk) เอาออกแล้ว ใช้เสียงสำรอง wake เต็มระดับเสียง */
  login:{bus:'ui',mode:'short',cap:3,vol:0.8,urls:["https://actions.google.com/sounds/v1/cartoon/clang_and_wobble_high.ogg"]},
  register:{bus:'ui',mode:'short',cap:3,vol:0.8,urls:["https://actions.google.com/sounds/v1/cartoon/siren_whistle.ogg"]},
  online:{bus:'ui',mode:'short',cap:2.5,vol:0.8,urls:["https://actions.google.com/sounds/v1/alarms/beep_short_double.ogg"]},
@@ -2655,7 +2656,7 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
  const KNB={
   /* เมนูและหน้าจอ */
   button:['tick'],whoosh:['swish'],open:['tap'],close:['BookPlace1','BookPlace2','BookPlace3'],toggle:['MetalClick'],slotset:['MetalLatch'],bump:['impactSoft_heavy_000','impactSoft_heavy_001','impactSoft_heavy_002'],
-  notify:['wake'],chat:['talk'],chatin:['talk'],purge:['wake'],page:['bookopen','BookOpen'],pageflip:['pageturn','BookFlip2','BookFlip3'],bookclose:['BookClose'],scroll:['scroll'],learn:['scroll'],
+  notify:['wake'],chat:['wake'],chatin:['wake'],purge:['wake'],page:['bookopen','BookOpen'],pageflip:['pageturn','BookFlip2','BookFlip3'],bookclose:['BookClose'],scroll:['scroll'],learn:['scroll'],
   login:['wake'],register:['questdone'],online:['wake'],offline:['slain'],logout:['DoorClose3','DoorClose4'],achv:['questdone'],starting:['cure'],
   /* ของ เงิน และการใช้ของ */
   pick:['pickup','quick'],buy:['coins','HandleCoins2'],sell:['coinpick','HandleCoins1'],coinpour:['tradedone'],gavel:['hit_strike'],drop:['drop','discard','DropLeather'],rare:['wake'],
@@ -2697,7 +2698,7 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
  const KNR={};Object.keys(KN.url).forEach(n=>{const m=/^r_(.+)_\d+$/.exec(n);if(m)(KNR[m[1]]=KNR[m[1]]||[]).push(n)});
  const knExp=k=>KN.url[k]?[k]:(KNR[k]||[]);/* ชื่อไฟล์ หรือชื่อชุด -> รายชื่อไฟล์ */
  if(KN.pack){
-  Object.keys(KNB).forEach(r=>{const R=ROLE[r];if(!R){KN.bad.push('ไม่มีหน้าที่เสียง '+r);return}const L=[];KNB[r].forEach(k=>{const E=knExp(k);if(!E.length)KN.bad.push('ไม่มีไฟล์ '+k+' สำหรับ '+r);E.forEach(n=>L.push(knEnt(n,/^(swoosh|clash|punch|hurt|hurt2|spell|fire|thunder|ice|earth|explosion|whoosh)$/.test(r)?1:0)))});if(!L.length)return;
+  Object.keys(KNB).forEach(r=>{const R=ROLE[r];if(!R){KN.bad.push('ไม่มีหน้าที่เสียง '+r);return}const L=[];KNB[r].forEach(k=>{const E=knExp(k);if(!E.length)KN.bad.push('ไม่มีไฟล์ '+k+' สำหรับ '+r);E.forEach(n=>L.push(knEnt(n,/^(swoosh|clash|punch|hurt|hurt2|spell|fire|thunder|ice|earth|explosion|whoosh|chat|chatin)$/.test(r)?1:0)))});if(!L.length)return;
    const loc=KN_LOCAL[r]?(R.urls||[]).filter(u=>/^sounds\//.test(u)):[];if(loc.length){R.urls=loc.slice(0,1);R.vars=R.urls.map(u=>({u,d:2}));R.knf=L}else{R.kn=L;R.urls=[];R.vars=[]}});
   Object.keys(ROLE).forEach(r=>{const R=ROLE[r];if(R.kn||R.knf)return;R.urls=[];R.vars=[];if(!KN_SILENT[r])KN.bad.push('หน้าที่เสียง '+r+' ไม่มีเสียงจริง')})}
  /* หาจุดที่เสียงเริ่มจริงในบัฟเฟอร์ (ข้ามช่วงเงียบหน้าไฟล์ที่ตัวถอดรหัส MP3 ใส่มา) ไม่เกิน 0.08 วินาที */
@@ -5371,7 +5372,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
     ของขวัญ: gift/{uid}/{id} รายบุคคล (ผู้รับลบเองหลังรับ)  giftall/{id} ทั้งเกม (ผู้เล่นแต่ละคนจำเวลาที่รับล่าสุดไว้ในเซฟ)
     การส่งต้องมี gm/{uid}=true ใน Realtime Database (ตั้งในหน้า Console เท่านั้น) */
  const sendBlip=()=>{try{window.__AUDIO&&window.__AUDIO.play('chat',1)}catch(e){}};/* เสียงสังเคราะห์สองโทนเดิมเอาออกแล้ว เหลือเสียงจริง */
- try{const AU=window.__AUDIO;if(AU&&AU.ROLE){const RO=AU.ROLE;RO.chat.vol=1;RO.chat.cap=2.5;if(RO.rare)RO.rare.vol=1}}catch(e){}/* หน้าที่เสียง chatin อยู่ในตารางหลักแล้ว ผูกเสียงจริงในส่วน KN */
+ try{const AU=window.__AUDIO;if(AU&&AU.ROLE){const RO=AU.ROLE;RO.chat.vol=1;RO.chat.cap=2.5;if(RO.chatin){RO.chatin.vol=1;RO.chatin.cap=2.5}if(RO.rare)RO.rare.vol=1}}catch(e){}/* หน้าที่เสียง chatin อยู่ในตารางหลักแล้ว ผูกเสียงจริงในส่วน KN */
  const TOAST=(()=>{const st=document.createElement('style');st.textContent='#toast{position:fixed;left:8px;right:8px;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:60;padding:12px;border-radius:8px;border:2px solid var(--fg);background:var(--bg);color:var(--fg);font-size:17px;font-weight:bold;box-shadow:0 2px 10px rgba(0,0,0,.4)}#toast[hidden]{display:none}';document.head.appendChild(st);const d=document.createElement('div');d.id='toast';d.hidden=true;document.body.appendChild(d);return d})();
  let toastT=null;
  const alertIn=(kind,line,age)=>{
@@ -5965,42 +5966,51 @@ try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-10-29',c:[C_SYS],h:'�
   /* เจ้าของของ: รับคำขอเก็บจากผู้เล่นที่ยืนอยู่ใกล้ของจริง คนแรกเท่านั้น */
   const xfClaim=async(from,did,name)=>{try{if(!did||!Array.isArray(S.ground))return;
    const i=S.ground.findIndex(a=>a&&a.mine&&a.did===did);if(i<0)return;const g=S.ground[i];
-   const cl=liveList().find(v=>v&&v.id===from);if(!cl||!(Math.hypot(cl.x-g.x,cl.y-g.y)<=3))return;
+   const cl=liveList().find(v=>v&&v.id===from);if(!cl||!(Math.hypot(cl.x-g.x,cl.y-g.y)<=8))return;
    const id=g.id,q=xfNum(g.q,9999);if(!id||!I[id]||!q){S.ground.splice(i,1);return}
    S.ground.splice(i,1);/* ย้ายออกก่อนส่ง กันคำขอที่สองได้ของซ้ำ */
    const ok=await xfPm(from,XM+'T|'+did+'|'+id+'|'+q);
    if(!ok){S.ground.push(g);return}
-   try{save()}catch(x){}say(name+' เก็บ '+shortN(id)+' '+q+' '+unitOf(id)+' ที่เจ้าทิ้งไว้ไปแล้ว',1)}catch(e){XF.err++}};
+   try{save()}catch(x){}say('มีผู้เล่นเก็บ '+shortN(id)+' '+q+' '+unitOf(id)+' ที่เจ้าทิ้งไว้ไปแล้ว',1);XF.force=1;xfAnn()}catch(e){XF.err++}};
   /* เจ้าของ: ประกาศตำแหน่งของที่ทิ้งไว้ในแมพที่ยืนอยู่ ทุก 12 วินาที เฉพาะตอนมีผู้เล่นอื่นอยู่ในแมพเดียวกันใกล้ๆ (ไม่เกิน 60 ก้าว) */
   const xfAnn=()=>{try{
    if(window.__MP_OFF||!online()||document.hidden||CM.failed||PM.failed||!Array.isArray(S.ground))return;
-   const now=Date.now();if(now-XF.annT<12000)return;const z=zoneAt(S.x,S.y),me=xfMe();if(!z||!me)return;
-   const G=S.ground.filter(g=>g&&g.mine&&I[g.id]&&xfNum(g.q,9999)&&Number.isInteger(g.x)&&Number.isInteger(g.y)&&(zoneAt(g.x,g.y)||{}).id===z.id);if(!G.length)return;
-   if(!liveList().some(v=>v&&v.id!==me&&v.z===z.id&&Math.hypot(v.x-S.x,v.y-S.y)<=60))return;
+   const now=Date.now();if(now-XF.annT<(XF.force?0:5000))return;XF.force=0;const z=zoneAt(S.x,S.y),me=xfMe();if(!z||!me)return;
+   const G=S.ground.filter(g=>g&&g.mine&&I[g.id]&&xfNum(g.q,9999)&&Number.isInteger(g.x)&&Number.isInteger(g.y)&&(zoneAt(g.x,g.y)||{}).id===z.id);
+   if(!G.length){if(XF.had){XF.had=0;XF.annT=now;send(XM+'E|')}return}/* ของหมดแล้ว: ประกาศรายการว่างครั้งเดียว ให้คนอื่นลบออกจากรายการทันที */
+   if(!liveList().some(v=>v&&v.id!==me&&v.z===z.id))return;
    XF.annT=now;G.sort((a,b)=>Math.hypot(a.x-S.x,a.y-S.y)-Math.hypot(b.x-S.x,b.y-S.y));
-   let m=XM+'D|',n=0;for(const g of G){if(!g.did)g.did=Math.random().toString(36).slice(2,8);const t=[g.did,g.x,g.y,g.id,g.q].join(',');if(m.length+t.length+1>118)break;m+=(n?';':'')+t;n++;if(n>=3)break}
-   if(n)send(m)}catch(e){XF.err++}};
+   const full=G.length<=3;let L=G;if(!full){XF.rot=((XF.rot||0)+3)%G.length;L=G.slice(XF.rot).concat(G.slice(0,XF.rot))}/* เกิน 3 ชิ้น หมุนประกาศทีละ 3 ชิ้น */
+   let m=XM+(full?'E|':'D|'),n=0;for(const g of L){if(!g.did)g.did=Math.random().toString(36).slice(2,8);const t=[g.did,g.x,g.y,g.id,g.q].join(',');if(m.length+t.length+1>118)break;m+=(n?';':'')+t;n++;if(n>=3)break}
+   if(n){XF.had=1;send(m)}}catch(e){XF.err++}};
   /* ผู้เล่นอื่น: รับประกาศของที่ถูกทิ้ง (คืนค่าจริง = ข้อความระบบ ไม่แสดงเป็นแชทแมพ) */
   const XFmap=(from,v,zid)=>{try{const m=String(v.m||'');if(m.charAt(0)!=='⁣'||m.charAt(1)!=='X')return false;
-   if(m.charAt(2)!=='D'||m.charAt(3)!=='|')return true;const now=Date.now();
+   const kd=m.charAt(2);if((kd!=='D'&&kd!=='E')||m.charAt(3)!=='|')return true;const now=Date.now();
+   if(kd==='E')Object.keys(XF.rg).forEach(k=>{if(XF.rg[k]&&XF.rg[k].from===from)delete XF.rg[k]});/* E = รายการครบทั้งหมดของเจ้าของ ของที่ไม่อยู่ในรายการหายไปแล้ว */
    m.slice(4).split(';').slice(0,3).forEach(t=>{const a=t.split(','),did=a[0],x=+a[1],y=+a[2],id=a[3],q=xfNum(a[4],9999);
     if(!/^[a-z0-9]{4,10}$/.test(did)||!Number.isInteger(x)||!Number.isInteger(y)||!I[id]||!q)return;const zz=zoneAt(x,y);if(!zz||zz.id!==zid)return;
-    const k=from+':'+did,e=XF.rg[k];XF.rg[k]={k,from,did,x,y,id,q,n:String(v.n||'ผู้ฝึกตน').slice(0,20),t:now,said:e?e.said:0}});
+    const k=from+':'+did,e=XF.rg[k];XF.rg[k]={k,from,did,x,y,id,q,n:'',t:now,said:e?e.said:0}});
    return true}catch(e){XF.err++;return true}};
   const xfTick=()=>{try{const z=zoneAt(S.x,S.y),now=Date.now();
    Object.keys(XF.rg).forEach(k=>{const r=XF.rg[k];if(!r||now-r.t>40000||!z||(zoneAt(r.x,r.y)||{}).id!==z.id)delete XF.rg[k]});
-   Object.keys(XF.rg).forEach(k=>{const r=XF.rg[k],d=Math.hypot(r.x-S.x,r.y-S.y);if(!r.said&&d<=4){r.said=1;
-    say(r.n+' ทิ้ง '+shortN(r.id)+' '+r.q+' '+unitOf(r.id)+' ไว้ ห่าง '+Math.round(d)+' ก้าว '+(d<1.5?'ยืนอยู่ตรงนี้':rel(r.x-S.x,r.y-S.y))+' ไปยืนที่จุดนั้นแล้วกด Enter เพื่อขอเก็บ',1)}});
-   xfAnn()}catch(e){XF.err++}};
+   Object.keys(XF.rg).forEach(k=>{const r=XF.rg[k],d=Math.hypot(r.x-S.x,r.y-S.y);if(!r.said){r.said=1;
+    say('มีของตกในแผนที่ '+shortN(r.id)+' '+r.q+' '+unitOf(r.id)+' ห่าง '+Math.round(d)+' ก้าว กด Shift M ดูรายการของตกแล้วเดินไปเก็บได้เลย',1)}});
+      xfAnn()}catch(e){XF.err++}};
   setInterval(xfTick,1500);
-  /* กด Enter ที่จุดที่ผู้เล่นอื่นทิ้งของไว้ = ส่งคำขอเก็บไปหาเจ้าของ */
-  const _enXF=A.enter;A.enter=function(){try{if(!PEND&&S.hp>0&&mode==='play'&&online()&&!PM.failed){
-    let b=null,bd=1.5;Object.keys(XF.rg).forEach(k=>{const r=XF.rg[k],d=Math.hypot(r.x-S.x,r.y-S.y);if(r&&d<bd){bd=d;b=r}});
-    if(b){delete XF.rg[b.k];const did=b.did,nm=shortN(b.id)+' '+b.q+' '+unitOf(b.id);XF.pend[did]=Date.now();
-     xfPm(b.from,XM+'C|'+did).then(ok=>{if(!ok&&XF.pend[did]){delete XF.pend[did];say('ส่งคำขอเก็บไม่สำเร็จ ลองใหม่')}});
-     setTimeout(()=>{if(XF.pend[did]){delete XF.pend[did];say('ไม่ได้รับ '+nm+' ของถูกคนอื่นเก็บไปก่อน หรือเจ้าของออฟไลน์ไปแล้ว')}},10000);
-     return say('ขอเก็บ '+nm+' แล้ว รอเจ้าของของยืนยัน')}}}catch(e){XF.err++}
+  HOOK.xfDrop=()=>{XF.force=1;xfAnn();setTimeout(()=>{XF.force=1;xfAnn()},2500)};/* ทิ้งแล้วประกาศทันที และซ้ำอีกครั้งกันข้อความหลุด */
+  /* เดินไปถึงของที่ผู้เล่นอื่นทิ้งไว้ = ส่งคำขอเก็บอัตโนมัติ (กด Enter ตรงจุดก็ได้) เจ้าของรับแล้วของเข้ากระเป๋าทันทีโดยไม่ต้องกดยืนยัน */
+  const xfNearest=(lim)=>{let b=null,bd=lim;Object.keys(XF.rg).forEach(k=>{const r=XF.rg[k],d=Math.hypot(r.x-S.x,r.y-S.y);if(r&&d<bd&&!XF.pend[r.did]){bd=d;b=r}});return b};
+  const xfAsk=b=>{delete XF.rg[b.k];const did=b.did,nm=shortN(b.id)+' '+b.q+' '+unitOf(b.id);XF.pend[did]=Date.now();
+   xfPm(b.from,XM+'C|'+did).then(ok=>{if(!ok&&XF.pend[did]){delete XF.pend[did];say('ส่งคำขอเก็บไม่สำเร็จ ลองใหม่')}});
+   setTimeout(()=>{if(XF.pend[did]){delete XF.pend[did];say('ไม่ได้รับ '+nm+' ของถูกคนอื่นเก็บไปก่อน หรือเจ้าของออฟไลน์ไปแล้ว')}},10000)};
+  const xfAuto=()=>{try{if(PEND||!(S.hp>0)||mode!=='play'||!online()||PM.failed||window.__MP_OFF)return;const z=zoneAt(S.x,S.y);if(!z)return;
+   const b=xfNearest(1.2);if(b&&(zoneAt(b.x,b.y)||{}).id===z.id)xfAsk(b)}catch(e){XF.err++}};
+  setInterval(xfAuto,400);
+  const _enXF=A.enter;A.enter=function(){try{if(!PEND&&S.hp>0&&mode==='play'&&online()&&!PM.failed){const b=xfNearest(1.5);if(b){xfAsk(b);return say('เก็บ '+shortN(b.id)+' '+b.q+' '+unitOf(b.id)+' กำลังเข้ากระเป๋า')}}}catch(e){XF.err++}
    return _enXF.apply(this,arguments)};
+  /* ให้เมนู Shift M แสดงของที่ผู้เล่นอื่นทิ้งไว้ในแมพนี้ (ไม่บอกชื่อเจ้าของ) */
+  HOOK.xfItems=()=>{try{const z=zoneAt(S.x,S.y);if(!z)return[];return Object.keys(XF.rg).map(k=>XF.rg[k]).filter(r=>r&&I[r.id]&&(zoneAt(r.x,r.y)||{}).id===z.id).map(r=>({r,x:r.x,y:r.y,n:'ของตกพื้น '+shortN(r.id)+(r.q>1?' x'+r.q:'')}))}catch(e){return[]}};
+  HOOK.xfAlive=r=>{try{return !!(r&&XF.rg[r.k])}catch(e){return false}};
   window.__XF={XF,give:()=>A.give(),pm:XFpm,map:XFmap};
   const _msg=msg;
   msg=function(c,t){
