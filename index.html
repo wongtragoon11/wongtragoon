@@ -2658,8 +2658,8 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
  const KNB={
   /* เมนูและหน้าจอ */
   button:['tick'],whoosh:['swish'],open:['tap'],close:['BookPlace1','BookPlace2','BookPlace3'],toggle:['MetalClick'],slotset:['MetalLatch'],bump:['impactSoft_heavy_000','impactSoft_heavy_001','impactSoft_heavy_002'],
-  notify:['wake'],chat:['wake'],chatin:['wake'],purge:['wake'],page:['bookopen','BookOpen'],pageflip:['pageturn','BookFlip2','BookFlip3'],bookclose:['BookClose'],scroll:['scroll'],learn:['scroll'],
-  login:['wake'],register:['questdone'],online:['wake'],offline:['slain'],logout:['DoorClose3','DoorClose4'],achv:['questdone'],starting:['cure'],
+  notify:['wake'],chat:['quill'],chatin:['ring'],purge:['wake'],page:['bookopen','BookOpen'],pageflip:['pageturn','BookFlip2','BookFlip3'],bookclose:['BookClose'],scroll:['scroll'],learn:['scroll'],
+  login:['wake'],register:['questdone'],online:['tp_in'],offline:['tp_out'],logout:['DoorClose3','DoorClose4'],achv:['questdone'],starting:['cure'],
   /* ของ เงิน และการใช้ของ */
   pick:['pickup','quick'],buy:['coins','HandleCoins2'],sell:['coinpick','HandleCoins1'],coinpour:['tradedone'],gavel:['hit_strike'],drop:['drop','discard','DropLeather'],rare:['wake'],
   bagopen:['packopen'],bagclose:['packclose'],bagmove:['BeltHandle1','BeltHandle2'],potion:['cork'],eat:['eat'],sip:['drink'],
@@ -2687,7 +2687,7 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
   /* บรรยากาศ (ตอนนี้เล่นเป็นลูปจริงต่อเนื่องผ่านระบบ BED ชุดนี้เก็บไว้สำรอง) */
   amb_v:['lp_windopen'],amb_f:['lp_windopen'],amb_b:['lp_windforest'],amb_w:['lp_windhigh'],amb_m:['lp_windhigh'],amb_c:['lp_market'],amb_k1:['lp_windhigh'],amb_k2:['lp_windforest'],amb_k3:['lp_windopen'],amb_in:['lp_market'],
   bird:['bird_day'],owl:['owl'],cricket:['lp_night'],wind:['leaves'],windh:['leaves'],water:['plop'],frog:['frog'],bat:['bat'],rain:['lp_rain']};
- const KN_LOCAL={login:1,online:1,offline:1,register:1,bosskill:1,die:1,achv:1,starting:1};
+ const KN_LOCAL={login:1,register:1,bosskill:1,die:1,achv:1,starting:1};
  const KN_SILENT={cicada:'ไม่มีเสียงจักจั่นจริงในชุด และไม่มีส่วนไหนของเกมเรียกใช้แล้ว',knlib:'ใช้ฟังเสียงจากคลังเสียงของผู้พัฒนา ผูกไฟล์ตอนกดฟัง'};
  const KN={pack:null,n:0,ok:0,fail:[],bad:[],busy:false,done:false,tries:0,url:{},dur:{},bytes:{},buf:{},off:{},lp:{},use:{}};
  try{const el=document.getElementById('sfxpack'),P=el?JSON.parse(el.textContent||'null'):null;
@@ -3298,7 +3298,7 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
  /* ===== เสียงจริงหลายจังหวะต่อกัน (SEQ) สำหรับเหตุการณ์ที่เสียงเดียวสั้นเกินหรือไม่ครบเรื่อง =====
     [ชุดเสียง, ความดัง, เวลาเริ่ม (วินาที)] เช่น เปิดกระเป๋า = ปลดหัวเข็มขัดถุงหนัง แล้วเปิดฝาถุง (ผ้าและหนังขยับ) แล้วล้วงหาของ ยาวราว 1 วินาที
     ถ้าเสียงจังหวะแรกยังถอดรหัสไม่เสร็จ ใช้เสียงเดียวของหน้าที่นั้นแทน (play) จึงไม่เงียบ */
- const SEQ={bagopen:[['packopen',.8,0],['rustle',.55,.17],['pickup',.42,.46]],bagclose:[['rustle',.45,0],['packclose',.8,.2]],
+ const SEQ={bagopen:[['chestopen',.62,0],['ring',.7,.36],['coins',.42,.5]],bagclose:[['chestclose',.75,0],['ring',.4,.1]],
   potion:[['cork',.75,0],['drink',.8,.34]],eat:[['eat',.85,0]],sip:[['drink',.8,0]],brew:[['pour',.6,0],['MetalPot2',.5,.8]],rod:[['swish',.6,0],['plop',.55,.5]],tankput:[['pour',.55,0],['wade',.45,.7]],
   teleport:[['tp_out',.7,0],['tp_in',.65,.6]],fishget:[['splash',.6,0],['pickup',.4,.5]],craft:[['anvil',.6,0],['anvil',.5,.42],['anvil',.55,.84]],
   die:[['hum_die',.85,0],['thud_b',.75,.42]],capdone:[['quill',.5,0],['coins',.7,.5],['questdone',.7,.95]],capinn:[['door',.6,.4],['eat',.6,1],['drink',.55,1.8],['wake',.5,2.8]],captea:[['pour',.7,.4],['cork',.35,1.1],['drink',.6,1.5]],caplib:[['bookopen',.7,0],['pageturn',.6,.8],['pageturn',.5,1.5],['quill',.4,2.1]],capshop:[['packopen',.55,.35],['coins',.6,.8],['tradedone',.5,1.2]],cappoi:[['pickup',.5,0],['tick',.3,.35]],caparena:[['gong',.6,0],['unsheathe',.7,.9],['sw_sword',.7,1.4],['hit_clash',.75,1.65],['sw_sword',.7,2],['hit_clash',.75,2.25]],capwin:[['ring',.6,0],['coins',.6,.45],['questdone',.6,.9]],caplose:[['discard',.55,0],['tap',.4,.5]]};
