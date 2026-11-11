@@ -653,19 +653,30 @@ const applyShare=(m,sum)=>{const d=MD[m.k];if(!d||!(sum>=0))return false;const m
    1) เลือดบอสไม่คืนเองเมื่อบันทึกของคนอื่นหมดอายุหรือถูกลบ (เดิมคิดจากผลรวม ผลรวมลดเลือดก็เด้งคืน) ตอนนี้จำว่าได้หักของแต่ละคนไปเท่าไรแล้ว หักเฉพาะส่วนที่เพิ่ม
    2) ใครล้มบอสได้ ส่งสัญญาณบอสตาย (d = 4 เท่าของเลือดเต็ม) ไว้ 20 วินาที ทุกเครื่องที่อยู่ใกล้เห็นบอสตายพร้อมกัน ได้รางวัลถ้าตีไปแล้วอย่างน้อย 2% ไม่ค้างเลือด 1 อีก
    3) บอสในเครื่องเราตายอยู่ (รอเกิดใหม่) แต่มีคนอื่นกำลังสู้ตัวนี้อยู่ บอสในเครื่องเราเกิดใหม่ทันที พร้อมเลือดที่ถูกตีไปแล้ว จะได้เห็นบอสและเข้าช่วยได้ */
-function bsStep(m,E,me,now,sn,put,del){const mx=MD[m.k].hp,live=t=>!!(m._rv&&now-m._rv<60000);
- if(m.dead){if(!live())m._dd=1;
-  if(m.kb!==m.dead&&!m.sdie&&now-m.dead<15000&&(m.myd||0)>0){m.kb=m.dead;put({d:Math.round(Math.min(9e8,mx*4)),t:sn})}
-  if(now-m.dead>20000&&(m.myd||m.wd||m.kb)){m.myd=0;m.wd=0;m.shr=0;m.kb=0;del()}
-  if(now-m.dead>25000&&!live()&&Object.keys(E).some(id=>id!==me&&E[id]&&E[id].t>sn-15000&&E[id].d>0&&E[id].d<mx*3)){m._rv=now;m._dd=0;m.sv={};m.sdie=0;m.myd=0;m.wd=0;m.shr=0;m.dead=1;try{say('มีผู้ฝึกตนกำลังสู้กับ '+MD[m.k].n+' อยู่ใกล้ๆ บอสปรากฏให้เห็นแล้ว')}catch(e){}}
+/* รอบที่ 36: อสูรและบอสตีแรงขึ้น อสูรธรรมดา 1.3 เท่า บอส 1.6 เท่า และอสูรที่ขั้นใกล้ผู้เล่น (ต่ำกว่าไม่เกิน 3 ขั้น) ตีทะลุเกราะได้ขั้นต่ำเป็นสัดส่วนของเลือดสูงสุด
+   อสูรธรรมดาอย่างน้อย 2.5% บอสตีปกติ 7% ท่าพิเศษของบอส 12% (โล่ปราณลดครึ่ง) อุปกรณ์หลอมสูงจึงไม่ทำให้บอสตีไม่เข้าอีก */
+function hard36(m,dm,sk){try{const boss=BOSSES.includes(m.k)||!!BOSSREQ[m.k];let d=dm*(boss?1.6:1.3);const mr=MRM[m.k]!=null?MRM[m.k]:Math.max(0,((MD[m.k]&&MD[m.k].lv)||1)-1);
+ if(Number.isFinite(mr)&&mr>=(S.step|0)-3){const fl=mhp()*(boss?(sk?.12:.07):.025)*(buff>Date.now()?.5:1)*(.9+Math.random()*.2);if(fl>d)d=fl}
+ return Number.isFinite(d)?Math.max(1,Math.round(d)):dm}catch(e){return dm}}
+function bsStep(m,E,me,now,sn,put,del,ld){const mx=MD[m.k].hp,RM=respMs(m),KS=Math.min(9e8,mx*4),isK=v=>!!v&&Number.isFinite(v.d)&&v.d>=KS*.75;
+ /* รอบที่ 35: การตายของบอสเป็นข้อมูลกลาง ทุกคนในเกมใช้เวลาตายเดียวกัน (บันทึกการตายเก็บไว้จนบอสเกิดใหม่) บอสจึงตายและเกิดใหม่พร้อมกันทุกเครื่อง */
+ let dT=0;Object.keys(E).forEach(id=>{const v=E[id];if(isK(v)&&v.t>sn-RM&&(!dT||v.t<dT))dT=v.t});
+ if(dT){const T=Math.max(2,Math.round(now-(sn-dT)));
+  if(!m.dead){const fresh=sn-dT<20000;if(fresh&&(m.myd||0)>=mx*.02)kill(m);else{m.sdie=1;m.hp=0;if(m.ai)m.ai.st='dead';if(target===m)target=null;if(fresh)try{say(MD[m.k].n+' ถูกผู้ฝึกตนคนอื่นล้มแล้ว จะเกิดใหม่พร้อมกันทุกคนในอีก '+Math.round(RM/60000)+' นาที')}catch(e){}}m.dead=T}
+  if(Math.abs(m.dead-T)>1500)m.dead=T;try{if(S.bd&&BOSSES.includes(m.k))S.bd[m.k]=m.dead}catch(e){}}
+ if(m.dead){m._dd=1;
+  if(!dT&&m.kb!==m.dead&&!m.sdie&&now-m.dead<15000){m.kb=m.dead;put({d:Math.round(KS),t:Math.round(sn-(now-m.dead))})}
+  else if(!dT&&ld&&m.kb!==m.dead&&now-m.dead>30000&&m.dead>1){m.dead=1;m.sdie=0;m._nb=1;try{if(S.bd)delete S.bd[m.k]}catch(e){}}/* เซิร์ฟเวอร์ไม่มีบันทึกว่าบอสตาย: บอสยังอยู่ ให้ตรงกับทุกคน */
+  if(now-m.dead>20000&&(m.myd||m.wd)){m.myd=0;m.wd=0;m.shr=0;if(!isK(E[me]))del()}
   return true}
- if(m._dd){m._dd=0;m.sdie=0;m.sv={};Object.keys(E).forEach(id=>{if(E[id]&&Number.isFinite(E[id].d))m.sv[id]=E[id].d})}
- if(!m.sv||typeof m.sv!=='object')m.sv={};
- let dmg=0,ks=false;Object.keys(E).forEach(id=>{if(id===me)return;const v=E[id];if(!v||!Number.isFinite(v.d)||v.d<0)return;
-  if(v.d>=mx*3){if(v.t>sn-20000&&!(m.sv[id]>=mx*3))ks=true;m.sv[id]=v.d;return}
-  if(!(v.t>sn-120000))return;const pv=m.sv[id]>=mx*3?0:(m.sv[id]||0);if(v.d>pv){dmg+=v.d-pv;m.sv[id]=v.d;(m.lw=m.lw||{})[id]=now}});
+ if(m._dd){m._dd=0;m.sdie=0;m.kb=0;m.bsv={};if(m._nb)m._nb=0;else Object.keys(E).forEach(id=>{if(E[id]&&Number.isFinite(E[id].d))m.bsv[id]=E[id].d})}
+ if(isK(E[me])&&now-(m._kd||0)>15000){m._kd=now;del()}
+ if(!m.bsv||typeof m.bsv!=='object')m.bsv={};
+ let dmg=0;Object.keys(E).forEach(id=>{if(id===me)return;const v=E[id];if(!v||!Number.isFinite(v.d)||v.d<0)return;
+  if(isK(v)){m.bsv[id]=v.d;return}
+  if(!(v.t>sn-120000))return;const pv=m.bsv[id]>=KS*.75?0:(m.bsv[id]||0);if(v.d>pv){dmg+=v.d-pv;m.bsv[id]=v.d;(m.lw=m.lw||{})[id]=now}});
  if(dmg>0){m.hp=Math.min(mx,m.hp-dmg);m.shr=(m.shr||0)+dmg}
- if(ks||m.hp<=0){if((m.myd||0)>=mx*.02)kill(m);else{m.sdie=1;m.dead=Date.now();m.hp=0;if(m.ai)m.ai.st='dead';if(target===m)target=null;try{say(MD[m.k].n+' ถูกผู้ฝึกตนคนอื่นล้มแล้ว จะเกิดใหม่ตามเวลา')}catch(e){}}return true}
+ if(m.hp<=0){if((m.myd||0)>=mx*.02)kill(m);else{m.sdie=1;m.dead=Date.now();m.hp=0;if(m.ai)m.ai.st='dead';if(target===m)target=null}return true}
  /* 4) ตำแหน่งบอสตรงกัน: ถ้าเราไม่ได้สู้กับบอสเอง แต่มีคนอื่นกำลังตีอยู่ บอสในเครื่องเราย้ายไปอยู่ติดตัวคนที่กำลังสู้ (บอสไล่ตามคนที่ตีมันอยู่แล้ว) ได้ยินและเห็นบอสที่เดียวกัน */
  try{if((m.myd||0)>(m._lm||0)){m._lm=m.myd;m.myT=now}
   const mine=now-(m.myT||0)<10000||(m.ag&&Math.hypot(S.x-m.x,S.y-m.y)<15);
@@ -2456,7 +2467,7 @@ function purgeLines(prefix){
  S.chat.forEach(a=>{for(let i=a.length-1;i>=0;i--)if(typeof a[i]==='string'&&a[i].indexOf(prefix)===0)a.splice(i,1)});
  try{Array.from($('log').children).forEach(c=>{if((c.textContent||'').indexOf(prefix)===0)c.remove()})}catch(e){}}
 /* ประกาศคงที่ในข้อความประจำวัน ผู้เล่นทุกคนเห็นทุกครั้งที่เข้าเกม แก้ข้อความได้ที่บรรทัดนี้ที่เดียว */
-const DAILY_ANN='ประกาศจากผู้พัฒนา อัปเดตวันที่ 11 พฤศจิกายน มาก่อนเลย! สมาคมนักหลอมอาวุธสร้างอาวุธเทพแปลงกายได้แล้ว กระบี่เทพแปลงกายตัดภพ ทวนเทพอสนีผ่าฟ้า กระบี่เทพจักรวาลไร้ขอบ ร้านชุดเกราะหลวงสร้างเกราะเทพแปลงกายได้ด้วย และของขั้นวิญญาณแรกเริ่มก็สร้างได้ วัตถุดิบต้องไปเอามาจากอสูรขั้นนั้นเอง แก้บั๊กหลอมยกระดับเกราะกับอาวุธแล้วค่าพลังแทบไม่ขึ้น ตอนนี้หลอมทุกชั้นแกร่งขึ้นเห็นๆ กดตัว C ดูค่าพลังจริงของแต่ละชิ้นได้ แก้บั๊กอีกหลายเรื่อง อยู่ในสำนักหรือเรือของตัวเองจะไม่เห็นคนจากสำนักหรือเรือลำอื่นแล้ว ขับเรือเหาะแล้วกดลงจอด เจ้ายังอยู่ในเรือ ปุ่ม N ไม่บอกเป้าเก่าที่อยู่คนละที่แล้ว ยันต์ฟ้าประทานโชคใช้ได้แล้ว เลือกแปะยันต์เป็นข้อแรกในเมนูหลอม แชทอ่านข้อความเต็มไม่ตัดแล้ว เรือเหาะต้องสตาร์ทเครื่องก่อนขับ ในห้องบังคับเรือเร่งเครื่องอยู่กับที่ได้ ตั้งคันเร่งได้ 3 ขั้น คนรอบเรือได้ยินเสียงเครื่อง พื้นเรือแต่ละห้องไม่เหมือนกัน เรือลำใหญ่เป็นพื้นหยก ขั้นเทพแปลงกายไปหาผู้เฒ่าเฝ้าตำหนักเทพในเมืองหลวง ฝึกตำหนักเทพได้ถึง 9 หลัง ยิ่งมีมากยิ่งแกร่ง ใช้วิชาโจมตีแล้วโยนตำหนักเทพทับศัตรูซ้ำ ทารกวิญญาณหนีร่างตอนนี้ลอยออกจากร่างเหาะหนีไปได้จริง ผู้ติดตามสำนักสั่งล่าอสูรแล้วล่าจริง ล่าต่อแม้เจ้าไปแผนที่อื่น และคุยตามแบบแผน แชทยาวขึ้นเป็นข้อความเดียว เดินทางไกลด้วยเรือเหาะตอนนี้ใช้เวลาตามระยะทางจริง ถ้าเดินเอง 6 นาที เรือระดับต่ำใช้ 4 นาที ระดับกลาง 3 นาที ระดับสูง 2 นาที ระดับสูงสุด 1 นาที เรือทะยานออกไปให้คนอื่นเห็น ระหว่างทางเดินในเรือได้ วิชาใหม่ 3 วิชา ฝ่ามือปราณทะลวงศิลา เรียนที่ครูฝึกวิชาต่อสู้เดี่ยวในหมู่บ้าน ลำแสงแก่นทองทะลวงฟ้า กับกระบี่ทารกวิญญาณพันเงา เรียนที่ครูในเมืองหลวง ผู้เฒ่าเฝ้าตำหนักเทพอยู่ทางเหนือของเมืองหลวง กด M เลือกชื่อท่านได้ ใครโยนตำหนักเทพ คนรอบตัวรู้หมดว่าใครโยนกี่หลัง ผู้ติดตามสำนักสั่งไปซื้อโอสถให้ได้แล้ว แก้เสียงเครื่องเรือเหาะแล้ว สตาร์ทเครื่องแล้วลงมานอกเรือก็ยังได้ยินเสียงเครื่อง เป็นเสียงยาวต่อเนื่อง เร่งเครื่องแล้วเสียงสูงขึ้น ขอแรงทุกคนช่วยกันทดลองเล่น ถ้าไม่มีใครลองก็ไม่รู้เลยว่ามีบั๊กอะไรซ่อนอยู่ โดยเฉพาะขับเรือเหาะและสู้บอสด้วยกันหลายคน เจอบั๊กหรืออะไรแปลกๆ บอกผู้พัฒนาในแชทโลกได้เลย บอกด้วยว่าทำอะไรอยู่ อยู่แผนที่ไหน แก้บั๊กบอสออนไลน์แล้ว สู้บอสด้วยกันเห็นบอสตัวเดียวกัน เลือดไม่เด้งคืน ตายพร้อมกัน ขับเรือเหาะเองได้แล้ว เข้าห้องบังคับเรือแล้วนั่งที่หางเสือ กดลูกศรขึ้นค้างเร่งไล่เกียร์ เลข 1 2 3 ใส่เกียร์ ซ้ายขวาเลี้ยว เสียงเครื่องจริงแยกตามระดับเรือ ส่วนของใหม่เมื่อวาน หนึ่ง ช่องสวมใส่เพิ่มเป็น 8 ช่อง กดตัว C ดูได้ มีหมวก รองเท้า เข็มขัด กำไล แหวน สร้อยคอ ครบทุกขั้นใหญ่ ซื้อที่ร้านเครื่องประดับในหมู่บ้าน กับหอเครื่องประดับหมื่นสมบัติในเมืองหลวง และมีอาวุธกับเกราะขั้นเทพแปลงกายแล้ว สอง หลอมยกระดับอุปกรณ์ได้ทุกชิ้นที่ช่างหลอมศาสตรา ของขั้นยิ่งสูงยิ่งหลอมได้สูง สูงสุดบวก 25 แต่ละช่องใช้วัตถุดิบหลอมไม่เหมือนกัน หลอมถึงบวก 3 สำเร็จแน่นอน หลังจากนั้นยิ่งสูงยิ่งยาก บวก 25 เหลือโอกาสแค่ 4 เปอร์เซ็นต์ หลอมพังวัตถุดิบหายเกลี้ยง ใจไม่ถึงอย่าหลอม แปะยันต์ฟ้าประทานโชคเพิ่มโอกาสได้อีก 15 เปอร์เซ็นต์ สาม กระดานภารกิจค่าหัวในหมู่บ้านและเมืองหลวง มีงานใหม่ทุกวัน ล่าอสูร ปราบบอส ส่งของ สำรวจ นั่งสมาธิ แถมวงล้อโชคชะตาหมุนฟรีวันละครั้ง สี่ หีบสมบัติลับ ตกจากบอสและอสูร เปิดแล้วลุ้นรางวัล ดวงดีได้เครื่องประดับหรือแจ็กพอต ห้า เรือเหาะสี่ขั้น ใช้หินวิญญาณเป็นเชื้อเพลิง วางบนพื้นแล้วกด Enter เข้าไปเดินในเรือได้ มีห้องต่างๆ ตามขั้นเรือ อาหารซื้อด้วยเหรียญทองเพิ่มพลังชั่วคราว และวิชาประจำขั้นใหญ่ทุกขั้น หก เรือเหาะมีหลายชั้นแล้ว เดินขึ้นลงบันไดได้ เดินถึงห้องไหนเกมบอกชื่อห้องทันที มีป้ายแผนผังบนดาดฟ้า กดตัว F ที่ประตูเรือเพื่อเก็บเรือ และคนอื่นที่ออนไลน์จะเห็นเรือที่เจ้าจอดไว้ เดินชนเรือคนอื่นเกมจะบอกว่าเป็นเรือของใคร เจ็ด ภารกิจค่าหัวแก้แล้ว ไม่มีภารกิจในเขตที่ขั้นยังเข้าไม่ได้อีก รับภารกิจแล้วเกมบอกทาง ภารกิจสำรวจพอเข้าเขตแล้วเกมตั้งเป้าให้ กด Shift N เดินไปได้เลย แปด ทักษะใหม่ประจำขั้นใหญ่ 14 วิชา ขั้นหลอมรวมลมปราณ วิชาลอยตัวเบาปราณ ลอยตัวขึ้นจากพื้นครู่สั้นๆ เรียนที่อาจารย์ซุนในหมู่บ้าน และปราณขับพิษชำระกาย ไล่พิษไล่ความกลัว เรียนที่หมอยาหลวงจางซู่ ขั้นสร้างรากฐาน ก้าวลมพันลี้ พุ่งตัวไปข้างหน้าไกลในพริบตา และปราณฟื้นฟูรากฐาน ฟื้นเลือดต่อเนื่อง ขั้นแก่นทองคำ แรงกดดันแก่นทองสะกดอสูร ทำให้อสูรที่อ่อนกว่าตัวแข็ง และแก่นทองหมุนเวียนปราณ เติมลมปราณ ขั้นวิญญาณแรกเริ่ม ทารกวิญญาณเคลื่อนย้ายพริบตา วาร์ปไปข้างหน้าผ่านสิ่งกีดขวาง และทารกวิญญาณหนีร่าง ตายแล้วฟื้นคืนได้ ขั้นเทพแปลงกาย กระบี่เทพแปลงกายผ่าภพ ฟันไกลแรงที่สุดในเกม ธารทิพย์เทพแปลงกายชุบร่าง ฟื้นเลือดเกือบเต็ม อาณาเขตเทพแปลงกาย อสูรในเขตขยับไม่ได้ อัสนีเทพแปลงกายถล่มภพ เรียกสายฟ้าถล่มทั้งเขต กายาเทพแปลงกายอมตะ ลดความเสียหายครึ่งหนึ่ง และดูดปราณฟ้าดินไม่สิ้นสุด ฟื้นลมปราณเต็ม วิชาขั้นสร้างรากฐานขึ้นไปเรียนที่ครูในเมืองหลวง เก้า ตอนนี้พิกัดที่เกมบอกเป็นพิกัดของแผนที่ที่ยืนอยู่ เริ่มนับจาก 1 ที่มุมตะวันตกเฉียงเหนือ เข้าแผนที่ใหม่หรือขึ้นเรือเหาะก็นับใหม่ ไม่มีเลขหลายพันอีกแล้ว สิบ เรือเหาะมีเสียงสตาร์ท เร่งเครื่องแล้วพุ่งออกไป บินอยู่ได้ยินเสียงเครื่องครางตลอด ลงจอดมีเสียง คนอื่นได้ยินด้วย วิธีขับคือขึ้นเรือ ไปห้องบังคับเรือบนดาดฟ้า กด Enter เลือกขับเรือออกบิน ใช้ลูกศรบังคับทิศ กด X ลงจอด สิบเอ็ด ผู้ติดตามสำนักรับคำสั่งได้แล้ว กด F คุยแล้วเลือกสั่งงาน ให้เดินเล่นไปทั่วแผนที่ เฝ้าจุด ไปยังสถานที่ หรือล่าอสูรเอง ผู้เล่นอื่นเห็นเขา กด F ถามเขาได้ พิมพ์แชทแมพเอ่ยชื่อเขา เขาจะตอบ บางทีก็คุยกันเอง ส่วนอสูรขั้นวิญญาณแรกเริ่มกับเทพแปลงกาย ตีแรงเท่าตัว บอสตีไกล ใครจะไปต้องเตรียมตัวให้พร้อม ไม่งั้นคุณอาจจะตายได้ คุณอาจจะร่างระเบิดตายเป็นผุยผงได้ 555555 ขอให้โชคดีนะครับ คู่มือการเล่นให้กดตัว U';
+const DAILY_ANN='ประกาศจากผู้พัฒนา อัปเดตวันที่ 11 พฤศจิกายน มาก่อนเลย! สมาคมนักหลอมอาวุธสร้างอาวุธเทพแปลงกายได้แล้ว กระบี่เทพแปลงกายตัดภพ ทวนเทพอสนีผ่าฟ้า กระบี่เทพจักรวาลไร้ขอบ ร้านชุดเกราะหลวงสร้างเกราะเทพแปลงกายได้ด้วย และของขั้นวิญญาณแรกเริ่มก็สร้างได้ วัตถุดิบต้องไปเอามาจากอสูรขั้นนั้นเอง แก้บั๊กหลอมยกระดับเกราะกับอาวุธแล้วค่าพลังแทบไม่ขึ้น ตอนนี้หลอมทุกชั้นแกร่งขึ้นเห็นๆ กดตัว C ดูค่าพลังจริงของแต่ละชิ้นได้ แก้บั๊กอีกหลายเรื่อง อยู่ในสำนักหรือเรือของตัวเองจะไม่เห็นคนจากสำนักหรือเรือลำอื่นแล้ว ขับเรือเหาะแล้วกดลงจอด เจ้ายังอยู่ในเรือ ปุ่ม N ไม่บอกเป้าเก่าที่อยู่คนละที่แล้ว ยันต์ฟ้าประทานโชคใช้ได้แล้ว เลือกแปะยันต์เป็นข้อแรกในเมนูหลอม แชทอ่านข้อความเต็มไม่ตัดแล้ว เรือเหาะต้องสตาร์ทเครื่องก่อนขับ ในห้องบังคับเรือเร่งเครื่องอยู่กับที่ได้ ตั้งคันเร่งได้ 3 ขั้น คนรอบเรือได้ยินเสียงเครื่อง พื้นเรือแต่ละห้องไม่เหมือนกัน เรือลำใหญ่เป็นพื้นหยก ขั้นเทพแปลงกายไปหาผู้เฒ่าเฝ้าตำหนักเทพในเมืองหลวง ฝึกตำหนักเทพได้ถึง 9 หลัง ยิ่งมีมากยิ่งแกร่ง ใช้วิชาโจมตีแล้วโยนตำหนักเทพทับศัตรูซ้ำ ทารกวิญญาณหนีร่างตอนนี้ลอยออกจากร่างเหาะหนีไปได้จริง ผู้ติดตามสำนักสั่งล่าอสูรแล้วล่าจริง ล่าต่อแม้เจ้าไปแผนที่อื่น และคุยตามแบบแผน แชทยาวขึ้นเป็นข้อความเดียว เดินทางไกลด้วยเรือเหาะตอนนี้ใช้เวลาตามระยะทางจริง ถ้าเดินเอง 6 นาที เรือระดับต่ำใช้ 4 นาที ระดับกลาง 3 นาที ระดับสูง 2 นาที ระดับสูงสุด 1 นาที เรือทะยานออกไปให้คนอื่นเห็น ระหว่างทางเดินในเรือได้ วิชาใหม่ 3 วิชา ฝ่ามือปราณทะลวงศิลา เรียนที่ครูฝึกวิชาต่อสู้เดี่ยวในหมู่บ้าน ลำแสงแก่นทองทะลวงฟ้า กับกระบี่ทารกวิญญาณพันเงา เรียนที่ครูในเมืองหลวง ผู้เฒ่าเฝ้าตำหนักเทพอยู่ทางเหนือของเมืองหลวง กด M เลือกชื่อท่านได้ ใครโยนตำหนักเทพ คนรอบตัวรู้หมดว่าใครโยนกี่หลัง ผู้ติดตามสำนักสั่งไปซื้อโอสถให้ได้แล้ว แก้เสียงเครื่องเรือเหาะแล้ว สตาร์ทเครื่องแล้วลงมานอกเรือก็ยังได้ยินเสียงเครื่อง เป็นเสียงยาวต่อเนื่อง เร่งเครื่องแล้วเสียงสูงขึ้น ของใหม่ หินเคลื่อนย้ายความเข้ม ย้ายระดับหลอมจากอุปกรณ์ชิ้นเก่าไปชิ้นใหม่ได้ที่ช่างหลอมศาสตรา ซื้อจากช่างหรือได้จากบอส และช่างหลอมศาสตรารับซื้อคืนของที่ไม่ใช้ทุกอย่าง ได้ครึ่งราคา มีบันทึกเหตุการณ์ทั้งหมดแล้ว ทุกข้อความขึ้นจอเลื่อนอ่านได้ กด F6 ตั้งค่าปิดเสียงอ่านรายหมวด อสูรและบอสทุกตัวตีแรงขึ้นแล้ว บอสตีทะลุเกราะได้ เตรียมโอสถให้พร้อม ข้อมูลบอสเหมือนกันทุกคนทั้งเกมแล้ว บอสถูกล้มทุกคนรู้พร้อมกัน เวลาเกิดใหม่เป็นเวลาเดียวกัน บอสเกิดพร้อมกันทุกเครื่อง คำสั่งผู้ติดตามอยู่ในเมนูสำนัก กด Shift U รายการสุดท้าย ขอแรงทุกคนช่วยกันทดลองเล่น ถ้าไม่มีใครลองก็ไม่รู้เลยว่ามีบั๊กอะไรซ่อนอยู่ โดยเฉพาะขับเรือเหาะและสู้บอสด้วยกันหลายคน เจอบั๊กหรืออะไรแปลกๆ บอกผู้พัฒนาในแชทโลกได้เลย บอกด้วยว่าทำอะไรอยู่ อยู่แผนที่ไหน แก้บั๊กบอสออนไลน์แล้ว สู้บอสด้วยกันเห็นบอสตัวเดียวกัน เลือดไม่เด้งคืน ตายพร้อมกัน ขับเรือเหาะเองได้แล้ว เข้าห้องบังคับเรือแล้วนั่งที่หางเสือ กดลูกศรขึ้นค้างเร่งไล่เกียร์ เลข 1 2 3 ใส่เกียร์ ซ้ายขวาเลี้ยว เสียงเครื่องจริงแยกตามระดับเรือ ส่วนของใหม่เมื่อวาน หนึ่ง ช่องสวมใส่เพิ่มเป็น 8 ช่อง กดตัว C ดูได้ มีหมวก รองเท้า เข็มขัด กำไล แหวน สร้อยคอ ครบทุกขั้นใหญ่ ซื้อที่ร้านเครื่องประดับในหมู่บ้าน กับหอเครื่องประดับหมื่นสมบัติในเมืองหลวง และมีอาวุธกับเกราะขั้นเทพแปลงกายแล้ว สอง หลอมยกระดับอุปกรณ์ได้ทุกชิ้นที่ช่างหลอมศาสตรา ของขั้นยิ่งสูงยิ่งหลอมได้สูง สูงสุดบวก 25 แต่ละช่องใช้วัตถุดิบหลอมไม่เหมือนกัน หลอมถึงบวก 3 สำเร็จแน่นอน หลังจากนั้นยิ่งสูงยิ่งยาก บวก 25 เหลือโอกาสแค่ 4 เปอร์เซ็นต์ หลอมพังวัตถุดิบหายเกลี้ยง ใจไม่ถึงอย่าหลอม แปะยันต์ฟ้าประทานโชคเพิ่มโอกาสได้อีก 15 เปอร์เซ็นต์ สาม กระดานภารกิจค่าหัวในหมู่บ้านและเมืองหลวง มีงานใหม่ทุกวัน ล่าอสูร ปราบบอส ส่งของ สำรวจ นั่งสมาธิ แถมวงล้อโชคชะตาหมุนฟรีวันละครั้ง สี่ หีบสมบัติลับ ตกจากบอสและอสูร เปิดแล้วลุ้นรางวัล ดวงดีได้เครื่องประดับหรือแจ็กพอต ห้า เรือเหาะสี่ขั้น ใช้หินวิญญาณเป็นเชื้อเพลิง วางบนพื้นแล้วกด Enter เข้าไปเดินในเรือได้ มีห้องต่างๆ ตามขั้นเรือ อาหารซื้อด้วยเหรียญทองเพิ่มพลังชั่วคราว และวิชาประจำขั้นใหญ่ทุกขั้น หก เรือเหาะมีหลายชั้นแล้ว เดินขึ้นลงบันไดได้ เดินถึงห้องไหนเกมบอกชื่อห้องทันที มีป้ายแผนผังบนดาดฟ้า กดตัว F ที่ประตูเรือเพื่อเก็บเรือ และคนอื่นที่ออนไลน์จะเห็นเรือที่เจ้าจอดไว้ เดินชนเรือคนอื่นเกมจะบอกว่าเป็นเรือของใคร เจ็ด ภารกิจค่าหัวแก้แล้ว ไม่มีภารกิจในเขตที่ขั้นยังเข้าไม่ได้อีก รับภารกิจแล้วเกมบอกทาง ภารกิจสำรวจพอเข้าเขตแล้วเกมตั้งเป้าให้ กด Shift N เดินไปได้เลย แปด ทักษะใหม่ประจำขั้นใหญ่ 14 วิชา ขั้นหลอมรวมลมปราณ วิชาลอยตัวเบาปราณ ลอยตัวขึ้นจากพื้นครู่สั้นๆ เรียนที่อาจารย์ซุนในหมู่บ้าน และปราณขับพิษชำระกาย ไล่พิษไล่ความกลัว เรียนที่หมอยาหลวงจางซู่ ขั้นสร้างรากฐาน ก้าวลมพันลี้ พุ่งตัวไปข้างหน้าไกลในพริบตา และปราณฟื้นฟูรากฐาน ฟื้นเลือดต่อเนื่อง ขั้นแก่นทองคำ แรงกดดันแก่นทองสะกดอสูร ทำให้อสูรที่อ่อนกว่าตัวแข็ง และแก่นทองหมุนเวียนปราณ เติมลมปราณ ขั้นวิญญาณแรกเริ่ม ทารกวิญญาณเคลื่อนย้ายพริบตา วาร์ปไปข้างหน้าผ่านสิ่งกีดขวาง และทารกวิญญาณหนีร่าง ตายแล้วฟื้นคืนได้ ขั้นเทพแปลงกาย กระบี่เทพแปลงกายผ่าภพ ฟันไกลแรงที่สุดในเกม ธารทิพย์เทพแปลงกายชุบร่าง ฟื้นเลือดเกือบเต็ม อาณาเขตเทพแปลงกาย อสูรในเขตขยับไม่ได้ อัสนีเทพแปลงกายถล่มภพ เรียกสายฟ้าถล่มทั้งเขต กายาเทพแปลงกายอมตะ ลดความเสียหายครึ่งหนึ่ง และดูดปราณฟ้าดินไม่สิ้นสุด ฟื้นลมปราณเต็ม วิชาขั้นสร้างรากฐานขึ้นไปเรียนที่ครูในเมืองหลวง เก้า ตอนนี้พิกัดที่เกมบอกเป็นพิกัดของแผนที่ที่ยืนอยู่ เริ่มนับจาก 1 ที่มุมตะวันตกเฉียงเหนือ เข้าแผนที่ใหม่หรือขึ้นเรือเหาะก็นับใหม่ ไม่มีเลขหลายพันอีกแล้ว สิบ เรือเหาะมีเสียงสตาร์ท เร่งเครื่องแล้วพุ่งออกไป บินอยู่ได้ยินเสียงเครื่องครางตลอด ลงจอดมีเสียง คนอื่นได้ยินด้วย วิธีขับคือขึ้นเรือ ไปห้องบังคับเรือบนดาดฟ้า กด Enter เลือกขับเรือออกบิน ใช้ลูกศรบังคับทิศ กด X ลงจอด สิบเอ็ด ผู้ติดตามสำนักรับคำสั่งได้แล้ว กด F คุยแล้วเลือกสั่งงาน ให้เดินเล่นไปทั่วแผนที่ เฝ้าจุด ไปยังสถานที่ หรือล่าอสูรเอง ผู้เล่นอื่นเห็นเขา กด F ถามเขาได้ พิมพ์แชทแมพเอ่ยชื่อเขา เขาจะตอบ บางทีก็คุยกันเอง ส่วนอสูรขั้นวิญญาณแรกเริ่มกับเทพแปลงกาย ตีแรงเท่าตัว บอสตีไกล ใครจะไปต้องเตรียมตัวให้พร้อม ไม่งั้นคุณอาจจะตายได้ คุณอาจจะร่างระเบิดตายเป็นผุยผงได้ 555555 ขอให้โชคดีนะครับ คู่มือการเล่นให้กดตัว U';
 function dailyText(){
  const d=new Date(),di=Math.floor((d.getTime()-d.getTimezoneOffset()*60000)/86400000);
  const bs=MS.filter(m=>BOSSES.includes(m.k)).map(m=>MD[m.k].n+(m.dead?' เกิดอีก '+Math.max(1,Math.ceil((respMs(m)-(Date.now()-m.dead))/60000))+' นาที':' พร้อมท้า')).join(' / ');
@@ -3463,7 +3474,7 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
  const ZBED={v:['r_lp_windopen_1',.08,0],re:['r_lp_windopen_1',.12,0],rw:['r_lp_windopen_1',.11,0],rn:['r_lp_windopen_1',.11,0],rs:['r_lp_windforest_1',.12,0],b:['r_lp_windforest_1',.15,0],
   w:['r_lp_windhigh_1',.12,0],rd:['r_lp_windopen_1',.11,0],m:['r_lp_windhigh_1',.15,0],c:['r_lp_market_1',.08,2200],k1:['r_lp_windhigh_1',.07,0],k2:['r_lp_windforest_1',.08,0],k3:['r_lp_windopen_1',.06,0],in:['r_lp_market_1',.03,1200]};/* รอบที่ 5: เลิกตัดเสียงแหลมจนอับ เหลือเฉพาะเสียงผู้คนในตลาดที่ไกล (2200) และเสียงข้างนอกผ่านผนังอาคาร (1200) */
  const CBED={cm:['r_lp_market_1',.12,2000],cl:['r_lp_windopen_1',.05,0],ci:['r_lp_market_1',.1,1500],cq:['r_lp_market_1',.07,2200],cg:['r_lp_windforest_1',.07,0],cs:['r_lp_windopen_1',.09,0]};ZBED.fb=['r_lp_windforest_1',.14,0];Object.assign(ZBED,{cm:['r_lp_market_1',.12,2000],e1:['r_lp_windopen_1',.1,0],tf:['r_lp_windopen_1',.09,0],tw:['r_lp_lake_1',.07,0],dk:['r_lp_market_1',.09,1700],k4:['r_lp_windhigh_1',.08,0],ew1:['r_lp_windforest_1',.13,2600],ew2:['r_lp_windhigh_1',.14,0]});/* รอบ 15: บรรยากาศสถานที่ใหม่ทางตะวันออก */ZBED.fs=['r_lp_windforest_1',.13,0];Object.assign(ZBED,{wb:ZBED.w,ma:ZBED.m,mp:ZBED.m,g1:ZBED.m,g2:ZBED.m,g3:ZBED.w,g4:ZBED.b,g5:ZBED.b,g6:ZBED.m,n1:ZBED.m,n2:ZBED.w,n3:ZBED.m,d1:ZBED.w,d2:ZBED.b,d3:ZBED.m});/* PATCH 34 เสียงพื้นหลังเฉพาะย่านและป่าใหม่ */
-  const zbedOf=()=>{const z=zoneAt(S.x,S.y);if(!z)return null;if(/^bd_sh/.test(z.id))return window.__SHTRV?['r_lp_windhigh_1',.28,2200]:['r_lp_windhigh_1',.05,650];/* รอบที่ 21: ในเรือเหาะเงียบ ได้ยินลมข้างนอกแผ่วๆ ผ่านลำเรือ ตอนเรือบินลมดังขึ้น */if(z.id==='c'&&window.__CAPD){const k=window.__CAPD(S.x,S.y);if(k&&CBED[k])return CBED[k]}return ZBED[(/^bd_/.test(z.id)||z.id==='ps_in')?'in':z.id]||null};
+  const zbedOf=()=>{const z=zoneAt(S.x,S.y);if(!z)return null;if(/^bd_sh/.test(z.id))return ['r_lp_windhigh_1',.05,650];/* รอบที่ 21: ในเรือเหาะเงียบ ได้ยินลมข้างนอกแผ่วๆ ผ่านลำเรือ ตอนเรือบินลมดังขึ้น */if(z.id==='c'&&window.__CAPD){const k=window.__CAPD(S.x,S.y);if(k&&CBED[k])return CBED[k]}return ZBED[(/^bd_/.test(z.id)||z.id==='ps_in')?'in':z.id]||null};
  setInterval(()=>{try{const B=(ambOn&&!document.hidden&&!S.fl)?zbedOf():null;bedSet('zone',B?B[0]:null,B?B[1]*medCur:0,0,B&&B[2]?B[2]:20000,1,1.1)}catch(e){BED.err++}},400);
  const waterDiag=()=>{const pr=[];WATERS.forEach(f=>{const P=f.c?[f.c]:f.pts;P.forEach(p=>{if(!(p[0]>=0&&p[1]>=0))pr.push('แหล่งน้ำ '+f.n+' มีพิกัดติดลบ');if(!zoneAt(p[0],p[1]))pr.push('แหล่งน้ำ '+f.n+' อยู่นอกแผนที่')});
    if(KN.pack&&!KN.url[f.loop])pr.push('แหล่งน้ำ '+f.n+' ไม่มีลูปเสียง '+f.loop);if(!(f.R>0&&f.g>0))pr.push('แหล่งน้ำ '+f.n+' ตั้งระยะได้ยินหรือความดังผิด')});
@@ -5239,7 +5250,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
     if(fw){ACT.fw++;rd.set(orf,fw).catch(()=>{})}/* ลาจากช่องเดิม: เขียนตำแหน่งเดิมพร้อมรหัสการกระทำที่ยังไม่ได้ส่งลงช่องเก่าก่อนลบ คนที่ยืนอยู่ตรงนั้นจึงได้ยินเสียงตาย เสียงวาร์ป หรือวิชาที่ใช้ตอนก้าวข้ามเส้น */
     rd.remove(orf).catch(()=>{})}
    MP.myT=pl.t;MP.rcell=cell;MP.wt[cell]=pl.t;delete MP.left[cell];ownPrune(now);
-    let sent=false;if(pl.sb){try{await rd.set(rf,pl);if(pl.a){ACT.ok=true;ACT.sent++;ACT.last=as}sent=true;window.__SHB={ok:true}}catch(es){if(!isPerm(es))throw es;window.__SHB={ok:false,t:Date.now()};delete pl.sb}}
+    try{const BD=window.__BDP?window.__BDP():null;if(BD&&(window.__BDK!==false||Date.now()-(window.__BDKT||0)>600000))pl.bd=BD}catch(e){}let sent=false;if(pl.sb||pl.bd){try{await rd.set(rf,pl);if(pl.a){ACT.ok=true;ACT.sent++;ACT.last=as}sent=true;if(pl.sb)window.__SHB={ok:true};if(pl.bd)window.__BDK=true}catch(es){if(!isPerm(es))throw es;if(pl.sb)window.__SHB={ok:false,t:Date.now()};if(pl.bd){window.__BDK=false;window.__BDKT=Date.now()}delete pl.sb;delete pl.bd}}
     if(hide){/* ซ่อนขั้นพลัง: ไม่ส่งช่อง lv ถ้ากฎฐานข้อมูลไม่ยอม ลองไม่ส่งช่อง a ด้วย ถ้ายังไม่ได้ เลิกซ่อนและแจ้งผู้พัฒนา */
      try{await rd.set(rf,pl);if(pl.a){ACT.ok=true;ACT.sent++;ACT.last=as}sent=true}
      catch(eh){if(!isPerm(eh))throw eh;
@@ -5286,7 +5297,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
  const unsubAll=()=>{Object.keys(LV.subs).forEach(c=>{try{LV.subs[c]()}catch(e){}});LV.subs={};LV.data={};LV.k=''};
  const subNear=()=>{try{const cells=cellsNow(),k=cells.join(',');if(k===LV.k)return;
   Object.keys(LV.subs).forEach(c=>{if(!cells.includes(c)){try{LV.subs[c]()}catch(e){}delete LV.subs[c];delete LV.data[c]}});
-  cells.forEach(c=>{if(LV.subs[c])return;LV.subs[c]=MP.rt.onValue(MP.rt.ref(MP.rdb,'presence/'+c),sn=>{const m={};sn.forEach(us=>{const v=us.val();if(v&&typeof v.x==='number'&&typeof v.y==='number'&&typeof v.t==='number')m[us.key]={id:us.key,n:String(v.n||'ผู้ฝึกตน').slice(0,20),x:v.x,y:v.y,t:v.t,c,a:typeof v.a==='string'?v.a.slice(0,48):'',q:typeof v.q==='number'&&v.q>0?v.q:0,lv:typeof v.lv==='number'?v.lv:-1,pv:v.pv===1?1:0,z:typeof v.z==='string'?v.z.slice(0,20):'',sb:v.sb||null};psFol(m,us.key,v,c)});
+  cells.forEach(c=>{if(LV.subs[c])return;LV.subs[c]=MP.rt.onValue(MP.rt.ref(MP.rdb,'presence/'+c),sn=>{const m={};sn.forEach(us=>{const v=us.val();if(v&&typeof v.x==='number'&&typeof v.y==='number'&&typeof v.t==='number')m[us.key]={id:us.key,n:String(v.n||'ผู้ฝึกตน').slice(0,20),x:v.x,y:v.y,t:v.t,c,a:typeof v.a==='string'?v.a.slice(0,48):'',q:typeof v.q==='number'&&v.q>0?v.q:0,lv:typeof v.lv==='number'?v.lv:-1,pv:v.pv===1?1:0,z:typeof v.z==='string'?v.z.slice(0,20):'',sb:v.sb||null,bd:v.bd||null};psFol(m,us.key,v,c)});
     if(LV.subs[c]){LV.data[c]=m;LV.t=Date.now();onLive()}},e=>{LV.err++;if(isPerm(e)){MP.failed=true;MP.err=e}devErr('MP live',e)})});
   LV.k=k}catch(e){LV.err++;devErr('MP sub',e)}};
  const liveAll=()=>{const n0=srvNow(),L=[];Object.keys(LV.data).forEach(c=>{const m=LV.data[c];Object.keys(m).forEach(id=>{if(m[id].t>n0-FRESH)L.push(m[id])})});try{(window.__XLIVE||[]).forEach(v=>{if(v&&v.t>n0-FRESH&&!L.some(q=>q.id===v.id))L.push(v)})}catch(e){}try{const me=MP.auth&&MP.auth.currentUser?MP.auth.currentUser.uid:'';for(let i=L.length-1;i>=0;i--){const z=String(L[i].z||'');if((z==='ps_in'||/^bd_sh/.test(z))&&String(L[i].id).split('~')[0]!==me)L.splice(i,1)}}catch(e){}/* รอบที่ 27: คนในสำนักส่วนตัวหรือในเรือเหาะของตัวเอง คนอื่นไม่เห็น */return dedupe(L)};HOOK.liveAll=()=>liveAll();
@@ -5297,20 +5308,33 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
  const bidOf=m=>safeK((m.z||'')+'_'+m.k);
  const bsDrop=bid=>{try{if(BS.subs[bid]){BS.subs[bid]();delete BS.subs[bid]}}catch(e){}delete BS.data[bid]};
  const bsTick=()=>{try{
+  /* รอบที่ 34: ซิงก์บอสทุกตัว (เดิมซิงก์เฉพาะบอสที่ต้องมีหลายคน) ส่งผ่านข้อมูลตำแหน่งผู้เล่น (ช่อง bd) ด้วย เผื่อฐานข้อมูลไม่รับช่อง bossdmg
+     ความเสียหายของตัวเองนับจากเลือดบอสที่ลดจริงในเครื่อง (รวมวิชาและผู้ติดตาม) ไม่พึ่งจุดนับเดิมที่นับไม่ครบ */
   const u=MP.auth&&MP.auth.currentUser,now=Date.now();
   if(!MP.ready||MP.failed||window.__MP_OFF||window.__DUP||!u||!online()){BSH.on=false;return}
-  if(BS.perm&&now-BS.permT<600000){BSH.on=false;return}BS.perm=0;
-  const rd=MP.rt,z=zoneAt(S.x,S.y),near={};
-  if(z)MS.forEach(m=>{if(BOSSREQ[m.k]&&m.z===z.id&&dist(m,{x:S.x,y:S.y})<=150)near[bidOf(m)]=m});
-  Object.keys(BS.subs).forEach(b=>{if(!near[b])bsDrop(b)});
-  Object.keys(near).forEach(bid=>{const m=near[bid];
-   if(!BS.subs[bid]){BS.data[bid]={};BS.subs[bid]=rd.onValue(rd.ref(MP.rdb,'bossdmg/'+bid),sn=>{const o={};sn.forEach(c=>{const v=c.val();if(v&&typeof v.d==='number'&&typeof v.t==='number')o[c.key]={d:v.d,t:v.t}});BS.data[bid]=o},e=>{if(isPerm(e)){BS.perm=1;BS.permT=Date.now()}devErr('MP bossdmg',e);bsDrop(bid)})}
-   const ref=rd.ref(MP.rdb,'bossdmg/'+bid+'/'+u.uid);
-   if(bsStep(m,BS.data[bid]||{},u.uid,now,srvNow(),v=>{rd.set(ref,v).catch(()=>{})},()=>{rd.remove(ref).catch(()=>{})}))return;
+  const perm=!!(BS.perm&&now-BS.permT<600000);if(!perm)BS.perm=0;
+  const rd=MP.rt,z=zoneAt(S.x,S.y),near={},sn=srvNow();
+  let inz=0;MS.forEach(m=>{if((BOSSREQ[m.k]||BOSSES.includes(m.k))&&MD[m.k]&&!m.tmp){near[bidOf(m)]=m;if(z&&m.z===z.id&&dist(m,{x:S.x,y:S.y})<=150)inz++}});/* รอบที่ 35: ฟังบอสทุกตัวทั้งเกม ทุกคนรู้เวลาตายและเวลาเกิดเดียวกัน */
+  Object.keys(BS.subs).forEach(b=>{if(!near[b]||perm)bsDrop(b)});
+  const PB={};try{(liveAll()||[]).forEach(v=>{const b=v&&v.bd,a=Array.isArray(b)?b:(b&&typeof b==='object'?[b[0],b[1],b[2]]:null);if(!a||typeof a[0]!=='string')return;const id=String(v.id).split('~')[0];if(!id||id===u.uid)return;(PB[a[0]]=PB[a[0]]||{})[id]={d:+a[1]||0,t:+v.t||0,k:+a[2]||0}})}catch(e){}
+  let pub=null;
+  Object.keys(near).forEach(bid=>{const m=near[bid],mx=MD[m.k].hp;
+   if(!perm&&!BS.subs[bid]){BS.data[bid]={};(BS.ld=BS.ld||{})[bid]=0;BS.subs[bid]=rd.onValue(rd.ref(MP.rdb,'bossdmg/'+bid),sn=>{BS.ld[bid]=1;const o={};sn.forEach(c=>{const v=c.val();if(v&&typeof v.d==='number'&&typeof v.t==='number')o[c.key]={d:v.d,t:v.t}});BS.data[bid]=o},e=>{if(isPerm(e)){BS.perm=1;BS.permT=Date.now()}devErr('MP bossdmg',e);bsDrop(bid)})}
+   const ref=rd.ref(MP.rdb,'bossdmg/'+bid+'/'+u.uid),E={},D=BS.data[bid]||{},P=PB[bid]||{};
+   Object.keys(D).forEach(id=>{E[id]={d:D[id].d,t:D[id].t}});
+   Object.keys(P).forEach(id=>{const p=P[id];let d=p.d,t=p.t;if(p.k>sn-respMs(m)){d=Math.min(9e8,mx*4);t=p.k}const e=E[id];if(!e||d>e.d)E[id]={d,t:Math.max(t,e?e.t:0)};else if(t>e.t)e.t=t});
+   if(Number.isFinite(m._oh)&&Number.isFinite(m.hp)&&m.hp<m._oh)m.myd=(m.myd||0)+(m._oh-Math.max(0,m.hp));
+   const kb0=m.kb,dead=bsStep(m,E,u.uid,now,sn,v=>{if(!perm){rd.set(ref,v).catch(e=>{if(isPerm(e)){BS.perm=1;BS.permT=Date.now()}});try{const od=rd.onDisconnect(ref);if(od&&typeof od.cancel==='function')od.cancel().catch(()=>{})}catch(e){}BS.odc[bid]=0}},()=>{if(!perm)rd.remove(ref).catch(()=>{})},!perm&&!!(BS.ld&&BS.ld[bid]));
+   m._oh=m.dead?null:m.hp;
+   if(m.kb&&m.kb!==kb0){try{if(window.__ACTX&&window.__ACTX.ACT)window.__ACTX.ACT.dirty=true}catch(e){}}
+   if((m.myd||0)>0||m.kb){const c=[bid.slice(0,40),Math.round(Math.min(9e8,m.myd||0)),(m.kb&&m.dead>1)?Math.round(sn-(now-m.dead)):0];if(!pub||c[2]||(!pub[2]&&c[1]>pub[1]))pub=c}
+   if(dead||perm)return;
    if(m.myd>0&&(m.myd!==m.wd||now-(BS.wT[bid]||0)>40000)&&now-(BS.wT[bid]||0)>=1500){BS.wT[bid]=now;m.wd=m.myd;
     rd.set(ref,{d:Math.round(m.myd),t:srvNow()}).then(()=>{if(!BS.odc[bid]){BS.odc[bid]=1;rd.onDisconnect(ref).remove().catch(()=>{})}}).catch(e=>{if(isPerm(e)){BS.perm=1;BS.permT=Date.now()}})}});
-  BSH.on=!BS.perm&&Object.keys(BS.subs).length>0;
+  window.__BDNOW=pub;
+  BSH.on=inz>0&&(!perm||window.__BDK!==false);
  }catch(e){BSH.on=false}};
+ BSH.note=()=>{};window.__BDP=()=>window.__BDNOW||null;
  if(!window.__BSTK)window.__BSTK=setInterval(bsTick,1000);/* รอบที่ 10: ซิงก์เลือดบอสร่วมกัน ทุก 1 วินาที */
  const onLive=()=>{try{const u=MP.auth&&MP.auth.currentUser;if(!u)return;const L=liveAll().filter(v=>v.id!==u.uid);spOthers(L,u.uid);nbUpdate(L,u.uid);ownCheck(u.uid)}catch(e){}};HOOK.liveRefresh=()=>onLive();
  /* ตำแหน่งของตัวเองในช่องอื่น: เก่าแล้ว (ไม่อัปเดตเกิน 20 วินาที) ลบทิ้งทันที ถ้ายังใหม่แปลว่าบัญชีนี้เปิดเล่นอยู่อีกเครื่อง
@@ -6779,7 +6803,7 @@ try{
   else if(r<(boss?.9:.8)){a.st='idle';a.t=now+ri(2000,5000)}
   else{a.st='turn';a.f=(a.f+(Math.random()<.5?-1:1)*ri(1,2)+8)%8;a.t=now+ri(2000,5000)}}
  function monAttack(m,now){const d0=MD[m.k],asp=d0.aspd||2000;if(now-(m.at||0)<asp)return;m.at=now;MAI.atk++;
-  const dm=Math.max(1,Math.round(d0.atk*(.8+Math.random()*.4)*(buff>Date.now()?.5:1)*100/(100+defn())));if(!godOn())S.hp-=dm;S.med=false;/* ถูกตีแล้วไม่ตัดเดินอัตโนมัติและไม่ตัดการรวมพลัง */sfx('hurt');
+  const dm=hard36(m,Math.max(1,Math.round(d0.atk*(.8+Math.random()*.4)*(buff>Date.now()?.5:1)*100/(100+defn()))),0);if(!godOn())S.hp-=dm;S.med=false;/* ถูกตีแล้วไม่ตัดเดินอัตโนมัติและไม่ตัดการรวมพลัง */sfx('hurt');
   const rg=monRng(m)>1.5,el=d0.el;/* รอบที่ 18: อสูรธาตุ เสียงพลังธาตุกระทบตัวเจ้า แบบเดียวกับตอนผู้เล่นใช้วิชาใส่กัน */
   if(el&&HOOK.monFx){try{HOOK.monFx(rg?'shot':'melee',m,{el,buff:buff>Date.now(),boss:isBoss(m.k)})}catch(e){}if(Math.random()<.5)posCue('mhit',m.x,m.y,{k:m.k,buff:buff>Date.now(),mon:m,noHit:1})}else posCue('mhit',m.x,m.y,{k:m.k,buff:buff>Date.now(),mon:m});
   if(S.hp<=0)die('เจ้าถูก'+d0.n+'สังหาร');else say(d0.n+(rg?' '+(MELTH[el]||'โจมตีระยะไกล')+' ':el?' '+(MELTM[el]||'โจมตี')+' ':' โจมตี ')+dm+' เหลือ '+Math.floor(S.hp))}
@@ -6797,7 +6821,7 @@ try{
    say(MD[m.k].n+' คำรามก้องสะท้านใจ เจ้าหวาดกลัว '+(dur/1000)+' วินาที ใช้วิชาโจมตีไม่ได้ ยังเดินหนีได้');return}
   if(!a.tele&&now>=a.skT&&d<=Math.max(6,monRng(m)+1)){/* รอบที่ 18: บอสระยะไกลใช้ทักษะได้จากระยะโจมตีของมัน */a.skT=now+ri(9000,13000);a.tele={x:S.x,y:S.y,t:now+1200};MAI.sk++;bossFx('tele',m,{x:S.x,y:S.y});say(B.warn);return}
   if(a.tele&&now>=a.tele.t){const T=a.tele;a.tele=null;const dd=Math.hypot(S.x-T.x,S.y-T.y),z=zoneAt(S.x,S.y),hp0=!!(dd<=2.5&&z&&z.id===m.z&&playerHittable(m));bossFx('slam',m,{x:T.x,y:T.y,hit:hp0});
-   if(hp0){const dm=Math.max(1,Math.round(MD[m.k].atk*B.m*(buff>Date.now()?.5:1)*100/(100+defn())));if(!godOn())S.hp-=dm;S.med=false;/* ถูกตีแล้วไม่ตัดเดินอัตโนมัติและไม่ตัดการรวมพลัง */
+   if(hp0){const dm=hard36(m,Math.max(1,Math.round(MD[m.k].atk*B.m*(buff>Date.now()?.5:1)*100/(100+defn()))),1);if(!godOn())S.hp-=dm;S.med=false;/* ถูกตีแล้วไม่ตัดเดินอัตโนมัติและไม่ตัดการรวมพลัง */
     if(B.poison)S.poison={until:now+5000,dmg:Math.max(1,Math.round(MD[m.k].atk*.08)),src:MD[m.k].n};
     if(S.hp<=0)die('เจ้าถูก'+MD[m.k].n+'สังหาร');else say(B.hit+' '+dm+' เหลือ '+Math.floor(S.hp))}
    else say('หลบ'+B.n+'พ้น')}}
@@ -9095,8 +9119,8 @@ try{(()=>{
   const tvS=e=>{const wk=Math.hypot(e.x-S.shp.x,e.y-S.shp.y)/10;return Math.max(8,Math.min(360,Math.round(wk*[1,4/6,3/6,2/6,1/6][t])))},tvT=v=>v>=60?Math.floor(v/60)+' นาที'+(v%60?' '+v%60+' วินาที':''):v+' วินาที';
   menu('เดินทางไกลด้วย'+shortN(id)+' ใช้หินวิญญาณ '+priceTxt(d.burn*d.tt*10)+' มีในเรือ '+priceTxt(bfOf(id)),L.map(e=>({t:e.t+' ใช้เวลา '+tvT(tvS(e))+' (เดินเองราว '+tvT(Math.round(tvS(e)/[1,4/6,3/6,2/6,1/6][t]))+')',e})),{ent:x=>{mode='play';mn=null;const e=x.e,need=d.burn*d.tt*10,TS=tvS(e);
    if(bfOf(id)<need)return say('หินวิญญาณในเรือไม่พอ ต้องใช้ '+priceTxt(need)+' เติมหินวิญญาณก่อน');bfSet(id,bfOf(id)-need);trv=1;window.__SHTRV=1;
-   try{window.__SHSND&&window.__SHSND.start()}catch(e){}say('แท่นค่ายกลสว่างวาบ เรือเหาะยกตัวขึ้นจากพื้นทะยานสู่ชั้นเมฆ มุ่งหน้าไป '+e.t+' ใช้เวลา '+tvT(TS)+' ได้ยินลมพัดผ่านลำเรือ ระหว่างทางเดินในเรือและใช้ห้องต่างๆ ได้');const t0=Date.now(),pg=setInterval(()=>{try{const left=Math.round(TS-(Date.now()-t0)/1000);if(left>6)say('เรือเหาะกำลังมุ่งหน้าไป '+e.t+' อีก '+tvT(left)+' ถึง')}catch(x){}},Math.max(15000,TS*250));
-   const cr=setInterval(()=>{try{sd(Math.random()<.6?'hullcreak':'creaktree',.4)}catch(x){}},1300);
+   try{window.__SHSND&&window.__SHSND.start()}catch(e){}say('เรือเร่งเครื่องออกแล่น มุ่งหน้าไป '+e.t+' ใช้เวลา '+tvT(TS)+' ระหว่างทางเดินในเรือและใช้ห้องต่างๆ ได้');const t0=Date.now(),pg=setInterval(()=>{try{const left=Math.round(TS-(Date.now()-t0)/1000);if(left>6)say('เรือเหาะกำลังมุ่งหน้าไป '+e.t+' อีก '+tvT(left)+' ถึง')}catch(x){}},Math.max(15000,TS*250));
+   const cr=0;ENG.on=true;try{mp18('shiprev')}catch(x){}
    setTimeout(()=>{clearInterval(cr);clearInterval(pg);trv=0;window.__SHTRV=0;let ok=false;const tries=[[6,0],[-6,0],[0,6],[0,-6],[10,5],[-10,5],[12,-8],[-12,-8],[16,0],[-16,0]];
     for(const q of tries){if(deploy(id,e.x+q[0],e.y+q[1],true)){ok=true;break}}
     try{window.__SHSND&&window.__SHSND.land()}catch(e){}
@@ -9575,7 +9599,7 @@ try{(()=>{const E2=HOOK.eng2,SH=window.__SHIP;if(!E2||!SH)throw new Error('ไ�
  const ENG=()=>window.__SHENG||{on:false,lv:2},tOf=id=>{try{return Math.max(1,Math.min(4,SH.tOf(id)||1))}catch(e){return 1}},cl=(v,a,b)=>Math.max(a,Math.min(b,v));
  const NM=['r_engt1_1','r_engt2_1','r_engt3_1','r_engt4_1','r_engst1_1','r_engst2_1','r_engst3_1','r_engst4_1','r_engoff_1','r_engrev_1','r_engrev_2','r_englift_1'];
  const pre=()=>NM.forEach(n=>E2.want(n));[1500,5000,15000].forEach(t=>setTimeout(pre,t));
- const o1=(n,g,pr,pan)=>{try{if(!E2.buf(n)){E2.want(n);return null}return E2.env(n,{g:cl(g,0,1)*E2.med(),pr:pr||1,pan:pan||0,att:.01,rel:.3,bus:'amb'})}catch(e){return null}};
+ const o1=(n,g,pr,pan,k)=>{try{if(!E2.buf(n)||!E2.c()){E2.want(n);k=k||0;if(k<30)setTimeout(()=>o1(n,g,pr,pan,k+1),200);return null}return E2.env(n,{g:cl(g,0,1)*E2.med(),pr:pr||1,pan:pan||0,att:.01,rel:.3,bus:'amb'})}catch(e){return null}};
  const oAt=(n,x,y,R,g,pr)=>{const p=HOOK.spAt(x,y,R);if(p&&p.g>.03)o1(n,g*p.g/Math.max(.01,E2.med()),pr,p.pan)};
  /* ----- เสียงเครื่องยนต์ต่อเนื่อง: วนซ้ำไร้รอยต่อ ปรับความดัง รอบเครื่อง และความทึบของเสียงแบบนุ่มนวล ----- */
  const V={};
@@ -9597,10 +9621,10 @@ try{(()=>{const E2=HOOK.eng2,SH=window.__SHIP;if(!E2||!SH)throw new Error('ไ�
  const hd=()=>D.mode==='ship'?(((S.shp&&S.shp.h)|0)%8+8)%8:S.f;
  const setH=h=>{if(D.mode==='ship'&&S.shp)S.shp.h=h;else S.f=h};
  const vmx=()=>D.mode==='ship'?VMX(tOf(S.shp.id)):VMX(tOf(S.boat));
- function turn(d){D.blk=0;const h=(hd()+(d<0?7:1))%8;setH(h);say((d<0?'หันซ้าย':'หันขวา')+' หัวเรือชี้ไป'+DN[h])}
+ function turn(d){D.blk=0;const h=(hd()+(d<0?7:1))%8;setH(h);D.nsT=Date.now()+2500;say((d<0?'หันซ้าย':'หันขวา')+' หัวเรือชี้ไป'+DN[h],1)}
  D.gear=v=>{D.gl=v;say('ใส่'+GN[v]+(v<3?' เรือเร่งได้ไม่เกินเกียร์นี้':' เร่งได้เต็มที่'))};
- const HELP=' กดลูกศรขึ้นค้างไว้เพื่อเร่ง เกียร์ขึ้นเอง ลูกศรลงเบรก ซ้ายขวาหันทิศ R ฟังตำแหน่งเรือ M ฟังสิ่งรอบเรือ D ลุก';
- const stand=m=>{D.on=false;D.v=0;D.keys={};D.acc=0;D.mode='';try{save()}catch(e){}if(m)say(m)};
+ const HELP=' กดลูกศรขึ้นค้างไว้เพื่อเร่ง บนโทรศัพท์แตะลูกศรขึ้นครั้งเดียวเรือเร่งค้างให้ แตะลูกศรลงเพื่อเบรก ซ้ายขวาหันทิศ R ฟังตำแหน่งเรือ M ฟังสิ่งรอบเรือ T เลือกปลายทางให้เรือแล่นไปเอง D ลุก';
+ const stand=m=>{D.on=false;D.lat=0;D.v=0;D.keys={};D.acc=0;D.mode='';try{save()}catch(e){}if(m)say(m)};
  D.sitShip=()=>{if(!inOwn())return say('ต้องอยู่ในเรือของตัวเองที่จอดอยู่ จึงนั่งที่หางเสือได้');const id=S.shp.id;
   if(!(bfOf(id)>0))return say('ในแท่นค่ายกลไม่มีหินวิญญาณ เติมหินวิญญาณก่อน');const E=ENG(),st=!E.on;if(st){E.on=true;E.rev=Math.floor(Date.now()/1000);try{SN.ign()}catch(e){}try{mp18('shiprev')}catch(e){}}
   if(S.shp.h==null)S.shp.h=0;D.on=true;D.mode='ship';D.v=0;D.acc=0;D.keys={};D.cg=0;D.mv=0;walk=false;
@@ -9618,11 +9642,16 @@ try{(()=>{const E2=HOOK.eng2,SH=window.__SHIP;if(!E2||!SH)throw new Error('ไ�
    if(a){e.preventDefault();e.stopImmediatePropagation();if(!D.keys[a]){D.keys[a]=1;if(a==='l'||a==='r')turn(a==='l'?-1:1)}return}
    if((e.code==='KeyQ'||e.code==='KeyE')&&!e.shiftKey){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)turn(e.code==='KeyQ'?-1:1);return}
    if((e.code==='KeyR'||e.code==='KeyM')&&!e.shiftKey&&D.mode==='ship'){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)(e.code==='KeyR'?D.where:D.around)();return}
+   if(e.code==='KeyT'&&!e.shiftKey&&D.mode==='ship'){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat){D.v=0;D.lat=0;try{SH.room('ctl')}catch(x){}}return}
    if(e.code==='KeyX'&&D.mode==='ship'){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)say('นั่งอยู่ที่หางเสือ เรือขับไปบนพื้นได้เลย ไม่ต้องขึ้นฟ้า กด D เพื่อลุก');return}
    const m=/^(Digit|Numpad)([123])$/.exec(e.code);if(m&&!e.shiftKey){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)D.gear(+m[2]);return}}catch(x){}},true);
  addEventListener('keyup',e=>{const a=AK[e.key];if(a){delete D.keys[a];if(a==='up')D.blk=0}},true);addEventListener('blur',()=>{D.keys={}});
  /* ปุ่มบนโทรศัพท์: กดค้างลูกศรขึ้นเร่ง ลงเบรก ซ้ายขวาหันทิศ */
- ['fwd','back','left','right','tl','tr'].forEach(k=>{const o=A[k];if(typeof o!=='function')return;A[k]=function(){if(D.on&&mode==='play'){const t=Date.now();if(k==='fwd'){D.pu=t+450;return}if(k==='back'){D.pd=t+450;return}if(t<(D.tq||0))return;D.tq=t+450;return turn(k==='left'||k==='tl'?-1:1)}return o.apply(this,arguments)}});
+ /* ปุ่มบนจอโทรศัพท์ (แตะทีละครั้ง กดค้างไม่ได้): แตะลูกศรขึ้น = เร่งค้างไว้ให้ แตะลูกศรลง = ผ่อนและเบรก แตะซ้ำตอนหยุดแล้ว = ถอยหลัง ซ้ายขวา Q E = หันครึ่งทิศ */
+ ['fwd','back','left','right','tl','tr'].forEach(k=>{const o=A[k];if(typeof o!=='function')return;A[k]=function(){if(D.on&&mode==='play'){const t=Date.now();
+   if(k==='fwd'){D.blk=0;if(!D.lat){D.lat=1;say('เร่งเครื่องค้างไว้ หัวเรือชี้ไป'+DN[hd()]+' แตะลูกศรลงเพื่อผ่อนและเบรก')}return}
+   if(k==='back'){if(D.lat){D.lat=0;D.pd=t+2500;say('ผ่อนคันเร่ง เบรก')}else{D.pd=t+1500;if(Math.abs(D.v)<.3)say('ถอยหลัง')}return}
+   if(t<(D.tq||0))return;D.tq=t+300;return turn(k==='left'||k==='tl'?-1:1)}return o.apply(this,arguments)}});
  /* เรือเคลื่อน: ตรวจเฉพาะตัวเรือจริง (ไม่ใช้ระยะเว้นตอนวางเรือ) ลอยข้ามเนินและน้ำได้ ชนอาคารหรือคนแล้วหยุด ถึงขอบเขตแผนที่ข้ามไปเขตถัดไปเองถ้าเข้าได้ */
  const dirTo=(dx,dy)=>((Math.round(Math.atan2(dx,-dy)/(Math.PI/4))%8)+8)%8;
  function foot(t,x,y,zid){const s=SH.SZ[t],w=s[2],h=s[3],x0=x-(w>>1);for(let a=x0;a<x0+w;a++)for(let b=y-h;b<=y;b++){const zz=zoneAt(a,b);if(!zz)return{edge:1};if(zz.id!==zid)return{other:zz};
@@ -9636,23 +9665,23 @@ try{(()=>{const E2=HOOK.eng2,SH=window.__SHIP;if(!E2||!SH)throw new Error('ไ�
  D.where=()=>{const p=S.shp;if(!p)return;const z=Z.find(a=>a.id===p.z);say('เรืออยู่ที่ '+locTxt(p.x,p.y)+(z?' ใน'+z.n:'')+' หัวเรือชี้ไป'+DN[hd()]+(Math.abs(D.v)>.3?' ความเร็ว '+Math.round(Math.abs(D.v))+' ก้าวต่อวินาที เกียร์ '+Math.max(1,D.cg):' จอดนิ่ง'))};
  D.around=()=>{const p=S.shp;if(!p)return;const L=W.filter(w=>w.z===p.z&&!w.shd&&w.n&&Number.isFinite(w.x)).map(w=>({w,d:Math.hypot(w.x-p.x,w.y-p.y)})).filter(o=>o.d<=60).sort((a,b)=>a.d-b.d).slice(0,4);
   say(L.length?'รอบเรือ: '+L.map(o=>String(o.w.n).split(' (')[0].slice(0,34)+' ทาง'+DN[dirTo(o.w.x-p.x,o.w.y-p.y)]+' '+Math.round(o.d)+' ก้าว').join(' , '):'รอบเรือไม่มีอะไรในระยะ 60 ก้าว')};
- const PSD={};function passNote(now){const p=S.shp;if(!p||now<(D.pnT||0))return;const w=W.find(o=>o.z===p.z&&!o.shd&&o.n&&Math.hypot(o.x-p.x,o.y-p.y)<=7&&!(PSD[o.n]>now));if(!w)return;PSD[w.n]=now+60000;D.pnT=now+3000;say('ผ่าน'+String(w.n).split(' (')[0].slice(0,34)+' ทาง'+DN[dirTo(w.x-p.x,w.y-p.y)])}
+ const PSD={};function passNote(now){const p=S.shp;if(!p||now<(D.pnT||0)||now<(D.nsT||0))return;const w=W.find(o=>o.z===p.z&&!o.shd&&o.n&&Math.hypot(o.x-p.x,o.y-p.y)<=7&&!(PSD[o.n]>now));if(!w)return;PSD[w.n]=now+60000;D.pnT=now+3000;say('ผ่าน'+String(w.n).split(' (')[0].slice(0,34)+' ทาง'+DN[dirTo(w.x-p.x,w.y-p.y)])}
  function drive(dt,now){if(!D.on)return;
   if(D.mode==='ship'){if(!inOwn())return stand('');if(!ENG().on)return stand('เครื่องเรือดับ เรือหยุด ลุกจากหางเสือแล้ว')}
   else if(!(S.boat&&S.fl&&I[S.boat])||!(S.hp>0))return stand('');
-  const VM=vmx(),G=cl(D.gl||3,1,3),top=VM*GF[G-1],play=mode==='play'&&!TB.on;const dn=play&&(!!D.keys.dn||now<D.pd),up=play&&!dn&&!D.blk&&(!!D.keys.up||now<D.pu);if(dn)D.blk=0;D.up=up;
+  const VM=vmx(),G=cl(D.gl||3,1,3),top=VM*GF[G-1],play=mode==='play'&&!TB.on;const dn=play&&(!!D.keys.dn||now<D.pd),up=play&&!dn&&!D.blk&&(!!D.keys.up||!!D.lat);if(dn||D.keys.dn)D.blk=0;if(D.keys.dn)D.lat=0;if(window.__SHTRV){D.v=0;D.lat=0;return}D.up=up;
   let v=D.v;const cg=Math.min(G,band(Math.abs(v)/VM-.01));
   if(!play)v*=Math.pow(.15,dt);
   else if(up){if(v<0)v=Math.min(0,v+VM*.9*dt);else if(v<top)v=Math.min(top,v+VM*[.42,.3,.2][cg-1]*dt);else v=Math.max(top,v-VM*.3*dt)}
   else if(dn){if(v>0)v=Math.max(0,v-VM*.9*dt);else v=Math.max(-VM*.22,v-VM*.15*dt)}
   else{const k=VM*.12*dt;v=v>0?Math.max(0,v-k):Math.min(0,v+k)}
-  D.v=v;const nb=Math.abs(v)>.05?Math.min(G,band(Math.abs(v)/VM-.01)):0;if(v>0&&nb>D.cg&&D.cg>0)say('เกียร์ '+nb);D.cg=nb;
+  D.v=v;const nb=Math.abs(v)>.05?Math.min(G,band(Math.abs(v)/VM-.01)):0;if(v>0&&nb>D.cg&&D.cg>0&&now>(D.nsT||0))say('เกียร์ '+nb);D.cg=nb;
   if(Math.abs(v)>1)D.mv=1;else if(D.mv&&Math.abs(v)<.05){D.mv=0;say('เรือหยุดนิ่ง');if(D.mode==='ship')try{save()}catch(e){}}
   if(D.mode==='ship'&&Math.abs(v)>.05){const id=S.shp.id,d=I[id];D.fb+=(d.burn||1)*[.5,.75,1][Math.max(1,D.cg)-1]*dt;if(D.fb>=1){const k=Math.floor(D.fb);D.fb-=k;bfSet(id,bfOf(id)-k);if(!(bfOf(id)>0)){ENG().on=false;try{mp18('shiprev')}catch(e){}return stand('หินวิญญาณในแท่นค่ายกลหมด เครื่องดับ เรือหยุดแล้ว เติมหินวิญญาณก่อน')}}}
   if(!play){D.acc=0;return}
   D.acc+=Math.abs(v)*dt;let k=0;
   while(D.acc>=1&&k<4){D.acc-=1;k++;const f=v>0?hd():(hd()+4)%8;
-   if(D.mode==='ship'){const e=shipStep(f);if(e){const hit=Math.abs(D.v);D.v=0;D.acc=0;D.mv=0;D.blk=v>0?1:0;say((/^ชน/.test(e)?'เรือ'+e+' หยุดแล้ว':'เรือหยุด '+e)+(v>0?' หันหัวเรือหรือถอยหลังก่อน':''));break}}
+   if(D.mode==='ship'){const e=shipStep(f);if(e){const hit=Math.abs(D.v);D.v=0;D.acc=0;D.mv=0;D.lat=0;D.blk=v>0?1:0;say((/^ชน/.test(e)?'เรือ'+e+' หยุดแล้ว':'เรือหยุด '+e)+(v>0?' หันหัวเรือหรือถอยหลังก่อน':''));break}}
    else{const ox=S.x,oy=S.y;move(f);if(moveBlocked||(S.x===ox&&S.y===oy)){D.v=0;D.acc=0;D.mv=0;break}}}
   if(D.mode==='ship'&&D.mv)passNote(now);if(D.mode==='ship'&&now>D.svT&&D.mv){D.svT=now+15000;try{save()}catch(e){}}}
  /* ----- ผู้เล่นอื่นได้ยินเรือที่แล่นอยู่: ส่งตำแหน่งเรือผ่านช่อง sb เดิม ชื่อเขตขึ้นต้น F: (ผู้เล่นอื่นไม่วาดเป็นเรือจอด) ----- */
@@ -9663,8 +9692,9 @@ try{(()=>{const E2=HOOK.eng2,SH=window.__SHIP;if(!E2||!SH)throw new Error('ไ�
  function sound(dt,now){const c=E2.c();if(!c)return;const E=ENG(),z=zoneAt(S.x,S.y),zid=z?z.id:'',out=!!z&&!z.inn&&zid!=='ps_in'&&!/^bd_/.test(zid),want={},md=E2.med();
   if(S.x!==lx||S.y!==ly){lx=S.x;ly=S.y;mvT=now}
   const rvf=now<revT?(revT-now)/1800:0;
-  const rpm=VM=>{const u=Math.abs(D.v)/VM,b=band(u),lo=[0,.4,.7][b-1],hi=[.4,.7,1][b-1];let r=u<.02?0:.12+.88*Math.min(1,(u-lo)/(hi-lo));if(D.up)r=Math.min(1,r+.12);return r};
-  if(D.on&&D.mode==='ship'&&S.shp){const t=tOf(S.shp.id);want['o'+t]={t,g:.2*md,pan:0,r:Math.max(rpm(VMX(t)),rvf*.8),cut:.5}}
+  const rpm=VM=>{const u=Math.abs(D.v)/VM,b=band(u),lo=[0,.4,.7][b-1],hi=[.4,.7,1][b-1];const b0=b===1?.12:.42;let r=u<.02?0:b0+(1-b0)*Math.min(1,(u-lo)/(hi-lo));if(D.up)r=Math.min(1,r+.1);return r};
+  if(window.__SHTRV&&S.shp&&I[S.shp.id]&&/^bd_sh/.test(zid)){const t=tOf(S.shp.id);want['o'+t]={t,g:.26*md,pan:0,r:.82,cut:.6}}
+  else if(D.on&&D.mode==='ship'&&S.shp){const t=tOf(S.shp.id);want['o'+t]={t,g:.2*md,pan:0,r:Math.max(rpm(VMX(t)),rvf*.8),cut:.5}}
   else if(S.boat&&S.fl&&I[S.boat]){const t=tOf(S.boat),VM=VMX(t);let r;
    if(D.on)r=rpm(VM);
    else r=now-mvT<450?.55:.12;
@@ -9697,7 +9727,7 @@ try{(()=>{const E2=HOOK.eng2,SH=window.__SHIP;if(!E2||!SH)throw new Error('ไ�
  /* เสียงสตาร์ท ดับ เร่ง และออกตัว ตามระดับเรือ */
  const SN=window.__SHSND||(window.__SHSND={}),ownT=()=>tOf((S.shp&&S.shp.id)||S.boat);
  /* เรือมีแต่เสียงเครื่องเรือ: แทนเสียงเดิมทั้งหมด (ไม่มีเสียงไฟ ค่ายกลหึ่ง ลมวูบ หรือเสียงเหาะกระบี่) */
- SN.ign=()=>{o1(NM[3+ownT()],.9)};SN.off=()=>{o1('r_engoff_1',.8,[1.1,1,.95,.85][ownT()-1])};SN.land=()=>{o1('r_engoff_1',.7,[1.1,1,.95,.85][ownT()-1])};
+ SN.ign=()=>{o1(NM[3+ownT()],.9)};SN.off=()=>{o1('r_engoff_1',.8,[1.1,1,.95,.85][ownT()-1])};SN.land=()=>{if(!ENG().on)o1('r_engoff_1',.7,[1.1,1,.95,.85][ownT()-1])};
  SN.rev=()=>{revT=Date.now()+1800;const t=ownT();o1(t>=3?'r_engrev_1':'r_engrev_2',.7,[1.12,1,.9,.8][t-1])};SN.start=()=>{revT=Date.now()+1800;const t=ownT();o1(t>=3?'r_engrev_1':'r_engrev_2',.6,[1.12,1,.9,.8][t-1])};
  try{const AU=window.__AUDIO;if(AU&&AU.PLA){AU.PLA.shipst=[['engst3',.6,0]];AU.PLA.shipland=[['engoff',.6,0]]}}catch(e){}
  if(typeof HOOK.flyFx==='function'){const of=HOOK.flyFx;let wb=0;HOOK.flyFx=function(on){if(on&&S.boat){wb=1;return}if(!on&&wb){wb=0;return}return of.apply(this,arguments)}}
@@ -9717,6 +9747,94 @@ try{(()=>{CHK.push(()=>{const o=[];if(typeof bsStep!=='function')o.push('บอ�
   'แก้บั๊ก: เลือดบอสค้างที่ 1 ไม่ตายสักที ตอนนี้ใครล้มบอสได้ ทุกคนที่อยู่ใกล้เห็นบอสตายพร้อมกัน คนที่ตีไปแล้วอย่างน้อย 2 เปอร์เซ็นต์ได้รางวัล',
   'แก้บั๊ก: มีคนกำลังสู้บอสอยู่ แต่อีกคนเดินเข้าไปใกล้แล้วไม่เห็นบอส เพราะบอสในเครื่องนั้นยังรอเกิดใหม่ ตอนนี้บอสปรากฏให้เห็นทันทีพร้อมเลือดที่ถูกตีไปแล้ว เข้าช่วยกันได้','ตำแหน่งบอสตรงกันทุกเครื่อง: บอสอยู่ติดตัวคนที่กำลังสู้กับมัน เดินเข้าไปช่วยเจอบอสที่เดียวกัน']})}catch(e){}
 })()}catch(e){console.error('R33',e)}
+try{(()=>{/* รอบที่ 34: คำสั่งผู้ติดตามอยู่ในเมนูสำนัก (Shift+U) */
+ const o=A.sect15;if(typeof o==='function')A.sect15=function(){const r=o.apply(this,arguments);try{const F=window.__FOCMD,L=F&&F.FO?F.FO():[];if(mode==='menu'&&mn&&Array.isArray(mn.items)&&L&&L.length&&!mn.items.some(x=>x&&x._fo)){const oe=mn.ent;mn.items.push({t:'สั่งงานผู้ติดตามทุกคน ('+L.length+' คน) ให้ติดตาม เฝ้า หรือออกล่า',_fo:1});mn.ent=function(x){if(x&&x._fo)return F.menu(F.FO().slice());return oe.apply(this,arguments)}}}catch(e){}return r};
+ try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-11',c:[C_SYS],h:'แก้บอสตายไม่พร้อมกันอีกรอบ และย้ายคำสั่งผู้ติดตามมาไว้ในเมนูสำนัก Shift+U',t:'บอสทุกตัวซิงก์กันแล้ว',x:[
+  'แก้บั๊ก: ฆ่าบอสแล้วอีกคนยังเห็นบอสอยู่ เดิมมีบอสแค่บางตัวที่ส่งข้อมูลหากัน ตอนนี้บอสทุกตัวส่งข้อมูลเลือดและการตายถึงกัน ใครล้มบอสได้ ทุกคนที่อยู่ใกล้เห็นบอสตายพร้อมกัน',
+  'ความเสียหายที่ตีบอสนับครบทุกทางแล้ว ทั้งวิชา การตีธรรมดา และผู้ติดตาม',
+  'กด Shift+U เปิดเมนูสำนัก รายการสุดท้ายคือสั่งงานผู้ติดตามทุกคน','ข้อมูลบอสเหมือนกันทุกคนทั้งเกม: บอสตัวไหนถูกล้ม ทุกคนรู้พร้อมกันไม่ว่าอยู่แผนที่ไหน เวลาตายและเวลาเกิดใหม่เป็นเวลาเดียวกันทุกเครื่อง บอสเกิดใหม่พร้อมกัน']})}catch(e){}
+})()}catch(e){console.error('R34',e)}
+try{(()=>{/* รอบที่ 37: บันทึกเหตุการณ์ทั้งหมด (ทุกข้อความขึ้นจอ เลื่อนอ่านได้ ไม่ถูกรวมหรือตัดทิ้ง) และ F6 ตั้งค่าปิดเสียงอ่านรายหมวด ปิดแล้วข้อความยังขึ้นในบันทึกเหมือนเดิม */
+ const L0=document.getElementById('log');let LA=document.getElementById('logall');
+ if(!LA&&L0){const h=document.createElement('div');h.textContent='บันทึกเหตุการณ์ทั้งหมด (เลื่อนอ่านได้ ตั้งค่าเสียงอ่านกด F6)';h.style.cssText='font-size:.85em;opacity:.8;margin:4px 0 2px';h.setAttribute('aria-hidden','true');
+  LA=document.createElement('div');LA.id='logall';LA.setAttribute('aria-live','off');LA.style.cssText='height:30vh;overflow:auto;border:1px solid var(--bd);padding:6px;margin-bottom:6px;font-size:.92em;-webkit-overflow-scrolling:touch';L0.parentNode.insertBefore(LA,L0.nextSibling);L0.parentNode.insertBefore(h,LA)}
+ const CAT=[['cmb','การโจมตี (เราตีอสูร อสูรตีเรา ทุกครั้ง)'],['loot','ของที่ได้ สังหาร และแต้มฝึกฝน'],['chat','แชท โลก แผนที่ ส่วนตัว สำนัก'],['join','ผู้เล่นเข้า ออก เข้าใกล้'],['amb','เสียงรอบตัว (ได้ยินเสียง มีเสียง)'],['ship','เรือเหาะ (เกียร์ ผ่านสถานที่)']];
+ const kind=t=>{t=String(t||'');
+  if(/เลือดเหลือน้อย|^เตือน |^อันตราย|ถูก.*สังหาร|ระบบตรวจพบ/.test(t))return'danger';
+  if(/^ผู้ฝึกตน .*(ออนไลน์แล้ว|ออฟไลน์แล้ว|เข้ามาใกล้|ออกจากพื้นที่ใกล้ตัวแล้ว)/.test(t))return'join';
+  if(/^\[(โลก|แผนที่|ส่วนตัว|สำนัก|ปาร์ตี้)\]/.test(t))return'chat';
+  if(/^(สังหาร |ได้รับ|ฝึกฝนจากการต่อสู้|ได้ปลา |หยิบ|เก็บได้)/.test(t))return'loot';
+  if(/^(ได้ยินเสียง|มีเสียง|ลมพัด)/.test(t))return'amb';
+  if(/^(เกียร์ \d|ผ่าน.* ทาง)/.test(t))return'ship';
+  if(/ เหลือ [\d,]+( จาก [\d,]+)?$|โจมตี.*\d|^หลบ.*พ้น|ฟันซ้ำ|โจมตีกลุ่ม|^ตี \d+ ครั้ง|พ่นพิษใส่|ใส่เจ้า \d/.test(t))return'cmb';
+  return'sys'};
+ const M=()=>{if(!S.mute||typeof S.mute!=='object')S.mute={};return S.mute};
+ const logAll=t=>{if(!LA)return;const near=LA.scrollHeight-LA.scrollTop-LA.clientHeight<40,d=document.createElement('div'),n=new Date();d.textContent=('0'+n.getHours()).slice(-2)+':'+('0'+n.getMinutes()).slice(-2)+':'+('0'+n.getSeconds()).slice(-2)+' '+t;LA.appendChild(d);while(LA.children.length>600)LA.removeChild(LA.firstChild);if(near)LA.scrollTop=LA.scrollHeight};
+ const _say=say;
+ say=function(t,sys,nh){try{if(typeof t==='string'&&t&&nh!==1){logAll(t);const k=kind(t),mu=!sys&&M()[k]===1&&k!=='danger'&&k!=='sys';
+   if(mu){try{histPush(t,0,histKeep(t)?null:[0])}catch(e){}lastSay=t;lastSayT=Date.now();return}
+   if(!histKeep(t))try{histPush(t,0,[0])}catch(e){}}}catch(e){}
+  return _say.apply(this,arguments)};
+ const oq=A.quiet;
+ A.msgset=function(){const m=M();menu('ตั้งค่าข้อความและเสียงอ่าน ข้อความทุกอย่างยังขึ้นในบันทึกเหตุการณ์และเลื่อนอ่านได้ เลือกหมวดเพื่อปิดหรือเปิดเสียงอ่าน',
+  CAT.map(c=>({t:(m[c[0]]===1?'ปิดเสียงอ่านอยู่: ':'อ่านอยู่: ')+c[1],k:c[0]})).concat([{t:'โหมดข้อความเงียบ ตอนนี้'+(S.quiet?'เปิด':'ปิด')+' (เบื้องหลังอ่านเฉพาะเรื่องด่วน)',q:1},{t:'เสียงพูดของเกมทั้งหมด เปิดหรือปิด (F2)',a:'tts'},{t:'เสียงบรรยากาศ เปิดหรือปิด (F3)',a:'ambT'},{t:'ปิดเมนู',x:1}]),
+  {ent:x=>{if(x.x){mode='play';mn=null;return say('ปิดเมนูตั้งค่าข้อความ')}if(x.q){mode='play';mn=null;return oq&&oq()}if(x.a){mode='play';mn=null;return typeof A[x.a]==='function'&&A[x.a]()}
+   const m=M();if(m[x.k]===1)delete m[x.k];else m[x.k]=1;try{save()}catch(e){}const nm=CAT.find(c=>c[0]===x.k)[1];A.msgset();_say((m[x.k]===1?'ปิดเสียงอ่าน ':'เปิดเสียงอ่าน ')+nm+(m[x.k]===1?' ข้อความยังขึ้นในบันทึก':''),1)}})};
+ KEYS.F6='msgset';MAIN.forEach(m=>{if(m[1]==='F6')m[0]='ตั้งค่าข้อความและเสียงอ่าน (F6)'});
+ CHK.push(()=>{const o=[];if(typeof A.msgset!=='function'||KEYS.F6!=='msgset')o.push('ตั้งค่าข้อความ: ปุ่ม F6 ไม่พร้อม');if(!document.getElementById('logall'))o.push('ตั้งค่าข้อความ: ไม่พบบันทึกเหตุการณ์ทั้งหมด');return o});
+ try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-11',c:[C_SYS],h:'บันทึกเหตุการณ์ทั้งหมด และ F6 ตั้งค่าปิดเสียงอ่านรายหมวด',t:'ทุกข้อความขึ้นจอ เลื่อนอ่านได้',x:[
+  'มีบันทึกเหตุการณ์ทั้งหมดใต้ช่องข้อความ ทุกอย่างที่เกิดขึ้นขึ้นจอพร้อมเวลา เราตีอสูรเข้าเท่าไร อสูรตีเราเท่าไร ได้อะไร ทำอะไร เลื่อนอ่านย้อนหลังได้ 600 บรรทัด และอ่านด้วยปุ่มวงเล็บเหลี่ยมในหมวดทั้งหมดได้',
+  'กด F6 เปิดเมนูตั้งค่า เลือกปิดเสียงอ่านเป็นหมวด การโจมตี ของที่ได้ แชท ผู้เล่นเข้าออก เสียงรอบตัว เรือเหาะ ปิดแล้วข้อความยังขึ้นในบันทึกเหมือนเดิม แค่ไม่อ่านออกเสียง',
+  'เรื่องอันตราย เช่น เลือดเหลือน้อย อ่านเสมอ ปิดไม่ได้ โหมดข้อความเงียบ เสียงพูด F2 และเสียงบรรยากาศ F3 อยู่ในเมนูเดียวกัน']})}catch(e){}
+})()}catch(e){console.error('R37',e)}
+try{(()=>{/* รอบที่ 38: หินเคลื่อนย้ายความเข้ม ย้ายระดับหลอมจากอุปกรณ์ชิ้นเก่าไปชิ้นใหม่ที่เป็นช่องเดียวกัน แล้วหลอมต่อได้เลย */
+ const XID='xfer22',XP=1000000;I[XID]={n:'หินเคลื่อนย้ายความเข้ม',u:'m',p:XP};LV[XID]=0;IDESC[XID]='ใช้ที่ช่างหลอมศาสตรา ย้ายระดับหลอมจากอุปกรณ์ชิ้นเก่าไปชิ้นใหม่ที่เป็นช่องเดียวกัน ใช้ครั้งละ 1 ก้อน ซื้อจากช่างหลอมศาสตรา หรือได้จากบอส';
+ const SLN={wpn:'อาวุธ',arm:'เกราะ'};Object.keys(ACSL).forEach(k=>SLN[k]=ACSL[k]);
+ const cnt=id=>{const a=S.inv.find(q=>q.id===id);return a?a.q:0};
+ const own=id=>cnt(id)>0||S.wpn===id||S.arm===id||(S.acc&&Object.keys(S.acc).some(k=>S.acc[k]===id));
+ const snd=(k,g,at)=>{try{snd18(k,g,at)}catch(e){}};
+ function buy(n){ask('ซื้อหินเคลื่อนย้ายความเข้มกี่ก้อน ก้อนละ '+priceTxt(XP)+' พิมพ์จำนวน 1 ถึง 99',v=>{const q=Math.floor(+v);mode='play';if(!(q>=1&&q<=99))return say('ยกเลิก');const tot=XP*q*100;
+   if(!((Number(S.gold)||0)>=tot))return say('หินวิญญาณไม่พอ ต้องใช้ '+priceTxt(XP*q));S.gold-=tot;add(XID,q);try{sfx('pick')}catch(e){}try{save()}catch(e){}say('ซื้อหินเคลื่อนย้ายความเข้ม '+q+' ก้อน จ่าย '+priceTxt(XP*q)+' ตอนนี้มี '+cnt(XID)+' ก้อน')})}
+ function xfer(n){if(cnt(XID)<1)return say('ต้องมีหินเคลื่อนย้ายความเข้ม 1 ก้อน ซื้อได้ที่ช่างหลอมศาสตรา ก้อนละ '+priceTxt(XP)+' หรือได้จากบอส');
+  const src=Object.keys(S.enh||{}).filter(id=>I[id]&&enh(id)>0&&own(id)&&slotOfId(id));
+  if(!src.length){mode='play';mn=null;return say('ไม่มีอุปกรณ์ที่หลอมแล้วให้ย้ายความเข้ม')}
+  menu('เลือกอุปกรณ์ต้นทาง ที่จะย้ายความเข้มออก',src.map(id=>({t:SLN[slotOfId(id)]+' '+shortN(id)+' +'+enh(id),id})),{ent:x=>{const a=x.id,sl=slotOfId(a),la=enh(a);
+   const ids=[S.wpn,S.arm].concat(S.acc?Object.keys(S.acc).map(k=>S.acc[k]):[]).concat(S.inv.map(q=>q.id)).filter((id,i,A)=>id&&I[id]&&A.indexOf(id)===i&&id!==a&&slotOfId(id)===sl&&enh(id)<la);
+   if(!ids.length){mode='play';mn=null;return say('ไม่มี'+SLN[sl]+'ชิ้นอื่นที่ระดับหลอมต่ำกว่า +'+la+' ให้ย้ายไป ต้องมีชิ้นปลายทางอยู่ในกระเป๋าหรือสวมอยู่')}
+   menu('ย้ายความเข้ม +'+la+' จาก '+shortN(a)+' ไปชิ้นไหน',ids.map(id=>{const nl=Math.min(la,ecap(id));return{t:shortN(id)+' ตอนนี้ +'+enh(id)+' ย้ายแล้วเป็น +'+nl+' (หลอมได้ถึง +'+ecap(id)+')'+(nl<la?' ส่วนเกิน '+(la-nl)+' ชั้นหายไป':''),id}}),{ent:y=>{const t=y.id,nl=Math.min(la,ecap(t));mode='play';mn=null;
+    if(enh(a)!==la||!own(a)||!own(t)||cnt(XID)<1)return say('ข้อมูลเปลี่ยนไป ยกเลิกการย้าย');
+    if(remN(XID,1)<1)return say('ไม่มีหินเคลื่อนย้ายความเข้ม');S.enh[t]=nl;delete S.enh[a];try{save()}catch(e){}
+    snd('anvil',.7);snd('buff',.6,.35);snd('levelup',.6,.8);try{mp18('capdone')}catch(e){}
+    say('ย้ายความเข้มสำเร็จ '+shortN(t)+' เป็น +'+nl+' แล้ว '+shortN(a)+' กลับเป็น +0 หลอมต่อได้ถึง +'+ecap(t)+' โจมตีรวม '+atk().toLocaleString('en-US')+' ป้องกันรวม '+defn())}})}})}
+ /* ร้านรับซื้อคืน (รีไซเคิล): ขายของทุกอย่างในกระเป๋าที่มีราคา ได้ครึ่งหนึ่งของราคาซื้อ */
+ function recy(n){const L=S.inv.filter(a=>a&&I[a.id]&&I[a.id].p>0&&a.q>0).map(a=>({t:I[a.id].n+(enh(a.id)>0?' +'+enh(a.id):'')+' มี '+a.q+' ชิ้น รับซื้อชิ้นละ '+priceTxt(Math.floor(I[a.id].p*.5)),id:a.id}));
+  if(!L.length){mode='play';mn=null;return say('ไม่มีของในกระเป๋าที่ร้านรับซื้อได้ ของที่สวมอยู่ต้องถอดก่อน')}
+  menu('รับซื้อคืนของ ได้ครึ่งหนึ่งของราคาซื้อ เลือกของที่จะขาย (มี '+wallet9()+')',L,{ent:y=>{const id=y.id,h=cnt(id);ask('ขาย '+shortN(id)+' กี่ชิ้น มี '+h+' ชิ้น พิมพ์จำนวน',v=>{const q=Math.floor(+v);if(!(q>=1&&q<=cnt(id))){mode='play';return say('ยกเลิก หรือมีไม่พอ')}
+    const got=remN(id,q);if(got<1){mode='play';return say('ขายไม่สำเร็จ')}const tot=Math.floor(I[id].p*.5)*got;S.gold+=tot*100;if(cnt(id)<1&&!own(id)&&S.enh)delete S.enh[id];try{sfx('buy')}catch(e){}try{save()}catch(e){}
+    say('ขาย '+shortN(id)+' '+got+' ชิ้น ได้ '+priceTxt(tot));recy(n)})}})}
+ const _t=A.talk;A.talk=function(){const r=_t.apply(this,arguments);try{const n=npcNear();if(n&&(n.npc==='forge22'||n.npc==='forge22v')&&mode==='menu'&&mn&&Array.isArray(mn.items)&&!mn.items.some(x=>x&&x._xf)){const oe=mn.ent;
+   mn.items.push({t:'ย้ายความเข้ม ย้ายระดับหลอมจากชิ้นเก่าไปชิ้นใหม่ (ใช้หินเคลื่อนย้ายความเข้ม 1 ก้อน มี '+cnt(XID)+' ก้อน)',_xf:1},{t:'ซื้อหินเคลื่อนย้ายความเข้ม ก้อนละ '+priceTxt(XP),_xf:2},{t:'ขายคืนของที่ไม่ใช้ ร้านรับซื้อทุกอย่างในกระเป๋า ได้ครึ่งราคา',_xf:3});
+   mn.ent=function(x){if(x&&x._xf===1)return xfer(n);if(x&&x._xf===2)return buy(n);if(x&&x._xf===3)return recy(n);return oe.apply(this,arguments)}}}catch(e){}return r};
+ KILLH.push(m=>{try{if(m&&BOSSES.includes(m.k)&&Math.random()<.2){add(XID,1);say('ได้รับ หินเคลื่อนย้ายความเข้ม 1 ก้อน')}}catch(e){}});
+ CHK.push(()=>{const o=[];if(!I[XID]||!IDESC[XID])o.push('หินเคลื่อนย้ายความเข้ม: ข้อมูลของหาย');return o});
+ window.__XFER={xfer,buy,recy};
+ try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-11',c:[C_ITEM],h:'หินเคลื่อนย้ายความเข้ม ย้ายระดับหลอมไปอุปกรณ์ชิ้นใหม่ได้',t:'เปลี่ยนชุดใหม่ไม่ต้องหลอมใหม่ตั้งแต่ต้น',x:[
+  'ไปหาช่างหลอมศาสตราที่หมู่บ้านหรือเมืองหลวง กด F คุย เลือกย้ายความเข้ม เลือกชิ้นเก่า แล้วเลือกชิ้นใหม่ที่เป็นช่องเดียวกัน เช่น เกราะไปเกราะ แหวนไปแหวน',
+  'ระดับหลอมทั้งหมดย้ายไปชิ้นใหม่ ชิ้นเก่ากลับเป็น +0 แล้วหลอมชิ้นใหม่ต่อจากระดับนั้นได้เลย ชิ้นปลายทางอยู่ในกระเป๋าหรือสวมอยู่ก็ได้',
+  'ใช้หินเคลื่อนย้ายความเข้มครั้งละ 1 ก้อน ซื้อจากช่างหลอมศาสตรา ก้อนละ 1 ล้านหินต่ำ หรือได้จากบอส โอกาส 20 เปอร์เซ็นต์','ร้านรับซื้อคืน: คุยกับช่างหลอมศาสตรา เลือกขายคืนของที่ไม่ใช้ ขายได้ทุกอย่างในกระเป๋าที่มีราคา ทั้งอุปกรณ์ วัตถุดิบ ศิลาหลอม และโอสถ ได้ครึ่งหนึ่งของราคาซื้อ ของที่สวมอยู่ต้องถอดก่อน']})}catch(e){}
+})()}catch(e){console.error('R38',e)}
+
+
+try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-11',c:[C_SYS],h:'แก้เรือเหาะ ขับบนโทรศัพท์ได้ เลือกปลายทางแล้วเรือแล่นไปพร้อมเสียงเครื่อง',t:'แตะลูกศรขึ้นครั้งเดียวเรือเร่งค้างให้',x:[
+ 'บนโทรศัพท์ แตะลูกศรขึ้นครั้งเดียวเรือเร่งค้างให้ แตะลูกศรลงเพื่อผ่อนและเบรก แตะซ้ายขวาหรือ Q E หันครึ่งทิศ เกมบอกทิศหัวเรือทุกครั้ง',
+ 'เลือกปลายทางให้เรือแล่นไปเอง: ห้องบังคับเรือ เลือกเดินทางไกล หรือกด T ตอนนั่งหางเสือ ระหว่างทางได้ยินเสียงเครื่องเร่ง ไม่มีเสียงไม้ลั่นและเสียงลมแล้ว',
+ 'สตาร์ทเครื่องมีเสียงทุกครั้ง เดิมถ้าเสียงยังโหลดไม่เสร็จจะเงียบ และเสียงเครื่องตอนเปลี่ยนเกียร์นุ่มขึ้น ไม่ตกวูบ']})}catch(e){}
+try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-11',c:[C_SYS],h:'อสูรและบอสทุกตัวตีแรงขึ้น',t:'เกราะหนาแค่ไหนบอสก็ตีเข้า',x:[
+ 'อสูรธรรมดาตีแรงขึ้น 1.3 เท่า บอสทุกตัวตีแรงขึ้น 1.6 เท่า',
+ 'อสูรและบอสที่ขั้นใกล้เคียงกับเจ้า ตีทะลุเกราะได้ อสูรธรรมดาตีครั้งละอย่างน้อย 2.5 เปอร์เซ็นต์ของเลือดสูงสุด บอสตีปกติอย่างน้อย 7 เปอร์เซ็นต์ ท่าพิเศษของบอสอย่างน้อย 12 เปอร์เซ็นต์',
+ 'โล่ปราณยังลดความเสียหายครึ่งหนึ่ง อสูรที่ขั้นต่ำกว่าเจ้ามากยังตีเบาเหมือนเดิม เตรียมโอสถและวิชาฟื้นเลือดให้พร้อมก่อนสู้บอส']})}catch(e){}
+
+
 try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-11',c:[C_SYS],h:'ขอแรงทุกคนช่วยทดลองเล่นและแจ้งบั๊ก',t:'ไม่มีใครลองก็ไม่รู้ว่ามีบั๊กอะไร',x:[
  'ถ้าไม่มีใครทดลองเล่น ผู้พัฒนาก็ไม่รู้ว่ามีบั๊กอะไรซ่อนอยู่ ขอแรงทุกคนช่วยกันลองระบบใหม่ โดยเฉพาะขับเรือเหาะ และสู้บอสด้วยกันหลายคน',
  'เจอบั๊กหรืออะไรแปลกๆ บอกผู้พัฒนาในแชทโลกได้เลย บอกด้วยว่าทำอะไรอยู่ อยู่แผนที่ไหน และเกิดอะไรขึ้น จะได้แก้ได้ตรงจุด']})}catch(e){}
