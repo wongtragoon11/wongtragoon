@@ -9614,37 +9614,42 @@ try{(()=>{const E2=HOOK.eng2,SH=window.__SHIP;if(!E2||!SH)throw new Error('ไ�
  const TP=[1.08,1,.94,.86],TC=[1.15,1,.85,.75];
  /* ----- ขับเรือ (รอบ 32): นั่งที่หางเสือในห้องบังคับเรือ อยู่ในเรือตลอด ตัวเรือเคลื่อนไปบนแผนที่ ไม่ขึ้นฟ้า ไม่มีเสียงเหาะ
     ลูกศรขึ้นค้างเร่งไล่เกียร์ ลงเบรก/ถอย ซ้ายขวาหรือ Q E หันทีละครึ่งทิศ (45 องศา) บอกทิศทุกครั้ง เลข 1 2 3 ใส่เกียร์ D ลุก ----- */
- const D={gl:3,on:false,mode:'',v:0,acc:0,keys:{},cg:0,mv:0,pu:0,pd:0,up:false,fb:0,svT:0};window.__DRV=D;
- const VMX=t=>{const d=I['s18_'+t]||{};return 10*Math.max(1,d.spd||1.2)};
- const GF=[.4,.7,1],band=u=>u<.4?1:u<.7?2:3,GN=['','เกียร์ 1 ช้า','เกียร์ 2 กลาง','เกียร์ 3 เร็วสุด'];
+ const D={gl:5,on:false,mode:'',v:0,acc:0,keys:{},cg:0,mv:0,pu:0,pd:0,up:false,fb:0,svT:0};window.__DRV=D;
+ const VMX=t=>{const d=I['s18_'+t]||{};return 6*Math.max(1,d.spd||1.2)};
+ const GF=[.2,.4,.6,.8,1],band=u=>Math.max(1,Math.min(5,Math.ceil(u*5-1e-9))),GN=['','เกียร์ 1 ช้าสุด','เกียร์ 2','เกียร์ 3','เกียร์ 4','เกียร์ 5 เร็วสุด'];
+ /* พูดทันทีแม้ข้อความเกิดจากตัวจับเวลา (ระบบอ่านถือว่าเป็นผลของปุ่มที่กด ไม่ถูกโหมดข้อความเงียบตัดทิ้ง) */
+ const mk=()=>{try{document.dispatchEvent(new Event('pointerdown'))}catch(e){}},usay=t=>{mk();say(t)};
  const inOwn=()=>{const z=zoneAt(S.x,S.y);return !!(z&&/^bd_sh/.test(z.id)&&S.shp&&I[S.shp.id])};
  const hd=()=>D.mode==='ship'?(((S.shp&&S.shp.h)|0)%8+8)%8:S.f;
  const setH=h=>{if(D.mode==='ship'&&S.shp)S.shp.h=h;else S.f=h};
  const vmx=()=>D.mode==='ship'?VMX(tOf(S.shp.id)):VMX(tOf(S.boat));
  function turn(d){D.blk=0;const h=(hd()+(d<0?7:1))%8;setH(h);D.nsT=Date.now()+2500;say((d<0?'หันซ้าย':'หันขวา')+' หัวเรือชี้ไป'+DN[h],1)}
- D.gear=v=>{D.gl=v;say('ใส่'+GN[v]+(v<3?' เรือเร่งได้ไม่เกินเกียร์นี้':' เร่งได้เต็มที่'))};
- const HELP=' กดลูกศรขึ้นค้างไว้เพื่อเร่ง บนโทรศัพท์แตะลูกศรขึ้นครั้งเดียวเรือเร่งค้างให้ แตะลูกศรลงเพื่อเบรก ซ้ายขวาหันทิศ R ฟังตำแหน่งเรือ M ฟังสิ่งรอบเรือ T เลือกปลายทางให้เรือแล่นไปเอง D ลุก';
+ D.gear=v=>{D.gl=v;say('ใส่'+GN[v]+(v<5?' เรือเร่งได้ไม่เกินเกียร์นี้':' เร่งได้เต็มที่'))};
+ const HELP=' กดลูกศรขึ้นค้างไว้เพื่อเร่ง บนโทรศัพท์แตะลูกศรขึ้นครั้งเดียวเรือเร่งค้างให้ แตะลูกศรลงเพื่อเบรก ซ้ายขวาหันทิศ R ฟังตำแหน่งเรือ M ฟังสิ่งรอบเรือ T เลือกปลายทางให้เรือแล่นไปเอง Space เร่งเครื่องอยู่กับที่ เลข 1 ถึง 5 จำกัดเกียร์ D ลุก';
  const stand=m=>{D.on=false;D.lat=0;D.v=0;D.keys={};D.acc=0;D.mode='';try{save()}catch(e){}if(m)say(m)};
  D.sitShip=()=>{if(!inOwn())return say('ต้องอยู่ในเรือของตัวเองที่จอดอยู่ จึงนั่งที่หางเสือได้');const id=S.shp.id;
   if(!(bfOf(id)>0))return say('ในแท่นค่ายกลไม่มีหินวิญญาณ เติมหินวิญญาณก่อน');const E=ENG(),st=!E.on;if(st){E.on=true;E.rev=Math.floor(Date.now()/1000);try{SN.ign()}catch(e){}try{mp18('shiprev')}catch(e){}}
   if(S.shp.h==null)S.shp.h=0;D.on=true;D.mode='ship';D.v=0;D.acc=0;D.keys={};D.cg=0;D.mv=0;walk=false;
-  D.gl=3;say('นั่งลงที่หางเสือแล้ว'+(st?' สตาร์ทเครื่องให้แล้ว':'')+' หัวเรือชี้ไป'+DN[hd()]+HELP)};
+  D.gl=5;say('นั่งลงที่หางเสือแล้ว'+(st?' สตาร์ทเครื่องให้แล้ว':'')+' หัวเรือชี้ไป'+DN[hd()]+HELP)};
  D.sit=on=>{if(on==null)on=!D.on;if(!on)return stand('ลุกจากหางเสือ เรือหยุดนิ่ง กด D นั่งใหม่');
   if(inOwn())return D.sitShip();
   return say('ต้องอยู่ในเรือของตัวเองก่อน วางเรือจากกระเป๋า เดินเข้าประตูเรือ แล้วกด D เพื่อนั่งที่หางเสือ')};
  /* เซฟเก่าที่ยังบินแบบเหาะอยู่: จอดเรือลงที่พื้นให้เอง แล้วขับจากในเรือแทน (ไม่มีการเหาะอีกแล้ว) */
  setInterval(()=>{try{if(!(S.boat&&S.fl)||window.__SHTRV||(typeof BT18!=='undefined'&&BT18.on)||mode!=='play')return;const id=S.boat;S.boat=0;S.fl=false;D.on=false;let ok=false;try{ok=SH.land(id,1)}catch(e){}
   say('เรือเหาะไม่บินขึ้นฟ้าแล้ว'+(S.shp?' จอดเรือลงที่พื้นให้แล้ว เดินเข้าประตูเรือ แล้วกด D นั่งที่หางเสือเพื่อขับ':' เก็บเรือเข้ากระเป๋าแล้ว วางเรือจากกระเป๋าแล้วเข้าไปขับในเรือ'));try{save()}catch(e){}}catch(e){}},1000);
+ D.rev=rp=>{const now=Date.now();revT=now+1500;if(!rp||now-(D.rvS||0)>1400){D.rvS=now;try{SN.rev()}catch(e){}try{mp18('shiprev')}catch(e){}if(!rp)say('เร่งเครื่อง')}};
+ {const oa=A.auto;if(typeof oa==='function')A.auto=function(){if(D.on&&mode==='play')return D.rev(false);return oa.apply(this,arguments)}}
  const AK={ArrowUp:'up',ArrowDown:'dn',ArrowLeft:'l',ArrowRight:'r'};
  addEventListener('keydown',e=>{try{if(mode!=='play'||e.ctrlKey||e.metaKey||e.altKey||e.isComposing)return;const tg=e.target;if(tg&&(/^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName)||tg.isContentEditable))return;
-   if(e.code==='KeyD'&&!e.shiftKey){if(!D.on&&!inOwn())return;e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)D.sit();return}
-   if(!D.on)return;const a=AK[e.key];
+   if(e.code==='KeyD'&&!e.shiftKey){if(!D.on&&!inOwn())return;mk();e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)D.sit();return}
+   if(!D.on)return;const a=AK[e.key];if(a||/^(Key[QERMTX]|Digit[1-5]|Numpad[1-5]|Space)$/.test(e.code))mk();
+   if(e.code==='Space'&&!e.shiftKey){e.preventDefault();e.stopImmediatePropagation();D.rev(e.repeat);return}
    if(a){e.preventDefault();e.stopImmediatePropagation();if(!D.keys[a]){D.keys[a]=1;if(a==='l'||a==='r')turn(a==='l'?-1:1)}return}
    if((e.code==='KeyQ'||e.code==='KeyE')&&!e.shiftKey){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)turn(e.code==='KeyQ'?-1:1);return}
    if((e.code==='KeyR'||e.code==='KeyM')&&!e.shiftKey&&D.mode==='ship'){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)(e.code==='KeyR'?D.where:D.around)();return}
    if(e.code==='KeyT'&&!e.shiftKey&&D.mode==='ship'){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat){D.v=0;D.lat=0;try{SH.room('ctl')}catch(x){}}return}
    if(e.code==='KeyX'&&D.mode==='ship'){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)say('นั่งอยู่ที่หางเสือ เรือขับไปบนพื้นได้เลย ไม่ต้องขึ้นฟ้า กด D เพื่อลุก');return}
-   const m=/^(Digit|Numpad)([123])$/.exec(e.code);if(m&&!e.shiftKey){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)D.gear(+m[2]);return}}catch(x){}},true);
+   const m=/^(Digit|Numpad)([1-5])$/.exec(e.code);if(m&&!e.shiftKey){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)D.gear(+m[2]);return}}catch(x){}},true);
  addEventListener('keyup',e=>{const a=AK[e.key];if(a){delete D.keys[a];if(a==='up')D.blk=0}},true);addEventListener('blur',()=>{D.keys={}});
  /* ปุ่มบนโทรศัพท์: กดค้างลูกศรขึ้นเร่ง ลงเบรก ซ้ายขวาหันทิศ */
  /* ปุ่มบนจอโทรศัพท์ (แตะทีละครั้ง กดค้างไม่ได้): แตะลูกศรขึ้น = เร่งค้างไว้ให้ แตะลูกศรลง = ผ่อนและเบรก แตะซ้ำตอนหยุดแล้ว = ถอยหลัง ซ้ายขวา Q E = หันครึ่งทิศ */
@@ -9655,12 +9660,12 @@ try{(()=>{const E2=HOOK.eng2,SH=window.__SHIP;if(!E2||!SH)throw new Error('ไ�
  /* เรือเคลื่อน: ตรวจเฉพาะตัวเรือจริง (ไม่ใช้ระยะเว้นตอนวางเรือ) ลอยข้ามเนินและน้ำได้ ชนอาคารหรือคนแล้วหยุด ถึงขอบเขตแผนที่ข้ามไปเขตถัดไปเองถ้าเข้าได้ */
  const dirTo=(dx,dy)=>((Math.round(Math.atan2(dx,-dy)/(Math.PI/4))%8)+8)%8;
  function foot(t,x,y,zid){const s=SH.SZ[t],w=s[2],h=s[3],x0=x-(w>>1);for(let a=x0;a<x0+w;a++)for(let b=y-h;b<=y;b++){const zz=zoneAt(a,b);if(!zz)return{edge:1};if(zz.id!==zid)return{other:zz};
-   const so=solidAt(a,b);if(so&&!so.shd)return{hit:'ชน'+so.n};const q=W.find(o=>o.npc&&o.z===zid&&o.x===a&&o.y===b);if(q)return{hit:'ชน '+String(q.n).slice(0,30)}}return null}
+   const so=solidAt(a,b);if(so&&!so.shd&&(so.shf||so.shipIn))return{hit:'ชน'+String(so.n).slice(0,40)}}return null}/* เรือลอยเหนือพื้น ข้ามป้าย ผู้คน อาคาร เนิน และน้ำได้ ชนได้เฉพาะเรือลำอื่นและขอบแผนที่ */
  function shipStep(f){const p=S.shp,t=tOf(p.id),nx=p.x+DX[f],ny=p.y+DY[f],z0=zoneAt(nx,ny),r=foot(t,nx,ny,z0&&z0.id===p.z?p.z:'');
   if(!r){p.x=nx;p.y=ny;SH.mk();return ''}if(r.hit)return r.hit;
   const s=SH.SZ[t];for(let k=2;k<=s[2]+s[3]+6;k++){const x=p.x+DX[f]*k,y=p.y+DY[f]*k,tz=zoneAt(x,y);if(!tz)break;if(tz.id===p.z)continue;
    if(tz.inn||/^(bd_|ps_)/.test(tz.id))return 'ข้างหน้าเป็น'+tz.n+' เรือเข้าไม่ได้';if((tz.min||0)>S.step&&!godOn())return 'ยังเข้า '+tz.n+' ไม่ได้ ต้องถึง'+realmName(tz.min)+'ก่อน';
-   const q=foot(t,x,y,tz.id);if(q&&q.other)continue;if(q)return q.hit||'ขอบแผนที่';p.x=x;p.y=y;p.z=tz.id;SH.mk();D.v=Math.min(D.v,vmx()*.4);say('เรือข้ามเข้าสู่ '+tz.n);try{save()}catch(e){}return ''}
+   const q=foot(t,x,y,tz.id);if(q&&q.other)continue;if(q)return q.hit||'ขอบแผนที่';p.x=x;p.y=y;p.z=tz.id;SH.mk();D.v=Math.min(D.v,vmx()*.4);usay('เรือข้ามเข้าสู่ '+tz.n);try{save()}catch(e){}return ''}
   return r.edge?'ถึงขอบแผนที่แล้ว ไปต่อไม่ได้':'ใกล้ขอบเขตแผนที่ ข้ามไม่ได้'}
  D.where=()=>{const p=S.shp;if(!p)return;const z=Z.find(a=>a.id===p.z);say('เรืออยู่ที่ '+locTxt(p.x,p.y)+(z?' ใน'+z.n:'')+' หัวเรือชี้ไป'+DN[hd()]+(Math.abs(D.v)>.3?' ความเร็ว '+Math.round(Math.abs(D.v))+' ก้าวต่อวินาที เกียร์ '+Math.max(1,D.cg):' จอดนิ่ง'))};
  D.around=()=>{const p=S.shp;if(!p)return;const L=W.filter(w=>w.z===p.z&&!w.shd&&w.n&&Number.isFinite(w.x)).map(w=>({w,d:Math.hypot(w.x-p.x,w.y-p.y)})).filter(o=>o.d<=60).sort((a,b)=>a.d-b.d).slice(0,4);
@@ -9669,19 +9674,19 @@ try{(()=>{const E2=HOOK.eng2,SH=window.__SHIP;if(!E2||!SH)throw new Error('ไ�
  function drive(dt,now){if(!D.on)return;
   if(D.mode==='ship'){if(!inOwn())return stand('');if(!ENG().on)return stand('เครื่องเรือดับ เรือหยุด ลุกจากหางเสือแล้ว')}
   else if(!(S.boat&&S.fl&&I[S.boat])||!(S.hp>0))return stand('');
-  const VM=vmx(),G=cl(D.gl||3,1,3),top=VM*GF[G-1],play=mode==='play'&&!TB.on;const dn=play&&(!!D.keys.dn||now<D.pd),up=play&&!dn&&!D.blk&&(!!D.keys.up||!!D.lat);if(dn||D.keys.dn)D.blk=0;if(D.keys.dn)D.lat=0;if(window.__SHTRV){D.v=0;D.lat=0;return}D.up=up;
+  const VM=vmx(),G=cl(D.gl||5,1,5),top=VM*GF[G-1],play=mode==='play'&&!TB.on;const dn=play&&(!!D.keys.dn||now<D.pd),up=play&&!dn&&!D.blk&&(!!D.keys.up||!!D.lat);if(dn||D.keys.dn)D.blk=0;if(D.keys.dn)D.lat=0;if(window.__SHTRV){D.v=0;D.lat=0;return}D.up=up;
   let v=D.v;const cg=Math.min(G,band(Math.abs(v)/VM-.01));
   if(!play)v*=Math.pow(.15,dt);
-  else if(up){if(v<0)v=Math.min(0,v+VM*.9*dt);else if(v<top)v=Math.min(top,v+VM*[.42,.3,.2][cg-1]*dt);else v=Math.max(top,v-VM*.3*dt)}
+  else if(up){if(v<0)v=Math.min(0,v+VM*.9*dt);else if(v<top)v=Math.min(top,v+VM*[.4,.32,.26,.2,.15][cg-1]*dt);else v=Math.max(top,v-VM*.3*dt)}
   else if(dn){if(v>0)v=Math.max(0,v-VM*.9*dt);else v=Math.max(-VM*.22,v-VM*.15*dt)}
   else{const k=VM*.12*dt;v=v>0?Math.max(0,v-k):Math.min(0,v+k)}
-  D.v=v;const nb=Math.abs(v)>.05?Math.min(G,band(Math.abs(v)/VM-.01)):0;if(v>0&&nb>D.cg&&D.cg>0&&now>(D.nsT||0))say('เกียร์ '+nb);D.cg=nb;
-  if(Math.abs(v)>1)D.mv=1;else if(D.mv&&Math.abs(v)<.05){D.mv=0;say('เรือหยุดนิ่ง');if(D.mode==='ship')try{save()}catch(e){}}
-  if(D.mode==='ship'&&Math.abs(v)>.05){const id=S.shp.id,d=I[id];D.fb+=(d.burn||1)*[.5,.75,1][Math.max(1,D.cg)-1]*dt;if(D.fb>=1){const k=Math.floor(D.fb);D.fb-=k;bfSet(id,bfOf(id)-k);if(!(bfOf(id)>0)){ENG().on=false;try{mp18('shiprev')}catch(e){}return stand('หินวิญญาณในแท่นค่ายกลหมด เครื่องดับ เรือหยุดแล้ว เติมหินวิญญาณก่อน')}}}
+  D.v=v;const nb=Math.abs(v)>.05?Math.min(G,band(Math.abs(v)/VM-.01)):0;if(v>0&&nb>D.cg&&D.cg>0&&now>(D.nsT||0))say('เกียร์ '+nb);if(v>0&&nb<D.cg&&nb>0&&!up&&now>(D.nsT||0))say('ลดเกียร์ '+nb);D.cg=nb;
+  if(Math.abs(v)>1)D.mv=1;else if(D.mv&&Math.abs(v)<.05){D.mv=0;usay('เรือหยุดนิ่ง');if(D.mode==='ship')try{save()}catch(e){}}
+  if(D.mode==='ship'&&Math.abs(v)>.05){const id=S.shp.id,d=I[id];D.fb+=(d.burn||1)*[.4,.55,.7,.85,1][Math.max(1,D.cg)-1]*dt;if(D.fb>=1){const k=Math.floor(D.fb);D.fb-=k;bfSet(id,bfOf(id)-k);if(!(bfOf(id)>0)){ENG().on=false;try{mp18('shiprev')}catch(e){}return stand('หินวิญญาณในแท่นค่ายกลหมด เครื่องดับ เรือหยุดแล้ว เติมหินวิญญาณก่อน')}}}
   if(!play){D.acc=0;return}
   D.acc+=Math.abs(v)*dt;let k=0;
   while(D.acc>=1&&k<4){D.acc-=1;k++;const f=v>0?hd():(hd()+4)%8;
-   if(D.mode==='ship'){const e=shipStep(f);if(e){const hit=Math.abs(D.v);D.v=0;D.acc=0;D.mv=0;D.lat=0;D.blk=v>0?1:0;say((/^ชน/.test(e)?'เรือ'+e+' หยุดแล้ว':'เรือหยุด '+e)+(v>0?' หันหัวเรือหรือถอยหลังก่อน':''));break}}
+   if(D.mode==='ship'){const e=shipStep(f);if(e){const hit=Math.abs(D.v);D.v=0;D.acc=0;D.mv=0;D.lat=0;D.blk=v>0?1:0;usay((/^ชน/.test(e)?'เรือ'+e+' หยุดแล้ว':'เรือหยุด '+e)+(v>0?' หันหัวเรือหรือถอยหลังก่อน':''));break}}
    else{const ox=S.x,oy=S.y;move(f);if(moveBlocked||(S.x===ox&&S.y===oy)){D.v=0;D.acc=0;D.mv=0;break}}}
   if(D.mode==='ship'&&D.mv)passNote(now);if(D.mode==='ship'&&now>D.svT&&D.mv){D.svT=now+15000;try{save()}catch(e){}}}
  /* ----- ผู้เล่นอื่นได้ยินเรือที่แล่นอยู่: ส่งตำแหน่งเรือผ่านช่อง sb เดิม ชื่อเขตขึ้นต้น F: (ผู้เล่นอื่นไม่วาดเป็นเรือจอด) ----- */
@@ -9692,7 +9697,7 @@ try{(()=>{const E2=HOOK.eng2,SH=window.__SHIP;if(!E2||!SH)throw new Error('ไ�
  function sound(dt,now){const c=E2.c();if(!c)return;const E=ENG(),z=zoneAt(S.x,S.y),zid=z?z.id:'',out=!!z&&!z.inn&&zid!=='ps_in'&&!/^bd_/.test(zid),want={},md=E2.med();
   if(S.x!==lx||S.y!==ly){lx=S.x;ly=S.y;mvT=now}
   const rvf=now<revT?(revT-now)/1800:0;
-  const rpm=VM=>{const u=Math.abs(D.v)/VM,b=band(u),lo=[0,.4,.7][b-1],hi=[.4,.7,1][b-1];const b0=b===1?.12:.42;let r=u<.02?0:b0+(1-b0)*Math.min(1,(u-lo)/(hi-lo));if(D.up)r=Math.min(1,r+.1);return r};
+  const rpm=VM=>{const u=Math.abs(D.v)/VM,b=band(u),lo=(b-1)*.2,hi=b*.2;const b0=b===1?.12:.45;let r=u<.02?0:b0+(1-b0)*Math.min(1,(u-lo)/(hi-lo));if(D.up)r=Math.min(1,r+.1);return r};
   if(window.__SHTRV&&S.shp&&I[S.shp.id]&&/^bd_sh/.test(zid)){const t=tOf(S.shp.id);want['o'+t]={t,g:.26*md,pan:0,r:.82,cut:.6}}
   else if(D.on&&D.mode==='ship'&&S.shp){const t=tOf(S.shp.id);want['o'+t]={t,g:.2*md,pan:0,r:Math.max(rpm(VMX(t)),rvf*.8),cut:.5}}
   else if(S.boat&&S.fl&&I[S.boat]){const t=tOf(S.boat),VM=VMX(t);let r;
@@ -9716,7 +9721,7 @@ try{(()=>{const E2=HOOK.eng2,SH=window.__SHIP;if(!E2||!SH)throw new Error('ไ�
      const t=cl(+sb[0]||1,1,4),x=Number.isFinite(v.x)?v.x:+sb[1],y=Number.isFinite(v.y)?v.y:+sb[2];if(!Number.isFinite(x)||!Number.isFinite(y))return;
      let f=FLY[id];if(!f)f=FLY[id]={x,y,d:Math.hypot(x-S.x,y-S.y),vr:0};const a=Math.min(1,dt*5);f.x+=(x-f.x)*a;f.y+=(y-f.y)*a;f.seen=now;
      const d=Math.hypot(f.x-S.x,f.y-S.y),vr=(d-f.d)/Math.max(dt,.02);f.d=d;f.vr=f.vr*.85+vr*.15;
-     const p=HOOK.spAt(Math.round(f.x),Math.round(f.y),50);if(!p||!(p.g>.02))return;const u=cl((+sb[5]||0)/10/VMX(t),0,1),b=band(u),lo=[0,.4,.7][b-1],hi=[.4,.7,1][b-1],r=u<.02?.1:.12+.88*Math.min(1,(u-lo)/(hi-lo));
+     const p=HOOK.spAt(Math.round(f.x),Math.round(f.y),50);if(!p||!(p.g>.02))return;const u=cl((+sb[5]||0)/10/VMX(t),0,1),b=band(u),lo=(b-1)*.2,hi=b*.2,r=u<.02?.1:.12+.88*Math.min(1,(u-lo)/(hi-lo));
      L.push({k:'f'+id+'_'+t,t,g:Math.min(.9,1.15*p.g),pan:p.pan,r,cut:.6+.4*p.g,dop:cl(1/(1+f.vr/40),.75,1.3)})})}catch(e){}
    Object.keys(FLY).forEach(k=>{if(now-FLY[k].seen>10000)delete FLY[k]});
    L.sort((a,b)=>b.g-a.g).slice(0,3).forEach(o=>{want[o.k]=o})}
@@ -9734,8 +9739,8 @@ try{(()=>{const E2=HOOK.eng2,SH=window.__SHIP;if(!E2||!SH)throw new Error('ไ�
  let errOnce=0;setInterval(()=>{try{const now=Date.now(),dt=Math.min(.25,(now-lastT)/1000);lastT=now;drive(dt,now);sound(dt,now)}catch(e){if(!errOnce){errOnce=1;bugLog('รอบที่ 32','ขับเรือหรือเสียงเครื่องผิดพลาด '+e)}}},60);
  CHK.push(()=>{const o=[];NM.forEach(n=>{if(!(window.__AUDIO&&window.__AUDIO.KN&&window.__AUDIO.KN.url[n]))o.push('เสียงเครื่องเรือ: ไม่พบเสียง '+n)});if(!window.__DRV||typeof window.__DRV.sit!=='function')o.push('ขับเรือ: ไม่พบระบบนั่งหางเสือ');return o});
  try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-11',c:[C_SYS],h:'ขับเรือเหาะเองได้ นั่งที่หางเสือในเรือ ขับได้เลยไม่ขึ้นฟ้า มีเกียร์ และเสียงเครื่องจริงแยกตามระดับเรือ',t:'นั่งหางเสือ ลูกศรขึ้นค้างเร่งไล่เกียร์ ซ้ายขวาเลี้ยว',x:[
-  'เข้าห้องบังคับเรือ สตาร์ทเครื่อง แล้วเลือกนั่งลงที่หางเสือ หรือกด D ตัวยังอยู่ในเรือ ขับเรือไปบนแผนที่ได้เลย ไม่ขึ้นฟ้า ไม่มีเสียงเหาะกระบี่ คนนอกเรือเห็นเรือเคลื่อนตามไป','อยู่ในเรือได้ยินเสียงเครื่องเบาๆ คนข้างนอกได้ยินเสียงเครื่องดัง ยิ่งเรือแล่นเร็วรอบเครื่องยิ่งสูง เรือชนอาคารหรือคนจะหยุดและบอกว่าชนอะไร เรือลอยข้ามเนินและน้ำได้ ถึงขอบเขตแผนที่ข้ามไปเขตถัดไปเอง','นั่งที่หางเสือแล้วสตาร์ทเครื่องให้เอง ระหว่างขับกด R ฟังตำแหน่งเรือ กด M ฟังสิ่งรอบเรือ แล่นผ่านสถานที่สำคัญจะบอกว่าผ่านอะไร ตัดเมนูคันเร่งออก เหลือแค่ลูกศร',
-  'นั่งหางเสือแล้ว กดลูกศรขึ้นค้างไว้ เรือค่อยๆ เร่งไล่จากเกียร์ 1 ไปเกียร์ 2 และ 3 จนถึงเกียร์ที่ใส่ไว้ ปล่อยแล้วเรือไหลช้าลงเอง ลูกศรลงเบรกและถอยหลัง ลูกศรซ้ายขวาหรือ Q E หันทีละครึ่งทิศ บอกทิศทุกครั้ง เลข 1 2 3 จำกัดเกียร์ (ปกติเกียร์ขึ้นเองถึง 3)',
+  'เข้าห้องบังคับเรือ สตาร์ทเครื่อง แล้วเลือกนั่งลงที่หางเสือ หรือกด D ตัวยังอยู่ในเรือ ขับเรือไปบนแผนที่ได้เลย ไม่ขึ้นฟ้า ไม่มีเสียงเหาะกระบี่ คนนอกเรือเห็นเรือเคลื่อนตามไป','อยู่ในเรือได้ยินเสียงเครื่องเบาๆ คนข้างนอกได้ยินเสียงเครื่องดัง ยิ่งเรือแล่นเร็วรอบเครื่องยิ่งสูง เรือลอยข้ามป้าย ผู้คน อาคาร เนิน และน้ำได้ ไม่ติดกลางทาง หยุดเฉพาะตอนชนเรือลำอื่นหรือสุดขอบแผนที่ มี 5 เกียร์ ความเร็วไม่มาก จอดอยู่กับที่กด Space เร่งเครื่องเล่นได้ ถึงขอบเขตแผนที่ข้ามไปเขตถัดไปเอง','นั่งที่หางเสือแล้วสตาร์ทเครื่องให้เอง ระหว่างขับกด R ฟังตำแหน่งเรือ กด M ฟังสิ่งรอบเรือ แล่นผ่านสถานที่สำคัญจะบอกว่าผ่านอะไร ตัดเมนูคันเร่งออก เหลือแค่ลูกศร',
+  'นั่งหางเสือแล้ว กดลูกศรขึ้นค้างไว้ เรือค่อยๆ เร่งไล่จากเกียร์ 1 ไปเกียร์ 2 และ 3 จนถึงเกียร์ที่ใส่ไว้ ปล่อยแล้วเรือไหลช้าลงเอง ลูกศรลงเบรกและถอยหลัง ลูกศรซ้ายขวาหรือ Q E หันทีละครึ่งทิศ บอกทิศทุกครั้ง เลข 1 ถึง 5 จำกัดเกียร์ (ปกติเกียร์ขึ้นเองถึง 5) จอดอยู่กับที่กด Space ค้างเพื่อเร่งเครื่องเล่น',
   'เสียงเครื่องเรือเป็นเสียงเครื่องยนต์จริง เล่นวนต่อเนื่องไร้รอยต่อ เรือแต่ละระดับเสียงไม่เหมือนกัน ระดับต่ำเสียงเครื่องเรือเล็ก ระดับกลางเครื่องยนต์ดีเซลเล็ก (เปลี่ยนเสียงใหม่แล้ว) ระดับสูงเครื่องดีเซลหนัก ระดับสูงสุดเรือใหญ่เสียงทุ้มลึกมีเสียงหึ่งค่ายกล',
   'เสียงสตาร์ท ดับเครื่อง และเร่งเครื่องเป็นเสียงจริงแยกตามระดับเรือ เร่งเร็วรอบเครื่องสูงขึ้น เปลี่ยนเกียร์แล้วรอบตกลงเหมือนรถจริง',
   'เรือของผู้เล่นอื่นที่แล่นอยู่ได้ยินเสียงเครื่อง ดังขึ้นตอนเข้าใกล้ เสียงสูงตอนพุ่งเข้าหาและต่ำลงตอนแล่นผ่านไป']})}catch(e){}
