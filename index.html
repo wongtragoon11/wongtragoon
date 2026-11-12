@@ -6584,7 +6584,7 @@ try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-10-29',c:[C_SYS],h:'�
        ผู้ตีพลังรบต่ำกว่า: ไม่ได้ตัวคูณขั้น ไม่มีขั้นต่ำความเสียหาย และแรงลดตามกำลังสามของสัดส่วนพลังรบ (พลังรบครึ่งหนึ่งตีได้ 1 ใน 8 ต่ำสุด 0.5%) / ผู้ตีพลังรบเท่าหรือสูงกว่า: กติกาเดิมทั้งหมด */
     let ap=0,mp=0;try{ap=+att.pw||0;mp=window.__MYPW?window.__MYPW():0}catch(e){}const pr=(ap>0&&mp>0)?ap/mp:1;
     if(pr<1){v*=Math.max(.005,pr*pr*pr);return Math.max(1,Math.round(v))}
-    let up=1;if(mg>0)up=Math.min(1000,Math.pow(10,mg));else if(ag>0)up=Math.min(40,Math.pow(1.35,ag));if(pr>1)up*=Math.min(5,Math.sqrt(pr));v*=up;if(as>=S.step){const fr=Math.min(.45,.03+.025*ag+(mg>0?.2*mg:0));v=Math.max(v,mhp()*fr*bf*(.9+Math.random()*.2))}return Math.max(1,Math.round(v))})();/* รอบที่ 46: ขั้นหรือพลังห่างกันมาก ผู้ที่ต่ำกว่าโดนหนักจนฟื้นเลือดไม่ทัน */if(!Number.isFinite(dm))return;
+    let up=1;if(mg>0)up=Math.min(1000,Math.pow(10,mg));else if(ag>0)up=Math.min(40,Math.pow(1.35,ag));if(pr>1)up*=Math.min(5,Math.sqrt(pr));v*=up;if(as>=S.step){const fr=Math.min(.45,.03+.025*ag+(mg>0?.2*mg:0));v=Math.max(v,mhp()*fr*bf*(.9+Math.random()*.2))}return Math.max(1,Math.round(v))})();/* รอบที่ 46: ขั้นหรือพลังห่างกันมาก ผู้ที่ต่ำกว่าโดนหนักจนฟื้นเลือดไม่ทัน */if(!Number.isFinite(dm))return;try{window.__PVPCHK&&window.__PVPCHK(dm,att,h)}catch(e){}
    PVP.got++;if(!godOn())S.hp-=dm;S.med=false;/* ถูกตีแล้วไม่ตัดเดินอัตโนมัติและไม่ตัดการรวมพลัง */sfx('hurt');try{if(window.__PTPVP)window.__PTPVP(from,att,dm,nm)}catch(e){}
    if(S.hp>0)return say(nm+' โจมตีเจ้า '+dm+' เหลือ '+Math.floor(S.hp)+' จาก '+mhp()+(PVP.tip++?'':' ถ้าไม่ต้องการสู้กับผู้เล่น กด Shift F3 เพื่อปิดโหมดสู้ผู้เล่น'));
    sendTo(from,{k:1});/* แจ้งผู้โจมตีว่าชนะ */
@@ -11272,6 +11272,64 @@ try{(()=>{/* ===== รอบที่ 58 (12 พ.ย. 2569): ตัวตรว�
   'ดูรายงานเครื่องตัวเองได้ ใช้ป้ายหยกประจำตัวผู้ฝึกตนในกระเป๋าหรือกด G แล้วเลือก รายงานเครื่องนี้ บอกรหัสเครื่อง 6 ตัวท้ายเวลาแจ้งปัญหาในแชทโลก จะได้แก้ตรงเครื่อง',
   'รายงานไม่เก็บรหัสผ่านและอีเมล']})}catch(e){}
 })()}catch(e){console.error('R58',e);try{bugLog('รอบที่ 58','ตั้งระบบไม่สำเร็จ: '+e)}catch(x){}}
+
+try{(()=>{/* ===== รอบที่ 59 (12 พ.ย. 2569): ตัวตรวจค่าที่ต้องถูกเสมอ (invariant) และตัวแก้อัตโนมัติ เพิ่มจากตัวเฝ้าเดิม (PATCH 9 และ R5FXH) =====
+   บั๊กเงียบคือค่าผิดแต่เกมไม่พัง ตัวนี้ตรวจกฎที่ค่าต้องเป็นเสมอ ถ้าแก้คืนได้อย่างปลอดภัยจะแก้ให้เลย ถ้าแก้เองไม่ได้ (สูตรผิด) จะจดลงบันทึกบั๊กและรายงานรายเครื่อง
+   แก้เอง: ของซ้ำกันในกระเป๋าและหีบ (รวมกอง) อาวุธ/เกราะผิดชนิด เวลารอค้างในอนาคตไกลเกินจริง บัฟเกินเวลาสูงสุด ความคืบหน้าภารกิจเกินเป้า ขั้นพลังลดลงเอง
+            สถานะดินแดนลับค้าง เลือดสัตว์อสูรในคอกเกินเลือดสูงสุด เซฟที่เขียนแล้วอ่านกลับไม่ตรง (เขียนซ้ำ)
+   จดอย่างเดียว: ค่าพลังต่ำกว่าค่าพื้นฐานของขั้น หลอมหรือจารึกเพิ่มชั้นแล้วค่าไม่ขึ้น ความเสียหายสู้ผู้เล่นผิดสัดส่วนพลังรบ ทรัพย์สินลดฮวบโดยไม่ได้ซื้อขาย */
+ const IV={fix:0,warn:0,last:'',runs:0,err:0,by:{}};window.__INV59=IV;
+ const fin=v=>typeof v==='number'&&Number.isFinite(v);
+ const note=(k,m,fixed)=>{IV.by[k]=(IV.by[k]||0)+1;if(fixed)IV.fix++;else IV.warn++;IV.last=m;try{bugLog(fixed?'ตัวแก้อัตโนมัติ':'ตัวตรวจค่า',m+(fixed?' แก้ให้แล้ว':''))}catch(e){}};
+ const WARN={};const warnOnce=(k,m)=>{const n=Date.now();if(WARN[k]&&n-WARN[k]<600000)return;WARN[k]=n;note(k,m,false)};
+ let maxStep=S.step|0;const wealth=()=>{try{let w=0;ST9.forEach(x=>{w+=(Number(CUR[x.k][1]())||0)*x.u});return w+(Number(S.coin)||0)}catch(e){return 0}};let wPrev=wealth(),wT=Date.now();
+ let lastMenuT=0;
+ const merge=L=>{if(!Array.isArray(L))return 0;const seen={};let n=0;for(let i=0;i<L.length;i++){const a=L[i];if(!a||!a.id)continue;if(seen[a.id]){seen[a.id].q+=Math.floor(+a.q||0);L.splice(i,1);i--;n++}else seen[a.id]=a}return n};
+ function run(){IV.runs++;const now=Date.now();
+  /* 1) ของซ้ำกอง */
+  const m1=merge(S.inv);if(m1)note('invdup','ของชนิดเดียวกันแยกเป็นหลายกองในกระเป๋า '+m1+' กอง รวมกองให้',true);
+  if(S.hm&&Array.isArray(S.hm.box)){const m2=merge(S.hm.box);if(m2)note('boxdup','ของซ้ำกองในหีบเก็บของ รวมกองให้',true)}
+  /* 2) อุปกรณ์ผิดชนิด: ถอดเข้ากระเป๋า */
+  if(S.wpn&&I[S.wpn]&&I[S.wpn].u!=='eq'){add(S.wpn,1);note('wpnty','ช่องอาวุธมีของที่ไม่ใช่อาวุธ '+S.wpn+' ถอดเข้ากระเป๋า',true);S.wpn=null}
+  if(S.arm&&I[S.arm]&&I[S.arm].u!=='arm'){add(S.arm,1);note('armty','ช่องเกราะมีของที่ไม่ใช่เกราะ '+S.arm+' ถอดเข้ากระเป๋า',true);S.arm=null}
+  /* 3) เวลารอและบัฟค้างในอนาคตไกลเกินจริง */
+  const fut=(o,max,lbl)=>{if(!o||typeof o!=='object')return;Object.keys(o).forEach(k=>{const v=o[k];if(fin(v)&&v>now+max){o[k]=now;note('fut_'+lbl,lbl+' '+k+' ค้างไกลเกินจริง',true)}})};
+  if(S.hm&&S.hm.cd)Object.keys(S.hm.cd).forEach(k=>{const v=S.hm.cd[k];if(!fin(v)||v>now+60000){S.hm.cd[k]=0;note('hmcd','เวลารอห้อง '+k+' ในบ้านผิดปกติ',true)}});
+  if(S.hm){if(fin(S.hm.sp)&&S.hm.sp>now+1300000){S.hm.sp=now+1200000;note('hmsp','บัฟตาน้ำวิญญาณเกินเวลาสูงสุด',true)}if(fin(S.hm.wd)&&S.hm.wd>now+1900000){S.hm.wd=now+1800000;note('hmwd','บัฟค่ายกลพิทักษ์เกินเวลาสูงสุด',true)}}
+  if(S.food&&typeof S.food==='object')Object.keys(S.food).forEach(k=>{const e=S.food[k];if(e&&fin(e.t)&&e.t>now+3*3600000){e.t=now+3600000;note('food','ผลของกิน '+k+' เกินเวลาสูงสุด',true)}});
+  try{if(cd&&typeof cd==='object')Object.keys(cd).forEach(k=>{const v=cd[k];if(fin(v)&&v>now+15*60000){cd[k]=now;note('skcd','เวลารอวิชา '+k+' ค้างเกิน 15 นาที',true)}})}catch(e){}
+  try{if(fin(buff)&&buff>now+30*60000){buff=now;note('buff','เกราะปราณค้างเกิน 30 นาที',true)}}catch(e){}
+  /* 4) ความคืบหน้าภารกิจ */
+  try{const B=window.__BQ54&&window.__BQ54.BQ;if(B&&S.bq&&Array.isArray(S.bq.L))S.bq.L.forEach(q=>{if(!q)return;if(!fin(q.p)||q.p<0){q.p=0;note('bqp','ความคืบหน้าภารกิจค่าหัวผิดรูป',true)}else if(fin(q.n)&&q.p>q.n){q.p=q.n;note('bqn','ความคืบหน้าภารกิจค่าหัวเกินเป้า',true)}})}catch(e){}
+  if(Array.isArray(S.rum))S.rum.forEach(r=>{if(r&&fin(r.g)&&fin(r.p)&&r.p>r.g){r.p=r.g;note('rum','ความคืบหน้าข่าวลือเกินเป้า',true)}});
+  if(S.q&&typeof S.q==='object'){if(!Number.isInteger(S.q.k)||S.q.k<0){S.q.k=Math.max(0,Math.floor(+S.q.k||0));note('qk','ภารกิจผู้ใหญ่บ้านผิดรูป',true)}}
+  /* 5) ขั้นพลังลดลงเอง (ไม่มีอะไรในเกมลดขั้น ยกเว้นผู้พัฒนาตั้งเอง) */
+  const st=S.step|0;let gm=false;try{gm=isGM()}catch(e){}
+  try{if(!gm&&typeof PCAP==='number'&&maxStep>PCAP)maxStep=PCAP}catch(e){}/* เพดานขั้นของผู้เล่นทั่วไปลดขั้นได้ตามกติกา */
+  if(st>maxStep)maxStep=st;else if(st<maxStep){if(gm)maxStep=st;else if(maxStep<R.length&&!window.__SAVE_LOCK&&!window.__DUP){S.step=maxStep;note('step','ขั้นพลังลดลงเองจาก '+maxStep+' เป็น '+st,true)}}
+  /* 6) ดินแดนลับค้าง */
+  try{const M=window.__MJ54;const z=zoneAt(S.x,S.y),inMj=z&&/^(mj[1-5]|bd_mr[1-5]_\d+)$/.test(z.id);if(S.mj&&!inMj&&M&&!M.open()){delete S.mj;note('mjst','สถานะดินแดนลับค้างหลังดินแดนปิด',true)}}catch(e){}
+  /* 7) สัตว์อสูรในคอก */
+  try{const P=window.__PETAPI;if(P&&Array.isArray(S.pen))S.pen.forEach(p=>{if(!p||!P.ok(p.k))return;const mx=P.mhp(p);if(!fin(p.hp)||p.hp>mx+1||p.hp<0){p.hp=Math.max(0,Math.min(mx,fin(p.hp)?p.hp:mx));note('penhp','เลือดอสูรในคอกผิดปกติ',true)}})}catch(e){}
+  /* 8) ค่าพลังต้องไม่ต่ำกว่าค่าพื้นฐานของขั้น (จดอย่างเดียว) */
+  try{const r=R[S.step];if(r){const a=atk(),h=mhp(),q=mqi(),d=defn();if(!(fin(a)&&a>=r[0]*.999))warnOnce('atkbase','พลังโจมตี '+a+' ต่ำกว่าค่าพื้นฐานของขั้น '+r[0]);if(!(fin(h)&&h>=r[1]*.999))warnOnce('hpbase','เลือดสูงสุด '+h+' ต่ำกว่าค่าพื้นฐานของขั้น '+r[1]);if(!(fin(q)&&q>=r[2]*.999))warnOnce('qibase','ลมปราณสูงสุด '+q+' ต่ำกว่าค่าพื้นฐานของขั้น '+r[2]);if(!(fin(d)&&d>=5))warnOnce('defbase','ป้องกัน '+d+' ต่ำกว่า 5')}}catch(e){IV.err++}
+  /* 9) หลอมเพิ่มชั้นแล้วค่าต้องขึ้น (ตรวจอุปกรณ์ที่สวมอยู่ทีละชิ้น จดอย่างเดียว) */
+  try{const ids=[S.wpn,S.arm].concat(ACSK.map(k=>accOf(k))).filter(id=>id&&I[id]);ids.forEach(id=>{['atk','def'].forEach(k=>{if(!I[id][k])return;const L=enh(id),c=ecap(id);const v0=eStat(id,k,L),v1=L<c?eStat(id,k,L+1):v0;if(!fin(v0)||v0<(+I[id][k]||0))warnOnce('es_'+id+k,'ค่า '+k+' ของ '+id+' ต่ำกว่าค่าเดิมของชิ้น');if(L<c&&!(v1>v0))warnOnce('eu_'+id+k,'หลอม '+id+' เพิ่มชั้นแล้วค่า '+k+' ไม่ขึ้น')})})}catch(e){IV.err++}
+  /* 10) ทรัพย์สินลดฮวบโดยไม่ได้อยู่ในเมนูซื้อขาย (จดอย่างเดียว) */
+  try{if(mode==='menu'||mode==='input'||mode==='confirm')lastMenuT=now;const w=wealth();if(wPrev>1000&&w<wPrev*.5&&now-lastMenuT>8000)warnOnce('wealth','ทรัพย์สินลดจาก '+Math.round(wPrev)+' เหลือ '+Math.round(w)+' โดยไม่ได้อยู่ในเมนูซื้อขาย');wPrev=w;wT=now}catch(e){}
+ }
+ setInterval(()=>{try{if(window.__DUP)return;run()}catch(e){IV.err++;try{bugLog('ตัวแก้อัตโนมัติ','ผิดพลาด '+e.message)}catch(x){}}},3000);
+ /* 11) เซฟต้องอ่านกลับได้ตรง: หลังเซฟตรวจค่าหลัก ถ้าไม่ตรงเขียนซ้ำ 1 ครั้ง */
+ {const os=save;save=function(){const r=os.apply(this,arguments);try{if(window.__DUP||window.__SAVE_LOCK)return r;const K=window.__KEY||'ipo1';const o=JSON.parse(localStorage.getItem(K)||'null');
+    const B=window.__BOOTP,x=B?B.x:S.x,y=B?B.y:S.y;const bad=!o||o.step!==S.step||Math.floor(+o.exp||0)!==Math.floor(+S.exp||0)||(o.gold||0)!==(S.gold||0)||o.x!==x||o.y!==y||JSON.stringify(o.enh||{})!==JSON.stringify(S.enh||{})||(Array.isArray(o.inv)?o.inv.length:-1)!==(Array.isArray(S.inv)?S.inv.length:-2);
+    if(bad){IV.sv=(IV.sv|0)+1;os.apply(this,arguments);const o2=JSON.parse(localStorage.getItem(K)||'null');if(!o2||o2.step!==S.step)note('save','เซฟเขียนแล้วอ่านกลับไม่ตรง แม้เขียนซ้ำ',false);else note('save1','เซฟเขียนแล้วอ่านกลับไม่ตรง',true)}}catch(e){IV.err++}return r}}
+ /* 12) ความเสียหายสู้ผู้เล่นผิดสัดส่วนพลังรบ (เรียกจากตัวรับความเสียหาย) */
+ window.__PVPCHK=(dm,att,h)=>{try{const ap=+(att&&att.pw)||0,mp=window.__MYPW?window.__MYPW():0;if(ap>0&&mp>0&&ap<mp*.5&&dm>mhp()*.2)warnOnce('pvpdm','ผู้ตีพลังรบต่ำกว่าครึ่ง ('+Math.round(ap)+' ต่อ '+Math.round(mp)+') แต่ตีแรง '+dm+' จากเลือด '+mhp())}catch(e){}};
+ CHK.push(()=>{const o=[];if(IV.err>20)o.push('ตัวแก้อัตโนมัติ: ผิดพลาด '+IV.err+' ครั้ง');if(IV.runs<1&&performance.now()>60000)o.push('ตัวแก้อัตโนมัติ: ไม่ทำงาน');
+  Object.keys(WARN).forEach(k=>{if(Date.now()-WARN[k]<600000)o.push('ตัวตรวจค่า: '+k)});return o});
+ try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-12',c:[C_FIX],h:'ตัวแก้ข้อมูลผิดปกติอัตโนมัติ',t:'เกมตรวจค่าที่ต้องถูกเสมอทุก 3 วินาที เจอค่าผิดแก้คืนให้เอง',x:['ของชนิดเดียวกันแยกกองรวมให้เอง ช่องอาวุธเกราะที่ใส่ของผิดชนิดถอดให้ เวลารอที่ค้างนานเกินจริงล้างให้ ความคืบหน้าภารกิจเกินเป้าปรับให้ ขั้นพลังลดลงเองคืนให้','เซฟทุกครั้งตรวจว่าอ่านกลับได้ตรง ถ้าไม่ตรงเขียนใหม่ทันที','ค่าที่แก้เองไม่ได้ เช่น ค่าพลังผิดสูตร จะถูกจดในรายงานเครื่องนี้ เพื่อแก้ให้ตรงจุด']})}catch(e){}
+ GMREG.push({t:'สรุปตัวแก้อัตโนมัติ แก้ไปกี่ครั้ง เรื่องอะไร',a:'inv59',f:()=>{mode='play';mn=null;const K=Object.keys(IV.by);say('ตัวแก้อัตโนมัติ ตรวจ '+IV.runs+' รอบ แก้ให้ '+IV.fix+' ครั้ง จดเตือน '+IV.warn+' ครั้ง'+(K.length?' เรื่อง '+K.map(k=>k+' '+IV.by[k]).join(' '):' ไม่มีอะไรผิดปกติ')+(IV.last?' ล่าสุด '+IV.last:''),1)}});
+})()}catch(e){console.error('R59',e);try{bugLog('รอบที่ 59','ตั้งระบบไม่สำเร็จ: '+e)}catch(x){}}
 
 </script>
 <!-- ชุดเสียงจริง 541 เสียง แบบ MP3 base64: Kenney (kenney.nl ใบอนุญาต CC0) 94 เสียง + เสียงบันทึกจริง 447 เสียง ใบอนุญาต CC0 และสาธารณสมบัติ (ชื่อขึ้นต้น r_ เช่น เสียงเท้าตามพื้น น้ำ ลม อสูร วิชา ของใช้ ผู้บันทึกเสียงครบในไฟล์ sound-credits.md ที่ส่งมาพร้อมกับเกม) เกมอ่านจากแท็กนี้ ห้ามย้ายไปไว้หลังสคริปต์ตัวโหลด -->
