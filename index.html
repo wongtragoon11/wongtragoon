@@ -9338,7 +9338,7 @@ try{(()=>{
  function claim(q){if(q.got)return say('ส่งภารกิจนี้ไปแล้ว');if(!ready(q))return say('ภารกิจยังไม่เสร็จ '+tTxt(q));if(q.ty==='give'&&remN(q.k,q.n)<q.n)return say('ของไม่พอ');
   const w=rwOf(q);q.got=1;S.gold+=w.l*100;S.coin=(S.coin||0)+w.c;S.exp+=w.x;add(w.sid,w.rf);if(w.rc)add('rc'+q.t,1);if(w.ch)add('ch'+q.t,1);sd('questdone',.7);sd('coins',.6,.4);mp18('capdone');try{save()}catch(e){}
   say('ส่งภารกิจสำเร็จ '+tTxt(q,1)+' ได้ '+rwTxt(q).replace(/^รางวัล /,''))}
- window.__BQ={BQ,tTxt:(q,sh)=>tTxt(q,sh),ready:q=>ready(q)};/* รอบที่ 54: สมุดภารกิจบนป้ายผู้ฝึกตนอ่านภารกิจค่าหัว */
+ window.__BQ54={BQ,tTxt:(q,sh)=>tTxt(q,sh),ready:q=>ready(q)};/* รอบที่ 58: แก้บั๊ก ชื่อ __BQ ถูกระบบภารกิจรอบหลังใช้ทับ สมุดภารกิจจึงไม่เห็นภารกิจค่าหัว *//* รอบที่ 54: สมุดภารกิจบนป้ายผู้ฝึกตนอ่านภารกิจค่าหัว */
  function board(n){const B=BQ.get(),act=B.L.filter(q=>q.acc&&!q.got),open=B.L.filter(q=>!q.acc),done=B.L.filter(q=>q.got).length,rd=act.filter(ready);
   const it=[{t:'ภารกิจที่รับไว้ '+act.length+'/6 พร้อมส่ง '+rd.length+' ส่งแล้ววันนี้ '+done,a:'act'},{t:'รับภารกิจใหม่ เหลือ '+open.length+' ภารกิจ (เปลี่ยนชุดใหม่ทุกวัน)',a:'new'},{t:S.whl===dayKey()?'วงล้อโชคชะตา วันนี้หมุนแล้ว พรุ่งนี้หมุนได้อีก':'หมุนวงล้อโชคชะตาประจำวัน ฟรีวันละครั้ง',a:'whl'}];if(rd.length)it.unshift({t:'ส่งภารกิจที่เสร็จแล้วทั้งหมด '+rd.length+' ภารกิจ',a:'all'});
   menu(n.n,it,{ent:x=>{if(x.a==='all'){mode='play';mn=null;rd.forEach(claim);return}if(x.a==='whl'){mode='play';mn=null;return wheel()}
@@ -11039,7 +11039,7 @@ try{(()=>{/* ===== รอบที่ 54 (12 พ.ย. 2569): ถ้ำพำน�
  /* สมุดภารกิจ: รวมภารกิจทุกอย่างที่รับไว้ แยก ยังไม่เสร็จ / เสร็จแล้วรอส่ง / ส่งแล้ว */
  function qItems(){const todo=[],ready=[],done=[];
   try{const q=S.q||{};const t='ภารกิจผู้ใหญ่บ้านหลี่: ล่ากระต่ายเขาเดียว '+Math.min(3,q.k|0)+' จาก 3 ตัว';if(q.got)done.push(t+' ส่งแล้ว');else if((q.k|0)>=3)ready.push(t+' กลับไปคุยผู้ใหญ่บ้านหลี่');else todo.push(t)}catch(e){}
-  try{const B=window.__BQ;if(B){const L=B.BQ.get().L||[];L.forEach(q=>{if(!q||!q.acc)return;const s='ภารกิจค่าหัว: '+B.tTxt(q);if(q.got)done.push(s+' ส่งแล้ว');else if(B.ready(q))ready.push(s+' กลับไปส่งที่กระดานภารกิจค่าหัว');else todo.push(s)})}}catch(e){err('สมุดภารกิจ ค่าหัว',e)}
+  try{const B=window.__BQ54;if(B&&B.BQ&&typeof B.BQ.get==='function'){const L=B.BQ.get().L||[];L.forEach(q=>{if(!q||!q.acc)return;const s='ภารกิจค่าหัว: '+B.tTxt(q);if(q.got)done.push(s+' ส่งแล้ว');else if(B.ready(q))ready.push(s+' กลับไปส่งที่กระดานภารกิจค่าหัว');else todo.push(s)})}}catch(e){err('สมุดภารกิจ ค่าหัว',e)}
   try{if(Array.isArray(S.rum)&&S.rumD===dayKey())S.rum.forEach(r=>{if(!r)return;const s='ข่าวลือประจำวัน: '+r.n+' '+r.p+' จาก '+r.g+' '+r.u;(r.done?done:todo).push(s+(r.done?' ได้รางวัลแล้ว':''))})}catch(e){}
   try{const p=S.ps;if(p&&Array.isArray(p.npcs)){const now=Date.now(),out=p.npcs.filter(a=>a&&a.m>0&&a.mo!==2);out.forEach(a=>{if(a.m>now)todo.push('งานสำนัก: '+a.n+' ออกเดินทาง กลับในอีก '+tm(a.m-now));else ready.push('งานสำนัก: '+a.n+' กลับมาแล้ว ไปรับผลที่หอภารกิจสำนัก')})}}catch(e){}
   return{todo,ready,done}}
@@ -11205,6 +11205,73 @@ try{(()=>{/* ===== รอบที่ 56 (12 พ.ย. 2569): ห้องใน�
   'ตรวจแล้ว สัตว์อสูรที่เรียกออกมาช่วยตีอสูรจริง ความเสียหายลดเลือดอสูรจริงและล้มอสูรได้เอง',
   'อสูรที่ฝากไว้ในคอกที่บ้านอยู่ในกรงในบ้าน ร้องและหายใจให้ได้ยินในบ้าน ออกจากบ้านแล้วกด Shift B เรียกออกมาจากคอกได้ทุกที่ เก็บแล้วกลับเข้าคอกเอง']})}catch(e){}
 })()}catch(e){console.error('R56',e);try{bugLog('รอบที่ 56','ตั้งระบบไม่สำเร็จ: '+e)}catch(x){}}
+
+try{(()=>{/* ===== รอบที่ 58 (12 พ.ย. 2569): ตัวตรวจบั๊กรายเครื่อง (รหัสเครื่อง) =====
+   ปัญหา: บางเครื่องเป็นบั๊ก บางเครื่องไม่เป็น จึงต้องรู้ว่าเครื่องไหน เบราว์เซอร์อะไร เจออาการอะไร
+   ทุกเครื่องมีรหัสเครื่อง (ipo_dev ในเครื่อง ตัวเดียวกับที่ระบบเซฟใช้) ตัวตรวจนี้เก็บ: สภาพเครื่อง (เบราว์เซอร์ ระบบ มือถือ หน้าจอ หน่วยความจำ เสียง เสียงพูด พื้นที่เก็บ)
+   ปัญหาจากตัวตรวจ CHK ทั้งหมด ข้อผิดพลาด JavaScript ที่เกิดจริง บันทึกบั๊ก (bugLog) ล่าสุด และสถานะเซฟ/ออนไลน์ แล้วส่งขึ้น Realtime Database ที่ devdiag/{uid}/{รหัสเครื่อง}
+   ทุก 5 นาทีเมื่อมีอะไรเปลี่ยน (และทันทีราว 20 วินาทีหลังเกิดข้อผิดพลาดใหม่) ผู้พัฒนาเปิดดูรวมทุกเครื่องในเมนู F8 และสรุปว่าอาการไหนเป็นเฉพาะเครื่องไหน
+   ต้องเพิ่มกฎ devdiag ใน Realtime Database ถ้าเซิร์ฟเวอร์ปฏิเสธ ส่วนส่งขึ้นเงียบเอง ลองใหม่ทุก 30 นาที ผู้เล่นยังดูรายงานเครื่องตัวเองได้ในป้ายหยกประจำตัวผู้ฝึกตน */
+ const DG={sent:0,fail:0,perm:0,permT:0,last:'',lastT:0,errs:[],err:0,due:0};window.__DEVDIAG=DG;
+ const devId=()=>{try{let d=localStorage.getItem('ipo_dev');if(!d||d.length<8){d=Math.random().toString(36).slice(2,10)+Date.now().toString(36);localStorage.setItem('ipo_dev',d)}return String(d).replace(/[^a-z0-9]/gi,'').slice(0,32)}catch(e){return 'nostore'}};
+ const shortId=d=>String(d||'').slice(-6).toUpperCase();
+ /* ข้อผิดพลาดจริงที่เกิดในเครื่องนี้ */
+ const pushErr=(m,src)=>{try{const s=String(m||'').slice(0,200);if(!s)return;const last=DG.errs[DG.errs.length-1];if(last&&last.m===s){last.n=(last.n||1)+1;last.t=Date.now()}else DG.errs.push({t:Date.now(),m:s,s:String(src||'').slice(0,80)});if(DG.errs.length>15)DG.errs.splice(0,DG.errs.length-15);DG.err++;DG.due=Date.now()+20000}catch(e){}};
+ addEventListener('error',ev=>{try{pushErr((ev&&ev.message)||'error',(ev&&ev.filename?String(ev.filename).split('/').pop():'')+':'+(ev&&ev.lineno||0))}catch(e){}});
+ addEventListener('unhandledrejection',ev=>{try{const r=ev&&ev.reason;pushErr('promise: '+((r&&(r.code||r.message))||r),'')}catch(e){}});
+ const env=()=>{const n=navigator||{},ua=String(n.userAgent||'');const br=/SamsungBrowser/.test(ua)?'Samsung Internet':/Edg\//.test(ua)?'Edge':/OPR\//.test(ua)?'Opera':/Firefox\//.test(ua)?'Firefox':/CriOS|Chrome\//.test(ua)?'Chrome':/Safari\//.test(ua)?'Safari':'อื่นๆ';
+  const os=/Android/.test(ua)?'Android':/iPhone|iPad|iPod/.test(ua)?'iOS':/Windows/.test(ua)?'Windows':/Mac OS X|Macintosh/.test(ua)?'Mac':/Linux/.test(ua)?'Linux':'อื่นๆ';
+  const ver=(ua.match(/(?:Chrome|CriOS|Firefox|Version|Edg|SamsungBrowser)\/([\d.]+)/)||[])[1]||'';let ac='ไม่มี';try{const AU=window.__AUDIO;const c=AU&&AU.dbg&&AU.dbg.ctx;ac=c?c.state:(window.AudioContext||window.webkitAudioContext?'มี':'ไม่มี')}catch(e){}
+  let ls=0;try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);ls+=(k.length+(localStorage.getItem(k)||'').length)}}catch(e){}
+  const bm=document.querySelector('meta[name="ipo-build"]');
+  return{br:br+' '+ver.split('.')[0],os,mob:/Mobi|Android|iPhone|iPad/.test(ua)?1:0,sc:(screen&&screen.width||0)+'x'+(screen&&screen.height||0),mem:n.deviceMemory||0,cpu:n.hardwareConcurrency||0,au:String(ac).slice(0,12),tts:window.speechSynthesis?1:0,ls:Math.round(ls/1024),b:bm?bm.content:'',ua:ua.slice(0,180)}};
+ const state=()=>{const C=window.__CSYNC||{},SV=window.__SAVEH||{};return{on:(typeof GMV!=='undefined'&&GMV.online)?1:0,dup:window.__DUP?1:0,lock:window.__SAVE_LOCK?1:0,quota:window.__QUOTA_FULL?1:0,sf:SV.fail|0,cf:C.fail|0,ce:String(C.err||'').slice(0,40),st:S.step|0,z:String((zoneAt(S.x,S.y)||{}).id||'').slice(0,16)}};
+ const probs=()=>{const o=[];CHK.forEach((f,i)=>{try{const r=f();if(Array.isArray(r))r.forEach(x=>{if(x&&o.length<40)o.push(String(x).slice(0,140))})}catch(e){o.push('ตัวตรวจ '+i+' ผิดพลาด: '+String(e&&e.message).slice(0,100))}});return o};
+ const bugs=()=>(Array.isArray(BUGL)?BUGL:[]).slice(-12).map(b=>({t:Math.floor(+b.t||0),s:String(b.s||'').slice(0,30),m:String(b.m||'').slice(0,160),n:b.n|0}));
+ function report(){const R={n:String(S.pname||window.__NAME||'ผู้ฝึกตน').slice(0,20),d:devId(),t:Date.now(),e:env(),s:state(),p:probs(),x:DG.errs.slice(-10).map(a=>({t:a.t,m:a.m,s:a.s,n:a.n|0})),g:bugs()};return R}
+ window.__DEVREPORT=report;
+ const mp=()=>{try{const V=HOOK.vc&&HOOK.vc();return V&&V.MP&&V.MP.ready&&V.MP.rt&&V.MP.rdb&&V.MP.auth&&V.MP.auth.currentUser?V:null}catch(e){return null}};
+ const sig=R=>JSON.stringify([R.p,R.x.map(a=>a.m+a.n),R.g.map(a=>a.m+a.n),R.s,R.e.br,R.e.au]);
+ async function send(force){const V=mp();if(!V||window.__DUP)return false;if(DG.perm&&Date.now()-DG.permT<1800000)return false;const R=report(),sg=sig(R);if(!force&&sg===DG.last&&Date.now()-DG.lastT<1800000)return false;
+  try{R.t=V.srvNow?V.srvNow():Date.now();const u=V.MP.auth.currentUser;let js=JSON.stringify(R);if(js.length>9000){R.p=R.p.slice(0,20);R.g=R.g.slice(-6);R.x=R.x.slice(-5)}
+   await V.MP.rt.set(V.MP.rt.ref(V.MP.rdb,'devdiag/'+u.uid+'/'+R.d),R);DG.sent++;DG.last=sg;DG.lastT=Date.now();DG.perm=0;return true}
+  catch(e){DG.fail++;if(/permission/i.test(String((e&&(e.code||e.message))||e))){DG.perm=1;DG.permT=Date.now()}return false}}
+ window.__DEVSEND=send;
+ setTimeout(()=>{try{send(true)}catch(e){}},45000);
+ setInterval(()=>{try{const now=Date.now();if(DG.due&&now>=DG.due){DG.due=0;send(true);return}if(now-DG.lastT>=300000)send(false)}catch(e){}},5000);
+ /* ----- เมนูผู้เล่น: รายงานเครื่องนี้ (ในป้ายหยกประจำตัวผู้ฝึกตน) ----- */
+ const lines=R=>{const e=R.e||{},s=R.s||{},L=[];
+  L.push('ผู้เล่น '+R.n+' รหัสเครื่อง '+shortId(R.d)+' ('+R.d+')');
+  L.push('เครื่อง: '+e.os+(e.mob?' มือถือ':' คอมพิวเตอร์')+' เบราว์เซอร์ '+e.br+' หน้าจอ '+e.sc+(e.mem?' หน่วยความจำ '+e.mem+' GB':'')+(e.cpu?' หน่วยประมวลผล '+e.cpu+' แกน':''));
+  L.push('เสียง '+e.au+' เสียงพูด '+(e.tts?'มี':'ไม่มี')+' พื้นที่เก็บในเครื่องใช้ '+e.ls+' KB รุ่นเกม '+e.b);
+  L.push('สถานะ: '+(s.on?'ออนไลน์':'ออฟไลน์')+(s.dup?' ถูกแท็บอื่นแทนที่':'')+(s.lock?' ล็อกเซฟ':'')+(s.quota?' เซิร์ฟเวอร์เต็มชั่วคราว':'')+' เซฟพลาด '+s.sf+' ซิงก์พลาด '+s.cf+(s.ce?' ('+s.ce+')':'')+' ขั้น '+s.st+' เขต '+s.z);
+  L.push('ปัญหาจากตัวตรวจ '+(R.p||[]).length+' รายการ'+((R.p||[]).length?': '+R.p.slice(0,5).join(' / '):' ปกติดี'));
+  (R.p||[]).slice(5,40).forEach(p=>L.push('ปัญหา: '+p));
+  (R.x||[]).forEach(a=>L.push('ข้อผิดพลาด '+new Date(a.t).toLocaleTimeString('th-TH')+(a.n>1?' ('+a.n+' ครั้ง)':'')+': '+a.m+(a.s?' ที่ '+a.s:'')));
+  (R.g||[]).slice().reverse().forEach(b=>L.push('บันทึกบั๊ก '+new Date(b.t).toLocaleString('th-TH')+' '+b.s+': '+b.m+(b.n>1?' ('+b.n+' ครั้ง)':'')));
+  return L};
+ function myDevMenu(){const R=report();menu('รายงานเครื่องนี้ รหัสเครื่อง '+shortId(R.d),lines(R).map(t=>({t})).concat([{t:'ส่งรายงานเครื่องนี้ตอนนี้',send:1}]),{ent:x=>{if(x.send){mode='play';mn=null;send(true).then(ok=>say(ok?'ส่งรายงานเครื่องนี้แล้ว รหัสเครื่อง '+shortId(R.d):'ส่งรายงานไม่ได้ตอนนี้ เครื่องนี้ยังเก็บรายงานไว้ ลองใหม่ภายหลัง'));return}say(x.t)}})}
+ {const ql=window.__QLOG;if(ql&&typeof ql.questLog==='function'){const oq=A.quest;A.quest=function(){const mm=menu;menu=function(t,items,o){menu=mm;try{if(/^ป้ายหยกประจำตัวผู้ฝึกตน/.test(String(t))&&Array.isArray(items)){const oe=o&&o.ent;items=items.concat([{t:'รายงานเครื่องนี้ (รหัสเครื่อง '+shortId(devId())+') ปัญหาที่เครื่องนี้เจอ',dv58:1}]);o=Object.assign({},o||{},{ent:function(x){if(x&&x.dv58)return myDevMenu();return oe?oe.apply(this,arguments):undefined}})}}catch(e){}return mm.call(this,t,items,o)};try{return oq.apply(this,arguments)}finally{menu=mm}}}}
+ {const ou=useItem;useItem=function(id){if(id==='badge'&&S.inv.some(a=>a.id==='badge')){mode='play';mn=null;return A.quest()}return ou.apply(this,arguments)}}
+ /* ----- เมนูผู้พัฒนา (F8): ดูทุกเครื่อง และสรุปอาการแยกตามเครื่อง ----- */
+ const norm=s=>String(s||'').replace(/[\d,.]+/g,'#').replace(/\s+/g,' ').trim().slice(0,90);
+ async function loadAll(){const V=mp();if(!V)throw new Error('ยังไม่ได้เชื่อมต่อเซิร์ฟเวอร์');const sn=await V.MP.rt.get(V.MP.rt.ref(V.MP.rdb,'devdiag'));const L=[];sn.forEach(us=>{us.forEach(ds=>{const v=ds.val();if(v&&typeof v==='object')L.push(Object.assign({uid:us.key},v))})});return L.sort((a,b)=>(b.t||0)-(a.t||0))}
+ const ago=t=>{const m=Math.max(0,Math.round((Date.now()-(+t||0))/60000));return m<60?m+' นาทีที่แล้ว':m<1440?Math.round(m/60)+' ชั่วโมงที่แล้ว':Math.round(m/1440)+' วันที่แล้ว'};
+ async function gmDevices(){if(!isGM())return say('เฉพาะผู้พัฒนา');say('กำลังโหลดรายงานทุกเครื่อง');let L;try{L=await loadAll()}catch(e){return say('โหลดรายงานไม่ได้ '+((e&&(e.code||e.message))||e)+' ถ้าเป็น permission denied ต้องเพิ่มกฎ devdiag ใน Realtime Database ก่อน')}
+  if(!L.length)return say('ยังไม่มีเครื่องไหนส่งรายงาน');const bad=L.filter(r=>(r.p&&r.p.length)||(r.x&&r.x.length));
+  menu('รายงานรายเครื่อง '+L.length+' เครื่อง มีปัญหา '+bad.length+' เครื่อง',[{t:'สรุปอาการ แต่ละอาการเกิดกับกี่เครื่อง เครื่องไหนบ้าง',sum:1}].concat(L.map(r=>{const e=r.e||{};return{t:(r.n||'?')+' เครื่อง '+shortId(r.d)+' '+e.os+(e.mob?' มือถือ ':' ')+e.br+' ปัญหา '+((r.p||[]).length)+' ข้อผิดพลาด '+((r.x||[]).length)+' ส่งเมื่อ '+ago(r.t),r}})),{ent:x=>{
+   if(x.sum){const M={};L.forEach(r=>{const k=new Set();(r.p||[]).forEach(p=>k.add('ตรวจ: '+norm(p)));(r.x||[]).forEach(a=>k.add('ผิดพลาด: '+norm(a.m)));k.forEach(q=>{(M[q]=M[q]||[]).push(r)})});
+    const K=Object.keys(M).sort((a,b)=>M[b].length-M[a].length);if(!K.length)return say('ทุกเครื่องปกติ ไม่มีอาการซ้ำ');
+    return menu('สรุปอาการ '+K.length+' อาการ จาก '+L.length+' เครื่อง',K.map(q=>{const R2=M[q],os={};R2.forEach(r=>{const e=r.e||{},k=e.os+' '+e.br;os[k]=(os[k]||0)+1});return{t:q+' เกิด '+R2.length+' จาก '+L.length+' เครื่อง: '+Object.keys(os).map(k=>k+' '+os[k]).join(', '),R2,q}}),{ent:y=>menu(y.q,y.R2.map(r=>({t:(r.n||'?')+' เครื่อง '+shortId(r.d)+' '+(r.e||{}).os+' '+(r.e||{}).br+' '+ago(r.t),r})),{ent:z=>menu('เครื่อง '+shortId(z.r.d),lines(z.r).map(t=>({t})),{ent:w=>say(w.t)})})})}
+   menu((x.r.n||'?')+' เครื่อง '+shortId(x.r.d),lines(x.r).map(t=>({t})),{ent:y=>say(y.t)})}})}
+ GMREG.push({t:'ตรวจบั๊กรายเครื่อง ดูรายงานทุกเครื่อง และสรุปว่าอาการไหนเกิดกับเครื่องไหน',a:'dev58',f:()=>{mode='play';mn=null;gmDevices()}});
+ GMREG.push({t:'รายงานเครื่องนี้ของผู้พัฒนา',a:'dev58m',f:()=>{myDevMenu()}});
+ CHK.push(()=>{const o=[];try{if(!devId()||devId()==='nostore')o.push('รหัสเครื่อง: เครื่องนี้เก็บข้อมูลไม่ได้');if(DG.fail>20&&!DG.perm)o.push('รายงานรายเครื่อง: ส่งไม่สำเร็จ '+DG.fail+' ครั้ง')}catch(e){}return o});
+ try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-12',c:[C_SYS],h:'ตรวจปัญหารายเครื่อง',t:'แต่ละเครื่องมีรหัสเครื่อง เกมตรวจปัญหาของเครื่องนั้นและส่งรายงานเองเพื่อแก้บั๊กที่เป็นเฉพาะบางเครื่อง',x:[
+  'บางบั๊กเป็นแค่บางเครื่อง เกมจึงตรวจแยกทีละเครื่อง เก็บว่าเป็นมือถือหรือคอม เบราว์เซอร์อะไร เสียงทำงานไหม เซฟสำเร็จไหม และข้อผิดพลาดที่เกิดจริง แล้วส่งรายงานเองทุก 5 นาทีเมื่อมีอะไรเปลี่ยน',
+  'ดูรายงานเครื่องตัวเองได้ ใช้ป้ายหยกประจำตัวผู้ฝึกตนในกระเป๋าหรือกด G แล้วเลือก รายงานเครื่องนี้ บอกรหัสเครื่อง 6 ตัวท้ายเวลาแจ้งปัญหาในแชทโลก จะได้แก้ตรงเครื่อง',
+  'รายงานไม่เก็บรหัสผ่านและอีเมล']})}catch(e){}
+})()}catch(e){console.error('R58',e);try{bugLog('รอบที่ 58','ตั้งระบบไม่สำเร็จ: '+e)}catch(x){}}
 
 </script>
 <!-- ชุดเสียงจริง 541 เสียง แบบ MP3 base64: Kenney (kenney.nl ใบอนุญาต CC0) 94 เสียง + เสียงบันทึกจริง 447 เสียง ใบอนุญาต CC0 และสาธารณสมบัติ (ชื่อขึ้นต้น r_ เช่น เสียงเท้าตามพื้น น้ำ ลม อสูร วิชา ของใช้ ผู้บันทึกเสียงครบในไฟล์ sound-credits.md ที่ส่งมาพร้อมกับเกม) เกมอ่านจากแท็กนี้ ห้ามย้ายไปไว้หลังสคริปต์ตัวโหลด -->
