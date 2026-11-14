@@ -642,10 +642,10 @@ function useItem(id){const d=I[id];if(!d){bugLog('กระเป๋า','ใช
  if(CONS(d))return consumeN(id,1);if(d.u==='fd')return eatFood(id);if(d.u==='ship')return boatUse(id);if(d.u==='acc')return equipAcc(id);if(/^lk\d$/.test(id))return say(shortN(id)+' ใช้ตอนหลอมยกระดับ ไปที่ช่างหลอมศาสตราหรือห้องหลอมในเรือ เลือกอุปกรณ์ที่จะหลอม แล้วเลือกตัวเลือกแรก เริ่มหลอมพร้อมแปะยันต์ โอกาสสำเร็จเพิ่ม 15% ใช้ยันต์ขั้นเดียวกับของหรือสูงกว่าได้');if(d.u==='box')return window.__BOX?window.__BOX(id):say('หีบยังเปิดไม่ได้');
  if(!lvOk(id))return;
  if(d.u==='arm'){rem(id);if(S.arm)add(S.arm,1);S.arm=id;return say('สวม '+d.n)}
- if(d.u==='eq'){rem(id);if(S.wpn)add(S.wpn,1);S.wpn=id;return say('สวมใส่ '+d.n+' โจมตี +'+d.atk)}
+ if(d.u==='eq'){rem(id);if(S.wpn)add(S.wpn,1);S.wpn=id;try{window.__WKEQ&&window.__WKEQ(id,'eq')}catch(e){}return say('สวมใส่ '+d.n+' โจมตี +'+d.atk)}
  if(d.u==='ps')return A.psPlace(id);/* ตราก่อตั้งสำนักส่วนตัว (รอบ 15 ชุดที่ 8) */
  if(d.u==='rn')return A.renameCard(id);/* บัตรเปลี่ยนชื่อ (รอบ 17) */
- if(d.u==='esc'){if(TB.on)return say('ทัณฑ์สายฟ้ากำลังจะฟาด ใช้ยันต์หนีไม่ได้');let tx=SP0[0],ty=SP0[1],tn='หมู่บ้านลำธารใส';
+ if(d.u==='esc'){if(TB.on)return say('ทัณฑ์สายฟ้ากำลังจะฟาด ใช้ยันต์หนีไม่ได้');if(window.__SHMOVING&&window.__SHMOVING())return say('เรือกำลังแล่นอยู่กลางฟ้า ใช้ยันต์ส่งกลับไม่ได้ รอเรือจอดก่อน');let tx=SP0[0],ty=SP0[1],tn='หมู่บ้านลำธารใส';
   if(d.to){/* ยันต์ส่งกลับเมืองต่างๆ (รอบ 15 ชุดที่ 4) ปลายทางอ่านจากตารางวงเวทย์ DEST ตัวเดียวกัน ขั้นพลังไม่ถึงปลายทางใช้ไม่ได้และไม่เสียยันต์ */
    const e=((window.__T11&&window.__T11.DEST)||[]).find(a=>a.id===d.to),ez=e&&zoneAt(e.x,e.y);if(!e||!ez||ez.id!==d.to)return say('ยันต์ใบนี้ใช้ไม่ได้ ปลายทางเสียหาย');if(ez.min>S.step&&!godOn())return say('ระดับยังไม่ถึง ต้องถึง'+realmName(ez.min)+'จึงไปที่ '+e.t+' ได้');tx=e.x;ty=e.y;tn=e.t}
   rem(id);posAllow();if(CAST.on)castCancel();S.x=tx;S.y=ty;posNote();S.fl=false;S.alt=0;S.med=false;walk=false;PEND=null;return say('ยันต์ทำงาน ถูกส่งกลับ'+tn)}
@@ -851,7 +851,7 @@ function mapPlaces(z){if(!z)return[];const op=!!z.open;return W.filter(w=>(!w.lm
 const A={
 fwd(){move(S.f)},back(){move((S.f+4)%8)},left(){if(rl&&Date.now()<rlT)return cyc(-1);move((S.f+6)%8)},right(){if(rl&&Date.now()<rlT)return cyc(1);move((S.f+2)%8)},
 tl(){S.f=(S.f+7)%8;lastTurn=-1;say(DN[S.f]);beep(250,.03)},tr(){S.f=(S.f+1)%8;lastTurn=1;say(DN[S.f]);beep(350,.03)},
-pos(){const z=zoneAt(S.x,S.y),a=altFix(),h=heightAt(S.x,S.y);say('พิกัด '+locTxt(S.x,S.y)+' '+whereTxt()+(S.boat&&S.fl?' ยืนบนดาดฟ้าเรือ':' ยืนบน '+(window.__SURF?window.__SURF.now():'พื้นดิน'))+' หันหน้าไป '+DN[S.f]+(a>0?' ปีนเขาอยู่ชั้นที่ '+a+' จาก '+h:(h>0?' ตรงนี้ปีนเขาได้ '+h+' ชั้น กด Page Up':'')))},
+pos(){try{const sp=window.__SHPOS&&window.__SHPOS();if(sp)return say(sp)}catch(e){}const z=zoneAt(S.x,S.y),a=altFix(),h=heightAt(S.x,S.y);say('พิกัด '+locTxt(S.x,S.y)+' '+whereTxt()+(S.boat&&S.fl?' ยืนบนดาดฟ้าเรือ':' ยืนบน '+(window.__SURF?window.__SURF.now():'พื้นดิน'))+' หันหน้าไป '+DN[S.f]+(a>0?' ปีนเขาอยู่ชั้นที่ '+a+' จาก '+h:(h>0?' ตรงนี้ปีนเขาได้ '+h+' ชั้น กด Page Up':'')))},
 climbUp(){climbStep(1)},climbDn(){climbStep(-1)},snap(){if(S.f%2){S.f=(S.f-lastTurn+8)%8}else S.f=0;say('หัน'+DN[S.f])},
 map(){const z=zoneAt(S.x,S.y);if(!z)return say('ไม่พบเขตที่ยืนอยู่');const znm=id=>{const q=Z.find(a=>a.id===id);return q?q.n:id};
  /* เมนู M ล็อกเป้าได้เฉพาะสถานที่ที่ไปได้ ร้าน ผู้คน ประตู ทางไป ลาน ตาน้ำวิญญาณ ถิ่นบอส ไม่รวมจุดสังเกต (lm) เช่น ต้นไม้ หุ่นไล่กา โพรงดิน ขอนไม้ ป้าย ที่มีไว้บอกทางตอนเดินผ่าน
@@ -882,7 +882,7 @@ talk(){const z=zoneAt(S.x,S.y),n=W.find(w=>w.npc&&w.z===z.id&&dist(S,w)<=2.5);if
 fly(){if(!canFly())return say('ต้องเรียนวิชาขี่กระบี่และถึงระดับสร้างรากฐาน หรือถึงระดับแก่นทองคำจึงจะบินเองได้');say('ขี่กระบี่เหาะ (ระบบบินเต็มรูปแบบรอแพตช์ถัดไป)')},
 quest(){say('เควสต์: ล่ากระต่ายเขาเดียวที่ทุ่งกระต่าย '+Math.min(3,S.q.k)+' จาก 3 ตัว'+(S.q.got?' รับรางวัลแล้ว':S.q.k>=3?' กลับไปคุยผู้ใหญ่บ้านหลี่ (F)':''))},
 party(){const z=zoneAt(S.x,S.y);let b=null,bd=1e9;MS.forEach(o=>{if(!o.dead&&BOSSREQ[o.k]&&z&&o.z===z.id){const d=dist(o,{x:S.x,y:S.y});if(d<bd){bd=d;b=o}}});if(!b||bd>80)return say('ระบบจัดตี้เต็มรูปแบบยังไม่เปิด แต่บอสทุกตัวต้องมีผู้ฝึกตนระดับใกล้เคียงบอสอยู่ใกล้ตัวบอสตามจำนวนที่กำหนด เดินเข้าใกล้บอสในระยะ 80 ก้าวแล้วกด T เพื่อฟังว่าตี้พร้อมหรือยัง');const p=partyInfo(b);if(!p)return;say(MD[b.k].n+' อยู่ห่าง '+Math.round(bd)+' ก้าว ต้องมีผู้ฝึกตนตั้งแต่ '+realmName(p.lo)+' ขึ้นไปอย่างน้อย '+p.need+' คนอยู่ใกล้บอสภายใน '+PARTY_R+' ก้าว ตอนนี้มี '+p.n+' คน '+(p.over?'เจ้าอยู่เหนือขั้นใหญ่ของบอส สู้คนเดียวได้ ไม่ต้องรวมตี้':!p.selfOk?'ขั้นของเจ้าต่ำกว่าเกณฑ์ ตีบอสไม่เข้า':p.n>=p.need?'ตี้พร้อม '+(BSH.on?'เลือดบอสใช้ร่วมกับตี้':'พลังรวมตี้ x'+Math.min(p.n,PARTY_CAP)):'ตี้ยังไม่พร้อม ปราณคุ้มกันบอสยังสะกดพลังโจมตีอยู่'))},craft(){say('วิชาชีพเสริมยังไม่เปิดในแพตช์ทดลองนี้')},
-equip(){menu('อุปกรณ์',[{t:'อาวุธ: '+(S.wpn?I[S.wpn].n:'ไม่มี')}],{ent:()=>{if(S.wpn){add(S.wpn,1);S.wpn=null;say('ถอดอาวุธแล้ว');mode='play'}}})},
+equip(){menu('อุปกรณ์',[{t:'อาวุธ: '+(S.wpn?I[S.wpn].n:'ไม่มี')}],{ent:()=>{if(S.wpn){const o9=S.wpn;add(S.wpn,1);S.wpn=null;try{window.__WKEQ&&window.__WKEQ(o9,'uq')}catch(e){}say('ถอดอาวุธแล้ว');mode='play'}}})},
 help(){const L=['ลูกศรเดิน Q E หัน W รีเซ็ตทิศ','M เมนูแผนที่ N เช็กระยะ A เช็ครอบตัวตามหมวด (Shift S เปลี่ยนหมวด ผู้คนและร้านค้า สัตว์อสูรของผู้เล่นอื่น สัตว์อสูรของเจ้า) P เช็คคนออนไลน์ใกล้ตัว K เช็กจำนวนคนออนไลน์ Shift F1 รายชื่อคนออนไลน์','I กระเป๋า Enter เก็บหรือใช้ของ Delete ทิ้ง (ผู้เล่นอื่นเก็บของที่ทิ้งได้) Shift Enter ส่งของให้ผู้เล่นที่ยืนอยู่ภายใน 5 ก้าว ในกระเป๋ากดตัวอักษรไทยตัวแรกของชื่อของเพื่อเลื่อนไปหา กดซ้ำไปชิ้นถัดไป','S จัดทักษะ เลข 1 ถึง 0 ใช้ทักษะ Space ออโต้','H เลือดปราณ L ข้อมูลตัวละคร Z สมาธิ B ทะลวง Enter คุยหรือซื้อของ F เช็กเลือดอสูร Tab เลือกอสูรตัวถัดไป Shift Tab เลือกอสูรตัวก่อนหน้า V เมนูกินยาฟื้นเลือดและปราณ เลือกแล้วกด Enter หรือกดเลข 1 ถึง 9 ; พูดให้คนในระยะ 39 ก้าวได้ยิน กดอีกครั้งหยุดพูด Shift ; ปิดเสียงคุยทั้งหมด','C อุปกรณ์ G เควสต์ X ขี่กระบี่','ข้ามเขตแผนที่ ต้องกด Enter ที่ทางเข้าเพื่อยืนยัน','ซื้อของและสร้างของที่ร้าน กด Enter คุยกับเจ้าของร้าน X ขี่กระบี่เหาะ (ไม่ต้องติดตั้งทักษะ ตั้งแต่ขั้นแก่นทองคำขึ้นไปบินได้เองไม่ต้องใช้กระบี่)','A เช็ครอบตัวตามหมวด (Shift S เปลี่ยนหมวด ผู้คนและร้านค้า สัตว์อสูรของผู้เล่นอื่น สัตว์อสูรของเจ้า) ไกล 39 ก้าว O เช็คสมุนไพร ไกล 29 ก้าว Shift O เช็คอสูร บอสมาก่อน Shift M เมนูสมุนไพรและของที่เก็บได้ เดินไปเก็บให้เอง U คู่มือเกม F4 ประกาศล่าสุดและข้อความประจำวัน F5 บันทึกการอัพเดท F10 ออกจากระบบ เดินชนคนได้ และแต่ละคนมีเสียงประจำตัว','แชท: ทับ \\ โลก / แผนที่ จุด คอมมา เปลี่ยนหมวด วงเล็บเหลี่ยม อ่านข้อความ','F2 เปิดปิดเสียงพูดของเกม','Shift F2 เปิดปิดการแจ้งผู้เล่นเข้า ออก Shift F4 อ่านประวัติผู้เล่นเข้า ออกล่าสุด 5 รายการ พร้อมเวลา กดซ้ำอ่านรายการที่เก่ากว่า หรือกดจุดไปหมวด ออนไลน์ ออฟไลน์ แล้วใช้วงเล็บเหลี่ยมอ่านทีละรายการ','F3 เปิดปิดเสียงบรรยากาศ Shift N เดินอัตโนมัติไปเป้าหมายที่ล็อกไว้ใน M ถึงสมุนไพรกด Enter เก็บ','Page Up ปีนขึ้นภูเขาหรือหน้าผาทีละชั้น Page Down ปีนลง ปีนอยู่สูงกว่าพื้นแล้วอสูรบนพื้นโจมตีไม่ถึง แต่ต้องปีนลงก่อนจึงจะสู้ได้','Shift ค้างไว้แล้วกด Page Up เพิ่มเสียงดนตรี Shift ค้างไว้แล้วกด Page Down ลดเสียงดนตรี ระดับ 0 ถึง 10 ระดับ 0 คือปิดดนตรี','Shift ค้างไว้แล้วกด Home เพิ่มเสียงรอบข้าง คือเสียงบรรยากาศ สัตว์ อาวุธ เอฟเฟกต์ และของใช้ Shift ค้างไว้แล้วกด End ลดเสียงรอบข้าง ระดับ 0 ถึง 10 ระดับ 5 คือมาตรฐาน เสียงเท้ากับดนตรีไม่เปลี่ยนตาม','Shift A ติดตามอสูรที่ใกล้ที่สุดในระยะ 20 ก้าว เดินอัตโนมัติไปถึงตัวแล้วล็อกเป้าให้','R บอกพิกัด ทิศที่หัน และชั้นที่ปีนอยู่','M เมนูแผนที่ ล็อกเป้าได้เฉพาะสถานที่ที่ไปได้ จุดสังเกตอย่างต้นไม้หรือหุ่นไล่กา เกมบอกเองตอนเดินผ่าน','F10 ออกจากระบบ เกมถามยืนยันก่อน','เลข 1 ถึง 0 ใช้ทักษะได้ตลอดเวลาแม้ไม่มีอสูร (ฟันลม) ทุกท่าใช้ลมปราณ ลมปราณหมดกด Z นั่งสมาธิ ขั้น 2 ขึ้นไปฟื้นเร็วขึ้น 20%','ระยะโจมตีตามขั้น ขั้น 1 ประชิด 1.5 ก้าว ขั้น 2 3 ก้าว ขั้น 3 5 ก้าว ขั้น 4 8 ก้าว ขั้น 5 ขึ้นไป 12 ถึง 15 ก้าว ขั้นแก่นทองคำ 24 ก้าว วิญญาณแรกเริ่ม 33 ก้าว เทพแปลงกาย 45 ก้าว กด S ฟังระยะของแต่ละวิชา กด L ฟังระยะพื้นฐาน','ทัณฑ์สายฟ้า ทะลวงขั้นแก่นทองคำและวิญญาณแรกเริ่มด้วย B ต้องออกไปที่โล่งนอกเขตปลอดภัย มีเวลาเตรียมตัว 5 นาทีและประกาศทั่วเกม ระหว่างเตรียมตัวขยับไม่ได้ กด B ยกเลิกได้ ระหว่างสายฟ้ารวมพลังใช้เลข 1 ถึง 0 ปล่อยวิชาโจมตีสู้สายฟ้า ลดความแรงได้','วิชารวมพลัง เช่น ฝ่ามืออัสนี เดินและโจมตีด้วยวิชาอื่นได้ระหว่างรวมพลัง นั่งสมาธิ = ยกเลิก ไม่เสียลมปราณ ถูกโจมตีไม่ตัดการรวมพลัง เป้าเดินออกนอกระยะระหว่างรวมพลัง = เป้าหลบได้','บอสคำราม = หวาดกลัว 3 วินาที ใช้วิชาโจมตีไม่ได้ ได้ยินบอสตั้งท่า ให้เดินหลบออกไป 3 ก้าว กด H ฟังเลือด ลมปราณ หวาดกลัว และพิษ','กระเป๋า I: Enter ใช้หรือกิน ของกินหรือหินวิญญาณที่มีหลายชิ้นจะถามจำนวน กดตัวเลข 0 ถึง 9 ใส่จำนวนได้เลย หรือเลือก 1 จนเลือดเต็ม ครึ่งหนึ่ง ทั้งหมด พิมพ์เอง แล้วกด Enter Esc กลับเข้ากระเป๋า','กระเป๋า I: Delete ทิ้งของ เลือกจำนวน แล้วกด Enter ยืนยัน ของวางไว้ตรงที่ยืน กด Enter ตรงนั้นเก็บคืนได้'];menu('คู่มือปุ่ม',L.map(t=>({t})))},
 go(){if(goal&&goal.mon&&(goal.mon.dead||!MS.includes(goal.mon)))goal=null;if(!goal)return say('ยังไม่ได้เลือกเป้าหมาย กด M');walk=true;say('เริ่มเดินอัตโนมัติไป '+goal.n+' กดปุ่มใดก็ได้เพื่อหยุด')},ambT(){ambOn=!ambOn;say('เสียงบรรยากาศ '+(ambOn?'เปิด':'ปิด'))},tts(){tts=!tts;say('เสียงพูดของเกม '+(tts?'เปิด':'ปิด'))},spd(){if(!isGM())return;spd=spd===1?60:1;say('ตัวคูณแต้มสมาธิทดสอบ '+spd+' เท่า')},esc(){},
 chatW(){ask('พิมพ์แชทโลก',v=>{endAsk();if(v)msg(1,'[โลก] คุณ: '+v)})},chatM(){ask('พิมพ์แชทแผนที่',v=>{endAsk();if(v)msg(2,'[แผนที่] คุณ: '+v)})},
@@ -1189,7 +1189,7 @@ skills:()=>Object.keys(SK).map(id=>{const k=SK[id],T=SKT[id],tc=Object.keys(TC9)
 money:()=>[{t:'หินวิญญาณต่ำ กลาง สูง สุดยอด แลกขึ้นทีละระดับ 100 ต่อ 1'},{t:'เหรียญทอง 100 แลกหินต่ำ 1 ก้อน ขายหินต่ำคืนได้ 80 เหรียญ'},{t:'แลกลงระดับล่างได้ 95 ต่อ 1 ก้อน'},{t:'ของซื้อได้ด้วยหินต่ำ ขายวัตถุดิบเป็นเหรียญที่ผู้แลกเงิน'}],
 mob:()=>['เมนูโทรศัพท์มี 3 ส่วน ส่วนบนสุดคือปุ่มตามสถานการณ์ ส่วนที่ 2 ปุ่มเดินและหันตัว ส่วนที่ 3 หมวดเมนู 6 หมวด','ปุ่มตามสถานการณ์ขึ้นมาเองเฉพาะตอนใช้ได้ และหายไปเองเมื่อหมดเหตุการณ์ ปุ่มสำคัญขึ้นใหม่มีเสียงคลิกโลหะเบาๆ หัวข้อบอกจำนวนปุ่มที่มีตอนนั้น','อยู่ใกล้อสูรไม่เกิน 20 ก้าว มีปุ่ม ติดตาม ตามด้วยชื่ออสูร กดแล้วเดินอัตโนมัติตามไปจนถึงตัว ล็อกเป้าให้ แล้วปุ่มทักษะโจมตีที่ระยะถึงจะขึ้นมาเอง','เลือดเหลือไม่ถึงครึ่ง ปุ่มวิชารักษาขึ้นมา เลือดเหลือไม่ถึงหนึ่งในสาม มีปุ่มกินโอสถฟื้นเลือดเม็ดที่เหมาะที่สุด','ยืนบนของ ยืนหน้าประตู ถึงทางเข้าเขตใหม่ อยู่ใกล้คน ยืนบนภูเขา นั่งสมาธิ ขี่กระบี่ หรือแต้มพอทะลวงขั้น มีปุ่มของเรื่องนั้นขึ้นมาเอง','กดหมวดเพื่อดูปุ่มในหมวด มีปุ่ม กลับหน้าหลัก ทั้งต้นและท้ายรายการ กลับแล้วโฟกัสอยู่ที่หมวดเดิม','หมวดทักษะที่ติดตั้ง ใช้ทักษะได้ทุกเวลา ทักษะที่ยังพักอยู่ เกมบอกว่าต้องรออีกกี่วินาที'].map(t=>({t})),
 fly:()=>[{t:'ต้องเรียนวิชาขี่กระบี่เหาะเหินและถึงขั้นสร้างรากฐาน ส่วนตั้งแต่ขั้นแก่นทองคำขึ้นไปบินได้เองด้วยพลังของตน ไม่ต้องเรียนวิชาและไม่ต้องใช้กระบี่'},{t:'กด X ขึ้นหรือลง ไม่ต้องติดตั้งช่องทักษะ เดินปกติด้วยลูกศร'},{t:'ขั้น 1 เหาะได้ 30 นาที เพิ่มอีก 10 นาทีต่อขั้น ลงพื้นแล้วฟื้น 1 เปอร์เซ็นต์ต่อ 18 วินาที'},{t:'ขณะเหาะอสูรโจมตีไม่ถึง และเราโจมตีไม่ได้'}]};
-A.guide=function(){menu('คู่มือเกม',[{t:'วิธีเล่นเบื้องต้น',g:'how'},{t:'แผนที่ อสูร และบอส',g:'maps'},{t:'ผู้คนและสถานที่',g:'npc'},{t:'ไอเทมทั้งหมดและหน้าที่',g:'items'},{t:'ทักษะทั้งหมดและหน้าที่',g:'skills'},{t:'เงินและการแลกเปลี่ยน',g:'money'},{t:'การเหาะ',g:'fly'},{t:'การเล่นบนโทรศัพท์และปุ่มตามสถานการณ์',g:'mob'},{t:'วาสนา สมุดจารึก ผู้ชี้ทาง และสิ่งที่ทำได้ในเกม (รอบที่ 14)',g:'r14'},{t:'ตำแหน่งสำนัก ภารกิจสำนัก และอาคารทึบ (รอบที่ 15)',g:'r15'},{t:'สำนักส่วนตัว ตั้งสำนักของตัวเอง (รอบที่ 15)',g:'r15c'}],{ent:x=>menu(x.t,GUIDE[x.g](),{})})};
+A.guide=function(){menu('คู่มือเกม',[{t:'วิธีเล่นเบื้องต้น',g:'how'},{t:'แผนที่ อสูร และบอส',g:'maps'},{t:'ผู้คนและสถานที่',g:'npc'},{t:'ไอเทมทั้งหมดและหน้าที่',g:'items'},{t:'ทักษะทั้งหมดและหน้าที่',g:'skills'},{t:'เงินและการแลกเปลี่ยน',g:'money'},{t:'การเหาะ',g:'fly'},{t:'การเล่นบนโทรศัพท์และปุ่มตามสถานการณ์',g:'mob'},{t:'วาสนา สมุดจารึก ผู้ชี้ทาง และสิ่งที่ทำได้ในเกม (รอบที่ 14)',g:'r14'},{t:'ตำแหน่งสำนัก ภารกิจสำนัก และอาคารทึบ (รอบที่ 15)',g:'r15'},{t:'สำนักส่วนตัว ตั้งสำนักของตัวเอง (รอบที่ 15)',g:'r15c'},{t:'ดินแดนใจกลาง คู่มือการเดินทาง สำรวจ และทุกสิ่งที่ทำได้',g:'nl80'}],{ent:x=>menu(x.t,GUIDE[x.g](),{})})};
 function showNews(all){const L=NEWS.filter(n=>all||n.id>(S.newsSeen||0));if(!L.length)return say('ไม่มีประกาศใหม่');L.forEach(n=>say('ประกาศ '+n.d+' : '+n.t));S.newsSeen=Math.max(...NEWS.map(n=>n.id))}
 A.news=function(){showNews(true)};
 A.logout=function(){conf('ออกจากระบบ ใช่ไหม เกมบันทึกให้ก่อนออก',()=>{try{localStorage.removeItem('ipo_rem');localStorage.removeItem('ipo_tok')}catch(e){}save();try{sessionStorage.removeItem('ipo_sess')}catch(e){}say('กำลังออกจากระบบ',1);sfx('logout');setTimeout(()=>{const b=document.getElementById('l_out');if(b&&typeof b.onclick==='function')b.onclick();else location.reload()},650)})};/* F10: ถามยืนยัน Enter ยืนยัน ปุ่มอื่นยกเลิก ยืนยันแล้ว ลบความจำการเข้าสู่ระบบ บันทึกเกม มีเสียงปิดประตู แล้วโหลดหน้าใหม่ (เดิมกดพลาดก็ออกทันที และมีตัวดักซ้อน 2 ชั้น) */
@@ -3663,7 +3663,7 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
   bear:{call:'bear_call',atk:'bear_atk',hurt:'bear_hurt',die:'bear_die',br:'bear_call',r:1,g:.9},leo:{call:'cat_call',atk:'cat_atk',hurt:'cat_hurt',die:'cat_die',br:'breath',r:.7,g:.85},
   ape:{call:'troll_call',atk:'troll_atk',hurt:'troll_hurt',die:'troll_die',br:'breath',r:.86,g:.85},phx:{call:'gull',atk:'wingbeat',hurt:'crow',die:'gull',br:'smallwings',r:.76,g:.8},
   lion:{call:'drag_call',atk:'drag_atk',hurt:'drag_hurt',die:'drag_die',br:'breath',r:.92,g:1}};Object.keys(GV).forEach(k=>{const v=MVOX[GV[k].b];MVOX[k]=Object.assign({},v,{r:Math.round(v.r*GV[k].rate*100)/100})});window.__MVOX=MVOX;
- const MVT=['call','atk','hurt','die','br'],MVTH={call:'ร้องประจำตัว',atk:'จู่โจม',hurt:'ร้องเจ็บ',die:'ร้องตอนตาย',br:'หายใจ'};
+ window.__KNPOS=(n9,g9,x9,y9,R9)=>{try{const p9=spOf(x9,y9,R9||14);if(!p9)return false;return !!knSp(rs(n9),g9*p9.g,p9,1,0,{bus:'sfx'})}catch(e){return false}};const MVT=['call','atk','hurt','die','br'],MVTH={call:'ร้องประจำตัว',atk:'จู่โจม',hurt:'ร้องเจ็บ',die:'ร้องตอนตาย',br:'หายใจ'};
  const MID=new WeakMap();let midN=0;const mid=m=>{let i=MID.get(m);if(!i){i=++midN;MID.set(m,i)}return i};
  const mvWant=k=>{const v=MVOX[k];if(v)MVT.forEach(t=>{if(v[t])knWant(rs(v[t]))})};
  const DG={t:0,n:0};/* ฆ่าหลายตัวพร้อมกัน (วิชากลุ่ม) เสียงร้องตายพร้อมกันไม่เกิน 2 ตัว ตัวอื่นเหลือเสียงร่างล้มเบาๆ */
@@ -3847,7 +3847,7 @@ const play=(role,gain,opt)=>{try{opt=opt||{};const R=ROLE[role];if(!R)return nul
    case'bagopen':mpAct('bag');return seqPlay('bagopen',.9)||play('bagopen',.9);case'bagmove':return play('bagmove',.55);/* เปิดกระเป๋า: ปลดหัวเข็มขัด เปิดถุง ล้วงหาของ ยาวราว 1 วินาที */
    case'toggle':return play('toggle',.5);/* เปิดปิดตัวเลือก และปุ่มตามสถานการณ์ขึ้นใหม่บนโทรศัพท์ */case'logout':return play('logout',1);
    case'hurt':mpAct('hurt');return;/* เสียงร้องเจ็บของเจ้าดังตามหลังเสียงโดน ใน posCue mhit (ส่วน fx) */
-   case'hit':case'cast':if(k==='cast'&&Date.now()-rodT<400)return;return play(k==='hit'?'swoosh':'spell',.9);
+   case'hit':case'cast':if(k==='cast'&&Date.now()-rodT<400)return;if(k==='hit'&&window.__WKHIT&&window.__WKHIT())return;return play(k==='hit'?'swoosh':'spell',.9);
   }
   if(/^cap[a-z]+$/.test(k)&&SEQ[k]){mpAct(k);return seqPlay(k,dv==null?1:dv)}/* PATCH 34 เสียงกิจกรรมเมืองหลวง ส่งรหัสให้ผู้เล่นอื่นได้ยินด้วย */
   for(const x of AUTO)if(x[0].test(k))return play(x[1],Math.max(.2,dv))};
@@ -9308,15 +9308,21 @@ try{(()=>{
   if(!L.length)return say('ไม่มีปลายทางที่เรือลำนี้ไปได้');
   const tvS=e=>{const wk=Math.hypot(e.x-S.shp.x,e.y-S.shp.y)/10;return Math.max(8,Math.min(360,Math.round(wk*[1,4/6,3/6,2/6,1/6][t])))},tvT=v=>v>=60?Math.floor(v/60)+' นาที'+(v%60?' '+v%60+' วินาที':''):v+' วินาที';
   menu('เดินทางไกลด้วย'+shortN(id)+' ใช้หินวิญญาณ '+priceTxt(d.burn*d.tt*10)+' มีในเรือ '+priceTxt(bfOf(id)),L.map(e=>({t:e.nl77?e.t:e.t+' ใช้เวลา '+tvT(tvS(e))+' (เดินเองราว '+tvT(Math.round(tvS(e)/[1,4/6,3/6,2/6,1/6][t]))+')',e})),{ent:x=>{mode='play';mn=null;if(x.e&&x.e.nl77)return window.__NL77.go(id,x.e);const e=x.e,need=d.burn*d.tt*10,TS=tvS(e);
-   if(bfOf(id)<need)return say('หินวิญญาณในเรือไม่พอ ต้องใช้ '+priceTxt(need)+' เติมหินวิญญาณก่อน');bfSet(id,bfOf(id)-need);trv=1;window.__SHTRV=1;
-   try{window.__SHSND&&window.__SHSND.start()}catch(e){}say('เรือเร่งเครื่องออกแล่น มุ่งหน้าไป '+e.t+' ใช้เวลา '+tvT(TS)+' ระหว่างทางเดินในเรือและใช้ห้องต่างๆ ได้');const t0=Date.now(),pg=setInterval(()=>{try{const left=Math.round(TS-(Date.now()-t0)/1000);if(left>6)say('เรือเหาะกำลังมุ่งหน้าไป '+e.t+' อีก '+tvT(left)+' ถึง')}catch(x){}},Math.max(15000,TS*250));
+   if(bfOf(id)<need)return say('หินวิญญาณในเรือไม่พอ ต้องใช้ '+priceTxt(need)+' เติมหินวิญญาณก่อน');bfSet(id,bfOf(id)-need);trv=1;window.__SHTRV=1;S.trv80={id,e:{x:e.x,y:e.y,t:e.t,id:e.id},t0:Date.now(),end:Date.now()+TS*1000,fx:S.shp.x,fy:S.shp.y};
+   try{window.__SHSND&&window.__SHSND.start()}catch(e){}say('เรือเร่งเครื่องออกแล่น มุ่งหน้าไป '+e.t+' ใช้เวลา '+tvT(TS)+' ระหว่างทางเดินในเรือและใช้ห้องต่างๆ ได้');const t0=Date.now();window.__SHMOV={fx:S.shp.x,fy:S.shp.y,tx:e.x,ty:e.y,t0,end:t0+TS*1000,n:e.t};const pg=setInterval(()=>{try{const left=Math.round(TS-(Date.now()-t0)/1000);if(left>6)say('เรือเหาะกำลังมุ่งหน้าไป '+e.t+' อีก '+tvT(left)+' ถึง')}catch(x){}},Math.max(15000,TS*250));
    const cr=0;ENG.on=true;try{mp18('shiprev')}catch(x){}
-   setTimeout(()=>{clearInterval(cr);clearInterval(pg);trv=0;window.__SHTRV=0;let ok=false;const tries=[[6,0],[-6,0],[0,6],[0,-6],[10,5],[-10,5],[12,-8],[-12,-8],[16,0],[-16,0]];
+   setTimeout(()=>{clearInterval(cr);clearInterval(pg);trv=0;window.__SHTRV=0;window.__SHMOV=null;delete S.trv80;let ok=false;const tries=[[6,0],[-6,0],[0,6],[0,-6],[10,5],[-10,5],[12,-8],[-12,-8],[16,0],[-16,0]];
     for(const q of tries){if(deploy(id,e.x+q[0],e.y+q[1],true)){ok=true;break}}
     try{window.__SHSND&&window.__SHSND.land()}catch(e){}
     const z=zoneAt(S.x,S.y);if(ok){if(z&&deckOf(z.id))say('เรือเหาะลงจอดที่ '+e.t+' แล้ว เดินไปที่ประตูลงจากเรือแล้วกด Enter');else say('เรือเหาะของเจ้าจอดที่ '+e.t+' แล้ว')}
     else{const inShip=!!(z&&(deckOf(z.id)||/^bd_shr\d+$/.test(z.id)));S.shp=null;clearShip();if(inShip){const q=safeNear(e.x,e.y,e.id)||[e.x,e.y];posAllow(3000);S.x=q[0];S.y=q[1];posNote()}say('ถึง '+e.t+' แล้ว แต่ไม่มีที่ว่างพอจอดเรือ ลงจากเรือแล้ว เรือเหาะเก็บเข้ากระเป๋า')}
     try{save()}catch(x){}try{render()}catch(x){}},TS*1000)}})}
+ window.__SHRES=(id,e,ms)=>{if(trv||!S.shp||S.shp.id!==id)return false;trv=1;window.__SHTRV=1;const cr=0,pg=0;ENG.on=true;try{window.__SHSND&&window.__SHSND.start()}catch(x){}setTimeout(()=>{clearInterval(cr);clearInterval(pg);trv=0;window.__SHTRV=0;window.__SHMOV=null;delete S.trv80;let ok=false;const tries=[[6,0],[-6,0],[0,6],[0,-6],[10,5],[-10,5],[12,-8],[-12,-8],[16,0],[-16,0]];
+    for(const q of tries){if(deploy(id,e.x+q[0],e.y+q[1],true)){ok=true;break}}
+    try{window.__SHSND&&window.__SHSND.land()}catch(e){}
+    const z=zoneAt(S.x,S.y);if(ok){if(z&&deckOf(z.id))say('เรือเหาะลงจอดที่ '+e.t+' แล้ว เดินไปที่ประตูลงจากเรือแล้วกด Enter');else say('เรือเหาะของเจ้าจอดที่ '+e.t+' แล้ว')}
+    else{const inShip=!!(z&&(deckOf(z.id)||/^bd_shr\d+$/.test(z.id)));S.shp=null;clearShip();if(inShip){const q=safeNear(e.x,e.y,e.id)||[e.x,e.y];posAllow(3000);S.x=q[0];S.y=q[1];posNote()}say('ถึง '+e.t+' แล้ว แต่ไม่มีที่ว่างพอจอดเรือ ลงจากเรือแล้ว เรือเหาะเก็บเข้ากระเป๋า')}
+    try{save()}catch(x){}try{render()}catch(x){}},ms);return true};/* รอบที่ 81: เดินทางไกลต่อหลังรีเฟรช */
  /* ----- ห้องในเรือ ----- */
  const cdOk=(k,sec)=>{const c=shc(),now=Date.now();if(now<(c[k]||0)){say('ยังใช้ไม่ได้อีก '+Math.ceil((c[k]-now)/60000)+' นาที');return false}c[k]=now+sec*1000;return true};
  const ENG=window.__SHENG={on:false,lv:2,rev:0};const THN=['','ขั้น 1 เดินเบา','ขั้น 2 ปานกลาง','ขั้น 3 เต็มกำลัง'];
@@ -9335,7 +9341,7 @@ try{(()=>{
   if(k==='med'||k==='gath')return say(RM[k].n+' กด Z นั่งสมาธิตรงนี้ ได้แต้มฝึกฝนเพิ่ม '+Math.round(MEDB[k][t]*100)+'% ของการนั่งสมาธิปกติ');
   if(k==='ward'){if(!cdOk('ward',300))return;buff=Math.max(buff,Date.now()+90000);sd('ward',.8);sd('buff',.5,.3);mp18('kbuff');return say('เปิดค่ายกลป้องกันเรือ ม่านแสงคลุมร่าง ลดความเสียหายที่ได้รับ 50% นาน 90 วินาที ใช้ได้อีกใน 5 นาที')}
   if(k==='alch'){sd('boil',.5);sd('crackle',.35,.2);return craftMenu('herb',{n:'ห้องปรุงยาในเรือเหาะ'})}
-  if(k==='forge'){sd('anvil',.5);return menu('ห้องหลอมศาสตราในเรือเหาะ',[{t:'หลอมยกระดับอุปกรณ์ที่สวมอยู่',a:'up'},{t:'สร้างศาสตราจากวัตถุดิบ',a:'cr'}],{ent:x=>{if(x.a==='up'&&window.__ENH)return window.__ENH.menu({n:'ห้องหลอมศาสตราในเรือเหาะ'});return craftMenu(RECIPES.shipforge?'shipforge':'forge',{n:'ห้องหลอมศาสตราในเรือเหาะ'})}})}
+  if(k==='forge'){sd('anvil',.5);return menu('ห้องหลอมศาสตราในเรือเหาะ',[{t:'หลอมยกระดับอุปกรณ์ที่สวมอยู่',a:'up'},{t:'สร้างศาสตราจากวัตถุดิบ',a:'cr'},{t:'ย้ายความเข้ม ย้ายระดับหลอมจากชิ้นเก่าไปชิ้นใหม่ (ใช้หินเคลื่อนย้ายความเข้ม 1 ก้อน)',a:'xf'}],{ent:x=>{if(x.a==='xf'&&window.__XFER)return window.__XFER.xfer();if(x.a==='up'&&window.__ENH)return window.__ENH.menu({n:'ห้องหลอมศาสตราในเรือเหาะ'});return craftMenu(RECIPES.shipforge?'shipforge':'forge',{n:'ห้องหลอมศาสตราในเรือเหาะ'})}})}
   if(k==='spring'){if(!cdOk('spring',600))return;S.hp=mhp();S.qi=mqi();delete S.poison;if(!S.food||typeof S.food!=='object')S.food={};const until=Date.now()+600000;['rg','rq'].forEach(q=>{const e=S.food[q];S.food[q]={v:Math.max(e&&e.t>Date.now()?e.v:0,2),t:Math.max(e&&e.t>Date.now()?e.t:0,until)}});
    sd('spring',.7);sd('splash',.5,.3);sd('cast_heal',.6,.6);mp18('heal');return say('แช่ตัวในบ่อน้ำวิญญาณ เลือดและลมปราณเต็ม และฟื้นเลือดกับลมปราณต่อเนื่องอีก 10 นาที ใช้ได้อีกครั้งใน 10 นาที')}
   if(k==='garden'){if(!cdOk('garden',1800))return;const L=(NP.g&&NP.g.length?NP.g:NP.m)||[];const got=[];for(let i=0;i<2+Math.floor(Math.random()*3);i++){const h=L[Math.floor(Math.random()*L.length)];if(h&&I[h]){add(h,1);got.push(shortN(h))}}sd('rustle',.6);sd('pickup',.5,.4);mp18('pick');try{save()}catch(e){}
@@ -10146,12 +10152,12 @@ try{(()=>{/* ===== รอบที่ 39: ระบบทีม (หัวหน
  const shipOf=uid=>{try{return (window.__SHF.list()||[]).find(a=>a.uid===uid)||null}catch(e){return null}};
  function gEnter(f,quiet){const uid=f.shf,o=shipOf(uid);if(!o||!o.sb)return say('ไม่พบข้อมูลเรือลำนี้ ลองใหม่อีกครั้ง');const t=Math.max(1,Math.min(4,+o.sb[0]||1));
   if(!canBoard(uid)){snd('tap',.6);return say('นี่คือ'+f.fn+' ประตูปิดอยู่ ต้องได้กุญแจจากเจ้าของเรือ หรืออยู่ทีมเดียวกับเจ้าของ จึงขึ้นได้')}
-  if(TB.on)return say('ทัณฑ์สายฟ้ากำลังจะมา ขึ้นเรือไม่ได้');const R=SH.IN(t);if(!R||!R.ex)return;
+  if(TB.on)return say('ทัณฑ์สายฟ้ากำลังจะมา ขึ้นเรือไม่ได้');if(String(o.sb[3]).slice(0,2)==='F:')return say('เรือลำนี้กำลังแล่นอยู่กลางฟ้า ขึ้นไม่ได้ รอเรือจอดก่อน');const R=SH.IN(t);if(!R||!R.ex)return;
   S.gst={o:uid,t,x:f.x,y:f.y,z:f.z,n:String(f.fn||'เรือเหาะ').slice(0,60)};posAllow(2500);try{if(CAST.on)castCancel('ขึ้นเรือ')}catch(e){}S.x=R.ex[0];S.y=R.ex[1]-1;S.f=0;S.med=false;walk=false;target=null;try{posNote()}catch(e){}
   if(!sfxK('shipdoor'))snd('door',.6);try{mp18('door')}catch(e){}sv();
   say('ขึ้น'+S.gst.n+'ในฐานะแขก เรือลำนี้มี '+SH.DECK[t].length+' ชั้น ห้องต่างๆ ใช้ได้เฉพาะเจ้าของ เจ้าของขับเรือไปไหนเจ้าไปด้วย จะลงจากเรือ กด X ได้ทุกที่บนเรือ หรือเดินไปที่ประตูทางออกกลางด้านใต้ของดาดฟ้าแล้วกด Enter')}
  const sfxK=k=>{try{return snd18(k,.75)}catch(e){return false}};
- function gOut(msg){const g=S.gst;if(!g)return;const o=shipOf(g.o);let x=g.x,y=g.y,zid=g.z;if(o&&o.sb&&String(o.sb[3]).slice(0,2)!=='F:'&&Number.isInteger(+o.sb[1])){x=+o.sb[1];y=+o.sb[2];zid=String(o.sb[3])}
+ window.__GSTSB=()=>{try{const g=S.gst;if(!g)return null;const o=shipOf(g.o);return o&&o.sb?o.sb:null}catch(e){return null}};window.__GSTMOV=()=>{const b=window.__GSTSB();return!!(b&&String(b[3]).slice(0,2)==='F:')};function gOut(msg){const g=S.gst;if(!g)return;if(window.__GSTMOV()&&!/สิทธิ์/.test(String(msg||'')))return say('เรือกำลังแล่นอยู่กลางฟ้า ลงจากเรือไม่ได้ รอเรือจอดก่อน');const o=shipOf(g.o);let x=g.x,y=g.y,zid=g.z;if(o&&o.sb&&String(o.sb[3]).slice(0,2)!=='F:'&&Number.isInteger(+o.sb[1])){x=+o.sb[1];y=+o.sb[2];zid=String(o.sb[3])}
   let zz=zoneAt(x,y+1);{const q=window.__SHNEAR?window.__SHNEAR(x,y+1,zz?zz.id:zid):null;if(q){x=q[0];y=q[1]-1;zz=zoneAt(x,y+1)}else if(!zz){x=SP0[0];y=SP0[1]-1;zz=zoneAt(x,y+1)}}/* รอบที่ 67: แขกลงจากเรือก็ลงพื้นที่ยืนได้ใกล้เรือ */delete S.gst;posAllow(3000);S.x=x;S.y=y+1;S.f=4;S.med=false;walk=false;target=null;try{posNote()}catch(e){}snd('door',.6);try{mp18('door')}catch(e){}sv();
   say((msg?msg+' ':'')+'ลงจากเรือแล้ว ยืนอยู่ที่ '+(zz?zz.n+' '+locTxt(S.x,S.y):''))}
  window.__GOUT=m=>gOut(m);
@@ -10294,7 +10300,7 @@ try{(()=>{/* ===== รอบที่ 46 ===== */
   if(k==='med'||k==='gath'){const b=(window.__SHMEDB&&window.__SHMEDB[k]||[])[g.t]||0;return say(nm+' กด Z นั่งสมาธิตรงนี้ ได้แต้มฝึกฝนเพิ่ม '+Math.round(b*100)+'% ของการนั่งสมาธิปกติ')}
   if(k==='ward'){if(!gcd('ward',300))return;buff=Math.max(buff,Date.now()+90000);snd('ward',.8);snd('buff',.5,.3);mp18('kbuff');return say('เปิดค่ายกลป้องกันเรือ ม่านแสงคลุมร่าง ลดความเสียหายที่ได้รับ 50% นาน 90 วินาที ใช้ได้อีกใน 5 นาที')}
   if(k==='alch'){snd('boil',.5);snd('crackle',.35,.2);mp18('craft');return craftMenu('herb',{n:'ห้องปรุงยาในเรือเหาะ'})}
-  if(k==='forge'){snd('anvil',.5);mp18('craft');return menu('ห้องหลอมศาสตราในเรือเหาะ',[{t:'หลอมยกระดับอุปกรณ์ที่สวมอยู่',a:'up'},{t:'สร้างศาสตราจากวัตถุดิบ',a:'cr'}],{ent:x=>{if(x.a==='up'&&window.__ENH)return window.__ENH.menu({n:'ห้องหลอมศาสตราในเรือเหาะ'});return craftMenu(RECIPES.shipforge?'shipforge':'forge',{n:'ห้องหลอมศาสตราในเรือเหาะ'})}})}
+  if(k==='forge'){snd('anvil',.5);mp18('craft');return menu('ห้องหลอมศาสตราในเรือเหาะ',[{t:'หลอมยกระดับอุปกรณ์ที่สวมอยู่',a:'up'},{t:'สร้างศาสตราจากวัตถุดิบ',a:'cr'},{t:'ย้ายความเข้ม ย้ายระดับหลอมจากชิ้นเก่าไปชิ้นใหม่ (ใช้หินเคลื่อนย้ายความเข้ม 1 ก้อน)',a:'xf'}],{ent:x=>{if(x.a==='xf'&&window.__XFER)return window.__XFER.xfer();if(x.a==='up'&&window.__ENH)return window.__ENH.menu({n:'ห้องหลอมศาสตราในเรือเหาะ'});return craftMenu(RECIPES.shipforge?'shipforge':'forge',{n:'ห้องหลอมศาสตราในเรือเหาะ'})}})}
   if(k==='spring'){if(!gcd('spring',600))return;S.hp=mhp();S.qi=mqi();delete S.poison;if(!S.food||typeof S.food!=='object')S.food={};const until=Date.now()+600000;['rg','rq'].forEach(q=>{const e=S.food[q];S.food[q]={v:Math.max(e&&e.t>Date.now()?e.v:0,2),t:Math.max(e&&e.t>Date.now()?e.t:0,until)}});
    snd('spring',.7);snd('splash',.5,.3);snd('cast_heal',.6,.6);mp18('heal');return say('แช่ตัวในบ่อน้ำวิญญาณ เลือดและลมปราณเต็ม และฟื้นต่อเนื่องอีก 10 นาที ใช้ได้อีกครั้งใน 10 นาที')}
   if(k==='garden'){if(!gcd('garden',1800))return;const L=(typeof NP!=='undefined'&&NP&&(NP.g&&NP.g.length?NP.g:NP.m))||[];const got=[];for(let i=0;i<2+Math.floor(Math.random()*3);i++){const h=L[Math.floor(Math.random()*L.length)];if(h&&I[h]){add(h,1);got.push(shortN(h))}}snd('rustle',.6);snd('pickup',.5,.4);mp18('pick');try{save()}catch(e){}
@@ -10973,8 +10979,8 @@ try{(()=>{/* ===== รอบที่ 54 (12 พ.ย. 2569): ถ้ำพำน�
   if(b==='spring'){const l=cdLeft('spring',1800000);if(l)return say('ตาน้ำวิญญาณยังสะสมปราณไม่เต็ม แช่ได้อีกใน '+tm(l));S.hp=mhp();S.qi=mqi();S.fear=0;try{if(S.poison)S.poison.until=0}catch(e){}const h=hm();h.sp=Date.now()+(600000+120000*t);h.spt=t;cdSet('spring');fx54('hmbath');try{save()}catch(e){}
    return say('แช่ตัวในตาน้ำวิญญาณ เลือดและลมปราณเต็ม พิษสลาย ป้องกันเพิ่ม '+F(DBF[majT()]*2*t)+' พลังโจมตีเพิ่ม '+(5+2*t)+' เปอร์เซ็นต์ นาน '+(10+2*t)+' นาที โจมตีรวม '+F(atk())+' ป้องกันรวม '+defn())}
   if(b==='body')return pgMenu('body');if(b==='mind')return pgMenu('mind');
-  if(b==='forge'){const L=[{t:'หลอมยกระดับอุปกรณ์ที่สวมอยู่',a:'up'},{t:'จารึกอักขระลงบนอุปกรณ์ที่สวมอยู่',a:'ins'}];if(RECIPES['hm54_'+t]&&RECIPES['hm54_'+t].length)L.push({t:'สร้างอาวุธและเกราะ ได้ถึงขั้น'+ACT22[Math.min(4,t-1)]+' '+RECIPES['hm54_'+t].length+' สูตร',a:'cr'});
-   return menu(n,L,{ent:x=>{if(x.a==='up'){if(window.__ENH&&window.__ENH.menu)return window.__ENH.menu({n:'ห้องหลอมศาสตราในบ้าน'});mode='play';return say('ระบบหลอมยังไม่พร้อม')}if(x.a==='cr')return craftMenu('hm54_'+t,{n:'ห้องหลอมศาสตราในบ้าน'});insMenu()}})}
+  if(b==='forge'){const L=[{t:'หลอมยกระดับอุปกรณ์ที่สวมอยู่',a:'up'},{t:'จารึกอักขระลงบนอุปกรณ์ที่สวมอยู่',a:'ins'},{t:'ย้ายความเข้ม ย้ายระดับหลอมจากชิ้นเก่าไปชิ้นใหม่ (ใช้หินเคลื่อนย้ายความเข้ม 1 ก้อน)',a:'xf'}];if(RECIPES['hm54_'+t]&&RECIPES['hm54_'+t].length)L.push({t:'สร้างอาวุธและเกราะ ได้ถึงขั้น'+ACT22[Math.min(4,t-1)]+' '+RECIPES['hm54_'+t].length+' สูตร',a:'cr'});
+   return menu(n,L,{ent:x=>{if(x.a==='xf'&&window.__XFER)return window.__XFER.xfer();if(x.a==='up'){if(window.__ENH&&window.__ENH.menu)return window.__ENH.menu({n:'ห้องหลอมศาสตราในบ้าน'});mode='play';return say('ระบบหลอมยังไม่พร้อม')}if(x.a==='cr')return craftMenu('hm54_'+t,{n:'ห้องหลอมศาสตราในบ้าน'});insMenu()}})}
   if(b==='lib'){if(hm().lib===dayKey())return say('วันนี้อ่านคัมภีร์แล้ว พรุ่งนี้มาอ่านใหม่');const g=Math.max(10,Math.round(R[S.step][3]*.04*t/5));hm().lib=dayKey();S.exp+=g;fx54('hmlib');try{save()}catch(e){}return say('อ่านคัมภีร์เก่าในหอคัมภีร์ เข้าใจมรรคามากขึ้น ได้แต้มฝึกฝน '+F(g))}
   if(b==='tpad')return tpadMenu();
   if(b==='ward'){const l=cdLeft('ward',3600000);if(l)return say('ค่ายกลพิทักษ์ยังฟื้นพลังไม่เต็ม เปิดได้อีกใน '+tm(l));hm().wd=Date.now()+1800000;cdSet('ward');fx54('hmward');try{save()}catch(e){}return say('เปิดค่ายกลพิทักษ์วัง ม่านแสงคุ้มกาย ป้องกันเพิ่ม 20 เปอร์เซ็นต์ และอีก '+F(DBF[majT()]*5)+' นาน 30 นาที ติดตัวไปทุกที่ ป้องกันรวม '+defn())}}
@@ -11720,7 +11726,7 @@ try{(()=>{/* ===== รอบที่ 69 (13 พ.ย. 2569): ระบบสำ�
  const now=()=>{let t=Date.now();try{if(HOOK.srvNow)t=HOOK.srvNow()}catch(e){}return t};
  const num=v=>{v=+v;return Number.isFinite(v)&&v>0?v:0};
  const wOf=o=>num(o.gold)/100+num(o.coin)/200+num(o.sm)*100+num(o.sh)*1e4+num(o.sx)*1e6;/* มูลค่าเงินทั้งหมด หน่วยหินวิญญาณต่ำ */
- const ivOf=o=>{let n=0;[o.enh,o.ins].forEach(m=>{if(m&&typeof m==='object')Object.keys(m).forEach(k=>{n+=Math.floor(num(m[k]))})});const g=o.pg&&typeof o.pg==='object'?o.pg:{};n+=Math.floor(num(g.body))+Math.floor(num(g.mind));const u=o.swu&&typeof o.swu==='object'?o.swu:{};['me','e','d'].forEach(a=>{const q=u[a];if(q&&typeof q==='object')['a','h','d'].forEach(b=>{n+=Math.floor(num(q[b]))})});return n};
+ const ivOf=o=>{let n=0;[o.enh,o.ins].forEach(m=>{if(m&&typeof m==='object')Object.keys(m).forEach(k=>{n+=Math.floor(num(m[k]))})});const g=o.pg&&typeof o.pg==='object'?o.pg:{};n+=Math.floor(num(g.body))+Math.floor(num(g.mind));{const t9=o.tp77;if(t9&&typeof t9==='object')Object.keys(t9).forEach(e9=>{const q9=t9[e9];if(q9&&typeof q9==='object')n+=Math.max(0,Math.min(100,Math.floor(+q9.l||0)))})}const u=o.swu&&typeof o.swu==='object'?o.swu:{};['me','e','d'].forEach(a=>{const q=u[a];if(q&&typeof q==='object')['a','h','d'].forEach(b=>{n+=Math.floor(num(q[b]))})});return n};
  const kOf=o=>Array.isArray(o.known)?new Set(o.known.filter(k=>typeof k==='string')).size:0;
  const petsOf=o=>[...(Array.isArray(o.pets)?o.pets:[]),...(Array.isArray(o.pen)?o.pen:[])].filter(p=>p&&typeof p.id==='string');
  const invV=o=>(Array.isArray(o.inv)?o.inv:[]).reduce((a,it)=>a+(it&&I[it.id]?Math.floor(num(it.q))*Math.max(1,num(I[it.id].p)):0),0);
@@ -11776,8 +11782,9 @@ try{(()=>{/* ===== รอบที่ 69 (13 พ.ย. 2569): ระบบสำ�
    ['wpn','arm'].forEach(k=>{const id=o[k];if(typeof id==='string'&&I[id]&&S[k]!==id){b[id]=(b[id]||0)+1}});['wpn','arm'].forEach(k=>{const id=S[k];if(typeof id==='string'&&I[id])a[id]=(a[id]||0)+1});
    Object.keys(b).forEach(id=>{const d=b[id]-(a[id]||0);if(d>0&&d<=1e6){try{add(id,d);ch.push('inv')}catch(e){}}})}/* รอบที่ 72: ของในกระเป๋าที่หาย คืนส่วนที่ขาด (ผ่าน add ตัวกันเสกของยอมรับ) */
   if(Array.isArray(o.known)){if(!Array.isArray(S.known))S.known=[];o.known.forEach(k=>{if(typeof k==='string'&&SK[k]&&!S.known.includes(k)){S.known.push(k);ch.push('known')}})}
+  {const B9=o.tp77;if(B9&&typeof B9==='object'&&!Array.isArray(B9)){if(!S.tp77||typeof S.tp77!=='object')S.tp77={};Object.keys(B9).forEach(e9=>{const q9=B9[e9];if(!q9||typeof q9!=='object'||!/^(metal|wood|water|fire|earth|thunder|wind|ice|dark)$/.test(e9))return;const l9=Math.max(0,Math.min(100,Math.floor(num(q9.l))));const c9=S.tp77[e9];if(l9>0&&(!c9||l9>Math.floor(num(c9.l)))){S.tp77[e9]={l:l9,p:0};ch.push('tp77')}})}}/* รอบที่ 81: คืนขั้นชุบร่างกายธาตุที่ลดลง */
   return [...new Set(ch)]};
- const CHN={gold:'หินวิญญาณต่ำ',coin:'เหรียญทอง',sm:'หินวิญญาณระดับกลาง',sh:'หินวิญญาณระดับสูง',sx:'หินวิญญาณระดับสุดยอด',enh:'ระดับหลอม',ins:'จารึก',pg:'หลอมกายและหลอมจิต',swu:'ขั้นอัปสงครามสำนัก',known:'วิชา',pets:'สัตว์อสูร',inv:'ของในกระเป๋า'};
+ const CHN={gold:'หินวิญญาณต่ำ',coin:'เหรียญทอง',sm:'หินวิญญาณระดับกลาง',sh:'หินวิญญาณระดับสูง',sx:'หินวิญญาณระดับสุดยอด',enh:'ระดับหลอม',ins:'จารึก',pg:'หลอมกายและหลอมจิต',swu:'ขั้นอัปสงครามสำนัก',tp77:'ขั้นชุบร่างกายธาตุ',known:'วิชา',pets:'สัตว์อสูร',inv:'ของในกระเป๋า'};
  async function applyFix(v,M,ref){if(!v||typeof v!=='object')return;const id=String(v.id||'').slice(0,40);if(!id||typeof v.js!=='string')return;
   if(!Array.isArray(S.fixd))S.fixd=[];
   if(S.fixd.includes(id)){try{await M.rt.remove(ref)}catch(e){}return}
@@ -12183,7 +12190,7 @@ try{(()=>{
  NL.go=(id,x)=>{try{const d=I[id],t=tierOf(id);if(!d||!t)return say('เรือลำนี้เดินทางไกลไม่ได้');if(S.voy77)return voyMenu();if(!S.shp||S.shp.id!==id)return say('ต้องวางเรือและอยู่ในเรือก่อน');
    const z=zoneAt(S.x,S.y);if(!z||!/^bd_sh/.test(z.id))return say('ต้องอยู่ในเรือของเจ้าก่อนจึงออกเดินทางไกลได้');
    const TS=Math.max(30,x.ts|0),need=d.burn*TS;if(bfOf(id)<need)return say('หินวิญญาณในเรือไม่พอเดินทางไกลขนาดนี้ ต้องใช้ '+priceTxt(need)+' มี '+priceTxt(bfOf(id))+' เติมหินวิญญาณในห้องบังคับเรือก่อน');
-   const to=destOf(x);bfSet(id,bfOf(id)-need);const now=Date.now();S.voy77={id,t,to,t0:now,end:now+TS*1000,tot:TS,k:x.nl77,nx:now+60000,ev:now+45000+Math.random()*30000,sea:(x.p&&x.p.sea)||((PM[(S.shp||{}).z]||{}).sea)?1:0};
+   const to=destOf(x);bfSet(id,bfOf(id)-need);const now=Date.now();S.voy77={id,t,to,t0:now,end:now+TS*1000,tot:TS,fx:S.shp.x,fy:S.shp.y,k:x.nl77,nx:now+60000,ev:now+45000+Math.random()*30000,sea:(x.p&&x.p.sea)||((PM[(S.shp||{}).z]||{}).sea)?1:0};
    voyStart(1);say('เรือเหาะทะยานขึ้นเหนือผิวน้ำ มุ่งหน้าไป '+to.n+' ใช้เวลา '+tvT(TS)+' ระหว่างทางเดินในเรือและใช้ห้องต่างๆ ได้ กด Shift V ฟังสถานะหรือฉีกมิติย่นทาง');sv()}catch(e){err('ออกเดินทาง',e)}};
  const ENGo=()=>window.__SHENG||{};
  function voyStart(first){try{window.__SHTRVSET&&window.__SHTRVSET(1)}catch(e){}try{ENGo().on=true}catch(e){}try{window.__SHSND&&window.__SHSND.start()}catch(e){}if(first){snd('levit',.55,.4);mp18('shiprev')}}
@@ -12340,7 +12347,7 @@ try{(()=>{
   ['ตำนานขนเก้าธาตุ','ตอนวิหคชาดสิ้นใจ ขนเก้าเส้นปลิวไปตกเก้าที่ กลายเป็นดินแดนประจำธาตุ ทอง ไม้ น้ำ ไฟ ดิน อัสนี ลม น้ำแข็ง และความมืด ปราณธาตุดิบไหลอยู่ตลอดเวลา ผู้ที่ทนความเจ็บได้จะชุบร่างกายจนแกร่งขึ้นถาวร'],
   ['เหตุที่อสูรที่นี่เก่งกว่า','ปราณที่นี่หนาแน่นกว่าทวีปรอบนอกราว 3 เท่า อสูรกินปราณเข้มข้นและกินแก่นอสูรกันเองตั้งแต่เกิด กระดูก เนื้อ และแก่นอสูรจึงแน่นกว่า อสูรขั้นเดียวกันจึงมีเลือดและพลังโจมตีราว 3 เท่าของทวีปรอบนอก บอสทุกตัวและอสูรในดินแดนธาตุมีสองธาตุ ทดแทนกันด้วยแต้มฝึกฝน 3 เท่า และเงิน 2 เท่า'],
   ['ที่ยังปิดอยู่','สุสานจูเชว่ ลานศิลาเทพผู้หลับใหล และขั้นพลังที่สูงกว่าเทพแปลงกาย ยังไม่เปิด เล่าลือกันว่าจะเปิดเมื่อม่านฟ้ากั้นสลาย']];
- NL.lore=()=>{snd('pageturn',.6);menu('ตำนานดินแดนใจกลาง',LORE.map(a=>({t:a[0],d:a[1]})),{ent:x=>{snd('BookFlip1',.6);say(x.t+' '+x.d)}})};
+ NL.loreList=LORE; NL.lore=()=>{snd('pageturn',.6);menu('ตำนานดินแดนใจกลาง',LORE.map(a=>({t:a[0],d:a[1]})),{ent:x=>{snd('BookFlip1',.6);say(x.t+' '+x.d)}})};
  /* ตัวตรวจ */
  (window.__R5DGH=window.__R5DGH||[]).push(is=>{try{EL9.forEach(e=>{if(!ERZ[e])is.push('ดินแดนธาตุ: ไม่มีที่ของธาตุ'+e);else{const p=ERZ[e];if(!I[p.uh])is.push('ดินแดนธาตุ: ไม่มีสมุนไพร '+p.id);if(!MD[p.mk]||MD[p.mk].el!==e)is.push('ดินแดนธาตุ: อสูร '+p.mk+' ธาตุไม่ตรง')}if(!ACT['nltp'+e.slice(0,2)])is.push('ดินแดนธาตุ: ไม่มีเสียงชุบร่าง '+e)});
    if(!(window.__MVOX&&window.__MVOX.nlm00&&window.__MVOX.nlm00.nl))is.push('เสียงอสูรดินแดนใจกลาง: ยังไม่ได้ประสมเสียง')}catch(e){is.push('ดินแดนธาตุ: ตัวตรวจพัง')}});
@@ -12349,6 +12356,196 @@ try{(()=>{
   'ดินแดนประจำธาตุ 9 แห่ง ทอง ไม้ น้ำ ไฟ ดิน อัสนี ลม น้ำแข็ง ความมืด มีเสียงพลังธาตุตลอดเวลา อยู่ในนั้นร่างกายถูกชุบทุก 30 วินาที เจ็บตัวทุกครั้ง ขึ้นขั้นใช้สมุนไพรประจำถิ่น ธาตุละ 100 ขั้น เพิ่มค่าถาวรและต้านอสูรธาตุนั้น',
   'ดูได้ที่นายท่าทุกที่ หรือ Shift V เลือก การชุบร่างกายธาตุของเจ้า และ ตำนานดินแดนใจกลาง','เสียงอสูรดินแดนใจกลางประสมสองชั้น ตัวใหญ่เสียงทุ้ม ตัวเล็กเสียงแหลม']})}catch(e){err('ข่าว 79',e)}
  try{TIPS.push('ดินแดนประจำธาตุ 9 แห่งในดินแดนใจกลาง ยืนอยู่ในนั้นเพื่อชุบร่างกาย ต้องพกสมุนไพรประจำถิ่นของที่นั้นไว้ขึ้นขั้น')}catch(e){}
+
+ /* ---------- รอบที่ 80 (14 พ.ย.) ส่วนที่ 1: เรือแล่นจริง และห้ามลงเรือขณะแล่น ----------
+    เดิมระหว่างเดินทาง พิกัดเรือไม่ขยับ ถึงเวลาแล้วค่อยย้ายไปปลายทางทีเดียว ตอนนี้พิกัดเรือเคลื่อนจากต้นทางไปปลายทางทุกวินาทีตามเวลาที่เหลือ
+    (ฉีกมิติหรือใช้ยันต์ย่นทาง เรือจะพุ่งข้ามระยะนั้นไปจริง) กด R บนเรือบอกพิกัดเรือ ทิศที่มุ่งไป ระยะและเวลาที่เหลือ
+    ทางลงเรือทุกทางปิดตอนเรือแล่น: ประตู (เดิม) ยันต์ส่งกลับ ขี่กระบี่ วาร์ป และตัวกันสุดท้าย ถ้าหลุดออกจากเรือด้วยทางใดก็ตาม (ยกเว้นตาย) พากลับขึ้นเรือ */
+ const SHM=()=>{const v=S.voy77;if(v&&S.shp&&v.to&&Number.isFinite(v.end)){const fx=Number.isFinite(v.fx)?v.fx:S.shp.x,fy=Number.isFinite(v.fy)?v.fy:S.shp.y;return{fx,fy,tx:v.to.x,ty:v.to.y,t0:v.t0,end:v.end,tot:v.tot*1000,n:v.to.n}}
+   const m=window.__SHMOV;if(m&&window.__SHTRV)return{fx:m.fx,fy:m.fy,tx:m.tx,ty:m.ty,t0:m.t0,end:m.end,tot:m.end-m.t0,n:m.n};return null};
+ const moving=()=>!!(S.voy77||window.__SHTRV||(S.gst&&window.__GSTMOV&&window.__GSTMOV()));window.__SHMOVING=moving;
+ const shipAt=()=>{const m=SHM();if(!m)return null;const now=Date.now(),f=Math.max(0,Math.min(1,1-(m.end-now)/Math.max(1,m.tot)));return{x:Math.round(m.fx+(m.tx-m.fx)*f),y:Math.round(m.fy+(m.ty-m.fy)*f),f,m,left:Math.max(0,Math.ceil((m.end-now)/1000))}};NL.shipAt=shipAt;
+ const DIR8=['เหนือ','ตะวันออกเฉียงเหนือ','ตะวันออก','ตะวันออกเฉียงใต้','ใต้','ตะวันตกเฉียงใต้','ตะวันตก','ตะวันตกเฉียงเหนือ'];
+ const dirTo=(dx,dy)=>DIR8[(Math.round(Math.atan2(dx,-dy)/(Math.PI/4))+8)%8];
+ const tvS=v=>v>=60?Math.floor(v/60)+' นาที'+(v%60?' '+v%60+' วินาที':''):v+' วินาที';
+ const onShipZ=()=>{const z=zoneAt(S.x,S.y);return!!(z&&/^bd_sh/.test(z.id))};
+ const overTxt=(x,y,m)=>{const z=zoneAt(x,y);if(z&&!/^bd_/.test(z.id))return'เหนือ'+z.n;if(x>=29000||y>=29000)return'เหนือทะเลเปิดของดินแดนใจกลาง';if(m&&m.tx<29000&&m.ty<29000&&m.fx<29000&&m.fy<29000)return'เหนือผืนป่าและภูเขาระหว่างเขตของทวีปรอบนอก';return'เหนือทะเลเมฆระหว่างทวีปรอบนอกกับดินแดนใจกลาง'};
+ window.__SHPOS=()=>{if(onShipZ()&&S.gst&&window.__GSTMOV&&window.__GSTMOV()){const b=window.__GSTSB();return'เรือที่เจ้าโดยสารกำลังแล่น พิกัดเรือ '+locTxt(+b[1],+b[2])+' '+overTxt(+b[1],+b[2])+' ลงเรือไม่ได้จนกว่าเรือจอด'}if(!onShipZ()||!S.shp)return'';const a=shipAt();
+  if(a){const d=Math.round(Math.hypot(a.m.tx-a.x,a.m.ty-a.y));return'เจ้าอยู่บนเรือที่กำลังแล่น พิกัดเรือ '+locTxt(a.x,a.y)+' '+overTxt(a.x,a.y,a.m)+' มุ่งหน้าไปทาง'+dirTo(a.m.tx-a.x,a.m.ty-a.y)+' สู่ '+a.m.n+' อีก '+d.toLocaleString('en-US')+' ช่อง ราว '+tvS(a.left)+' ถึง เดินมาแล้ว '+Math.round(a.f*100)+' เปอร์เซ็นต์'}
+  const z=Z.find(q=>q.id===S.shp.z);return'เจ้าอยู่บนเรือ เรือจอดอยู่ที่พิกัด '+locTxt(S.shp.x,S.shp.y)+(z?' ใน'+z.n:'')+' ตรงนี้บนเรือคือพิกัด '+locTxt(S.x,S.y)};
+ /* ทุกวินาที: บันทึกพิกัดเรือที่แล่นอยู่ลงข้อมูลเดินทาง (เซฟไปด้วย) ประกาศเมื่อผ่านสถานที่ใหม่ */
+ let lastOver='';
+ setInterval(()=>{try{const a=shipAt();if(!a){lastOver='';return}if(S.voy77){S.voy77.px=a.x;S.voy77.py=a.y}const o=overTxt(a.x,a.y,a.m);if(o!==lastOver){if(lastOver&&onShipZ())say('เรือแล่น'+o+' มุ่งหน้าไปทาง'+dirTo(a.m.tx-a.x,a.m.ty-a.y));lastOver=o}}catch(e){NL.err++}},1000);
+ /* ปิดขี่กระบี่ (X) บนเรือที่แล่น */
+ try{const of=A.fly;if(typeof of==='function')A.fly=function(){if(moving()&&onShipZ())return say('เรือกำลังแล่นอยู่กลางฟ้า ขี่กระบี่ลงจากเรือไม่ได้ รอเรือจอดก่อน');return of.apply(this,arguments)}}catch(e){err('กันขี่กระบี่',e)}
+ /* ตัวกันสุดท้าย: หลุดออกจากเรือตอนแล่น (ไม่ใช่เพราะตาย) พากลับตำแหน่งเดิมบนเรือ */
+ let shipIn=null,dieT=0;try{DIEH.push(()=>{dieT=Date.now()})}catch(e){}
+ setInterval(()=>{try{if(!moving()){shipIn=null;return}const z=zoneAt(S.x,S.y),inS=!!(z&&/^bd_sh/.test(z.id));
+   if(inS){shipIn={x:S.x,y:S.y};return}
+   if(shipIn&&S.hp>0&&Date.now()-dieT>15000&&(S.shp||S.gst)){NL.kickBack=(NL.kickBack||0)+1;posAllow(2000);S.x=shipIn.x;S.y=shipIn.y;posNote();try{render()}catch(e){}say('เรือกำลังแล่นอยู่กลางฟ้า ลงจากเรือไม่ได้ รอเรือจอดก่อน')}else shipIn=null}catch(e){NL.err++}},200);
+ (window.__R5DGH=window.__R5DGH||[]).push(is=>{try{if(typeof window.__SHPOS!=='function')is.push('เรือแล่น: ไม่มีตัวบอกพิกัดเรือ');const v=S.voy77;if(v&&!shipAt())is.push('เรือแล่น: คำนวณพิกัดเรือไม่ได้')}catch(e){is.push('เรือแล่น: ตัวตรวจพัง')}});
+ /* ---------- รอบที่ 80 ส่วนที่ 2: อาวุธ 13 ชนิด เสียงของแต่ละชนิด (ฟัน สวม ถอด เก็บจากพื้น เหยียบ) ผู้เล่นอื่นได้ยินชุดเดียวกัน ----------
+    นิยายทั้งสองเรื่อง ผู้ฝึกตนใช้ศาสตราหลายแบบ กระบี่ ดาบ ทวน ง้าว ค้อน พัด แส้ ขลุ่ย ระฆัง กระจกวิเศษ เป็นต้น
+    ค่าพลังเท่ากันทุกชนิดในขั้นเดียวกัน (ไม่มีชนิดไหนเสียเปรียบ) ต่างกันที่เสียง ท่วงท่า และแหล่งที่ซื้อหรือสร้าง */
+ const WKN=[['sword','กระบี่','sw'],['saber','ดาบ','sa'],['spear','ทวน','sp'],['halb','ง้าว','ha'],['staff','กระบอง','st'],['hammer','ค้อน','hm'],['axe','ขวาน','ax'],['fan','พัด','fa'],['whip','แส้','wh'],['claw','กรงเล็บ','cl'],['flute','ขลุ่ย','fl'],['bell','ระฆัง','be'],['mirror','กระจก','mi']];
+ const WKC={},WKT={};WKN.forEach(a=>{WKC[a[0]]=a[2];WKT[a[0]]=a[1]});NL.WKT=WKT;
+ const WRX=[['saber',/ดาบ/],['spear',/ทวน|หอก/],['halb',/ง้าว/],['staff',/กระบอง|ไม้เท้า|ไม้พลอง/],['hammer',/ค้อน/],['axe',/ขวาน/],['fan',/พัด/],['whip',/แส้/],['claw',/กรงเล็บ/],['flute',/ขลุ่ย/],['bell',/ระฆัง/],['mirror',/กระจก/]];
+ const kindOf=id=>{const d=I[id];if(!d)return'sword';if(d.wk&&WKC[d.wk])return d.wk;const n=d.n||'';for(const a of WRX)if(a[1].test(n))return a[0];return'sword'};window.__WKOF=kindOf;NL.kindOf=kindOf;
+ const WS={sword:{s:[['unsheathe',.8,0],['ring',.2,.03]],e:[['unsheathe',.7,0]],u:[['sheathe',.7,0]],p:[['MetalClick',.6,0],['DrawKnife2',.35,.08]],t:[['MetalLatch',.5,0]]},
+  saber:{s:[['sw_sword',.85,0],['KnifeSlice1',.4,.05]],e:[['DrawKnife1',.7,0]],u:[['sheathe',.65,0]],p:[['MetalLatch',.6,0]],t:[['MetalClick',.5,0]]},
+  spear:{s:[['whoosh',.8,0],['swish',.45,.06]],e:[['sw_staff',.5,0],['MetalClick',.3,.15]],u:[['BeltHandle1',.6,0]],p:[['impactPlate_light_001',.6,0]],t:[['impactPlate_light_003',.45,0]]},
+  halb:{s:[['twirl',.7,0],['whoosh',.55,.12]],e:[['eq_mail',.65,0]],u:[['MetalLatch',.6,0]],p:[['impactPlate_medium_002',.55,0]],t:[['impactGeneric_light_001',.5,0]]},
+  staff:{s:[['sw_staff',.85,0]],e:[['tap',.6,0]],u:[['tap',.5,0]],p:[['thud_s',.6,0]],t:[['thud_s',.45,0]]},
+  hammer:{s:[['whoosh',.95,0],['thud_m',.3,.18]],e:[['thud_m',.6,0]],u:[['thud_m',.5,0]],p:[['thud_b',.6,0]],t:[['thud_b',.5,0]]},
+  axe:{s:[['Chop',.8,0],['swish',.35,.04]],e:[['eq_leather',.65,0]],u:[['BeltHandle2',.6,0]],p:[['impactGeneric_light_002',.6,0]],t:[['impactGeneric_light_000',.45,0]]},
+  fan:{s:[['rustle',.7,0],['cast_air',.3,.05]],e:[['Cloth1',.65,0]],u:[['Cloth2',.6,0]],p:[['Cloth3',.6,0]],t:[['Cloth4',.45,0]]},
+  whip:{s:[['swish',.8,0],['hit_leather',.5,.1]],e:[['BeltHandle1',.6,0]],u:[['BeltHandle2',.55,0]],p:[['ClothBelt2',.6,0]],t:[['hit_leather',.4,0]]},
+  claw:{s:[['KnifeSlice2',.8,0],['swish',.4,.05]],e:[['eq_cloth',.6,0]],u:[['MetalClick',.55,0]],p:[['KnifeSlice1',.5,0]],t:[['MetalClick',.45,0]]},
+  flute:{s:[['whistle',.7,0],['swish',.3,.05]],e:[['tap',.55,0]],u:[['tap',.45,0]],p:[['tap',.55,0]],t:[['tap',.4,0]]},
+  bell:{s:[['ring',.7,0],['whoosh',.35,.05]],e:[['ring',.4,0]],u:[['ring',.3,0]],p:[['MetalPot1',.55,0]],t:[['MetalPot2',.45,0]]},
+  mirror:{s:[['blink',.7,0],['ward',.4,.1]],e:[['ward',.45,0]],u:[['tap',.5,0]],p:[['iceshat',.3,0]],t:[['iceshat',.25,0]]}};
+ const STEPX={wkart:[['eq_mail',.45,0]],wkcot:[['HandleCoins1',.45,0]],wkitt:[['DropLeather',.4,0]]};
+ const ACTA=(c,seq,lb)=>{try{ACT[c]=seq;if(AU.PLA&&AU.ACTREG){AU.PLA[c]=seq;if(!AU.ACTREG.includes(c))AU.ACTREG.push(c)}if(window.__KNUSE)seq.forEach(a=>{window.__KNUSE[a[0]]=window.__KNUSE[a[0]]||lb})}catch(e){err('เสียงอาวุธ',e)}};
+ const WTN={s:'ฟัน',e:'สวม',u:'ถอด',p:'เก็บจากพื้น',t:'เหยียบ'};
+ WKN.forEach(a=>Object.keys(WTN).forEach(t=>ACTA('wk'+a[2]+t,WS[a[0]][t],'อาวุธ'+a[1]+' '+WTN[t])));Object.keys(STEPX).forEach(c=>ACTA(c,STEPX[c],'เหยียบของบนพื้น'));
+ let hitT=0;window.__WKHIT=()=>{try{if(!S.wpn||!I[S.wpn])return false;const now=Date.now();if(now-hitT<120)return true;hitT=now;fx('wk'+WKC[kindOf(S.wpn)]+'s');return true}catch(e){return false}};
+ window.__WKEQ=(id,t)=>{try{if(id&&I[id])fx('wk'+WKC[kindOf(id)]+(t==='eq'?'e':'u'))}catch(e){}};
+ try{const ot=takeGround;takeGround=function(a){const id=a&&a.id;const r=ot.apply(this,arguments);try{if(r!==false&&id&&I[id]&&I[id].u==='eq')fx('wk'+WKC[kindOf(id)]+'p')}catch(e){}return r}}catch(e){err('เสียงเก็บอาวุธ',e)}
+ {let lx=null,ly=null;setInterval(()=>{try{if(S.x===lx&&S.y===ly)return;lx=S.x;ly=S.y;if(!Array.isArray(S.ground))return;const g=S.ground.find(q=>q&&q.x===S.x&&q.y===S.y);if(!g)return;
+   if(g.id&&I[g.id]&&I[g.id].u==='eq')fx('wk'+WKC[kindOf(g.id)]+'t');else if(g.id&&I[g.id]&&I[g.id].u==='arm')fx('wkart');else if(g.coin!=null||g.gold!=null)fx('wkcot');else fx('wkitt')}catch(e){NL.err++}},150)}
+ /* อาวุธหลากชนิดของดินแดนใจกลาง: หลอมได้ทุกชนิด (ใช้วัตถุดิบเดียวกับกระบี่ขั้นนั้น) */
+ const FKEY=['nlforge0','nlforge1','nlforge2','nlforge3','nlforge4'];
+ const cpI=(src,id,nm,extra)=>{I[id]=Object.assign({},I[src],{n:nm},extra||{});LV[id]=LV[src];if(IDESC[src])IDESC[id]=IDESC[src];if(MUSE[src])MUSE[id]=MUSE[src];if(SELLP[src])SELLP[id]=SELLP[src]};
+ try{for(let t=0;t<5;t++){const R=RECIPES[FKEY[t]];if(!R)continue;const ra=R.find(r=>r.o==='nlw'+t+'a'),rb=R.find(r=>r.o==='nlw'+t+'b');if(I['nlw'+t+'a'])I['nlw'+t+'a'].wk='sword';if(I['nlw'+t+'b'])I['nlw'+t+'b'].wk='sword';
+   WKN.slice(1).forEach(a=>{const ia='nlw'+t+'a'+a[2],ib='nlw'+t+'b'+a[2];
+    cpI('nlw'+t+'a',ia,I['nlw'+t+'a'].n.replace(/^กระบี่/,a[1]),{wk:a[0]});cpI('nlw'+t+'b',ib,I['nlw'+t+'b'].n.replace(/^กระบี่/,a[1]),{wk:a[0]});
+    if(ra&&!R.some(r=>r.o===ia))R.push({o:ia,m:Object.assign({},ra.m)});
+    if(rb&&!R.some(r=>r.o===ib)){const m={};Object.keys(rb.m).forEach(k=>{m[k==='nlw'+t+'a'?ia:k]=rb.m[k]});R.push({o:ib,m})}})}}catch(e){err('อาวุธหลากชนิด',e)}
+ /* ของขายในดินแดนใจกลาง (ทวีปรอบนอกไม่มี): ศาสตราร้านค้า 13 ชนิด เกราะร้านค้า เครื่องประดับ 6 ช่อง โอสถฟื้นเลือดและปราณ แก่นอสูร (แพง) */
+ const TLV=[4,14,24,34,44],TNM=['ทะเลใน','ดาวแกร่ง','ทะเลนอก','แคว้นฉู่','จูเชว่'];
+ const BUY={};
+ try{for(let t=0;t<5;t++){const A=I['nlw'+t+'a'],B=I['nla'+t+'a'];
+   WKN.forEach(a=>{const id='nlws'+t+a[2];I[id]={n:a[1]+'ร้านค้า'+TNM[t]+' (ศาสตราดินแดนใจกลาง โจมตี +'+Math.round(A.atk*.75).toLocaleString('en-US')+')',u:'eq',atk:Math.round(A.atk*.75),p:[6000,180000,1800000,60000000,900000000][t],wk:a[0]};LV[id]=TLV[t];
+    IDESC[id]='ศาสตราร้านค้าของดินแดนใจกลาง ชนิด'+a[1]+' แรงกว่าศาสตราทวีปรอบนอกขั้นเดียวกัน แต่เบากว่าศาสตราที่หลอมจากสมบัติประจำถิ่น';SELLP[id]=Math.round(I[id].p/200)});
+   const ar='nlas'+t,rl=Math.floor(TLV[t]/10)*10;let bd=0;Object.keys(I).forEach(k=>{const d=I[k];if(d&&d.u==='arm'&&!/^nlas/.test(k)&&(LV[k]||0)<rl&&d.def>bd)bd=d.def});const adf=Math.min(B.def,Math.max(Math.round(B.def*.75),bd+Math.ceil(bd*.03)+1));I[ar]={n:'ชุดเกราะร้านค้า'+TNM[t]+' (ป้องกัน +'+adf+')',u:'arm',def:adf,p:[5000,150000,1500000,50000000,800000000][t]};LV[ar]=TLV[t];IDESC[ar]='เกราะร้านค้าของดินแดนใจกลาง ทนกว่าเกราะทวีปรอบนอกขั้นเดียวกัน';SELLP[ar]=Math.round(I[ar].p/200);
+   ACSK.forEach(sl=>{const o=I['ac_'+sl+t];if(!o)return;const id='nlac'+sl+t,ix='nlacx'+sl+t,st=(f)=>{const r={};['atk','def','hp'].forEach(k=>{if(o[k])r[k]=Math.round(o[k]*f)});return r};
+    const s1=st(1.3),s2=st(1.7),tx=s=>Object.keys(s).map(k=>({atk:'โจมตี',def:'ป้องกัน',hp:'เลือด'})[k]+' +'+s[k].toLocaleString('en-US')).join(' ');
+    I[id]=Object.assign({n:ACSL[sl]+'ทะเลดาว'+TNM[t]+' ('+tx(s1)+')',u:'acc',slot:sl,p:o.p*3},s1);LV[id]=(LV['ac_'+sl+t]||TLV[t])+1;IDESC[id]=ACSL[sl]+'ของดินแดนใจกลาง แรงกว่าของทวีปรอบนอกขั้นเดียวกันราว 30 เปอร์เซ็นต์ สวมได้หนึ่งชิ้นต่อช่อง หลอมยกระดับที่ช่างหลอมศาสตราได้';SELLP[id]=Math.round(o.p*3/200);
+    I[ix]=Object.assign({n:ACSL[sl]+'วิหคชาด'+TNM[t]+' ('+tx(s2)+')',u:'acc',slot:sl},s2);LV[ix]=LV[id];IDESC[ix]=ACSL[sl]+'ชั้นสูงของดินแดนใจกลาง ซื้อไม่ได้ ต้องหลอมจากสมบัติประจำถิ่นที่โรงหลอม แรงกว่าของทวีปรอบนอกราว 70 เปอร์เซ็นต์';
+    const R=RECIPES[FKEY[t]];if(R&&!R.some(r=>r.o===ix)){const b=t*10,si=ACSK.indexOf(sl);R.push({o:ix,m:{[id]:1,['nlt'+String(b+si).padStart(2,'0')]:2,['nlcore'+(2*t+1)]:6}})}});
+   const hp='nlhp'+t,qi='nlqp'+t;I[hp]={n:'โอสถโลหิตวิหคชาด'+TNM[t]+' (ฟื้นเลือด '+[12000,120000,1200000,18000000,60000000][t].toLocaleString('en-US')+')',u:'hp',v:[12000,120000,1200000,18000000,60000000][t],p:[450,7500,120000,1350000,4500000][t]};LV[hp]=TLV[t];IDESC[hp]='โอสถของดินแดนใจกลาง ปรุงจากสมุนไพรที่ปราณหนาแน่น ฟื้นเลือดมากกว่าโอสถทวีปรอบนอกขั้นเดียวกัน';
+   I[qi]={n:'โอสถปราณทะเลดาว'+TNM[t]+' (ฟื้นปราณ '+[6000,18000,270000,4500000,15000000][t].toLocaleString('en-US')+')',u:'qi',v:[6000,18000,270000,4500000,15000000][t],p:[600,9000,150000,1800000,6000000][t]};LV[qi]=TLV[t];IDESC[qi]='โอสถของดินแดนใจกลาง ฟื้นปราณมากกว่าโอสถทวีปรอบนอกขั้นเดียวกัน'}
+  for(let g=1;g<=10;g++){const id='nlcore'+g;if(I[id])I[id].p=[0,3000,12000,60000,300000,1500000,8000000,40000000,200000000,1000000000,5000000000][g]}}catch(e){err('ของร้านแดนใหม่',e)}
+ /* ร้านแต่ละนครขายชนิดต่างกัน: ศาสตรา 4 ชนิด เครื่องประดับ 3 ช่อง ต่อนคร หมุนเวียนกันจนครบทุกชนิด */
+ const CITIES=P.filter(p=>p.city);NL.CITIES=CITIES;
+ const ckinds=ci=>[0,1,2,3].map(j=>WKN[(ci*4+j)%13]);const cslots=ci=>[0,1,2].map(j=>ACSK[(ci*2+j)%6]);
+ const tierList=f=>{const o=[];for(let t=0;t<5;t++)f(t).forEach(id=>{if(I[id])o.push(id)});return o};
+ const goods=(ci,k)=>{if(/^herb/.test(k))return tierList(t=>['nlhp'+t,'nlqp'+t]);if(/^smith/.test(k))return tierList(t=>ckinds(ci).map(a=>'nlws'+t+a[2]));if(/^armor/.test(k))return tierList(t=>['nlas'+t].concat(cslots(ci).map(s=>'nlac'+s+t)));
+   if(/^dk_|^cap_/.test(k))return['nlcore1','nlcore2','nlcore3','nlcore4','nlcore5','nlcore6','nlcore7','nlcore8'].concat(tierList(t=>ACSK.map(s=>'nlac'+s+t)));return tierList(t=>['nlhp'+t,'nlqp'+t,'nlws'+t+ckinds(ci)[0][2]])};
+ const nlKey=(z,k)=>{const ci=CITIES.findIndex(p=>p.id===z);if(ci<0)return null;const key='nlx_'+z+'_'+k;if(!SH9[key]){const L=goods(ci,k);if(!L.length)return null;SH9[key]={tier:4,list:L}}return key};
+ try{Object.keys(NPC7).filter(t=>/^nls_/.test(t)).forEach(t=>{const k=t.slice(4);if(!SH9[k])return;NPC7[t]=n=>{const z=n.z||((zoneAt(n.x,n.y)||{}).id),key=nlKey(z,k);if(!key)return shop9(n,k);const ci=CITIES.findIndex(p=>p.id===z);
+   menu(n.n,[{t:'สินค้าของดินแดนใจกลาง ทวีปรอบนอกไม่มี '+SH9[key].list.length+' รายการ',a:'n'},{t:'สินค้าจากทวีปรอบนอกที่พ่อค้านำมาขาย',a:'o'},{t:'ร้านนี้ขายอะไรต่างจากนครอื่น',a:'i'}],{ent:x=>{if(x.a==='n')return shop9(n,key);if(x.a==='o')return shop9(n,k);
+    say(/^smith/.test(k)?'ร้านศาสตราของนครนี้ขาย '+ckinds(ci).map(a=>a[1]).join(' ')+' ชนิดอื่นหาได้ที่นครอื่น หรือหลอมที่โรงหลอมศาสตรา':/^armor/.test(k)?'ร้านนี้ขายเกราะ และ'+cslots(ci).map(s=>ACSL[s]).join(' ')+' ช่องอื่นหาได้ที่นครอื่น':/^herb/.test(k)?'ร้านนี้ขายโอสถของดินแดนใจกลาง ฟื้นเลือดและปราณได้มากกว่าโอสถทวีปรอบนอก':'ร้านนี้ขายของหายากที่ทวีปรอบนอกไม่มี ราคาแพงตามความหายาก สมบัติประจำถิ่นซื้อไม่ได้ ต้องล่าจากบอสเอง')}})}})}catch(e){err('ร้านแดนใหม่',e)}
+ NL.goods=goods;NL.nlKey=nlKey;
+ /* ---------- รอบที่ 80 ส่วนที่ 3: ช่างหลอมศาสตรา (หลอม ย้ายความเข้ม ขายคืน) ทุกนคร ชาวนครมีชีวิต นครละ 80 คน คู่มือดินแดนใจกลาง ---------- */
+ const used=new Set();W.forEach(w=>{if(w&&w.z&&/^nlc_/.test(w.z))used.add(w.x+','+w.y)});
+ const freeNear=(z,x,y)=>{for(let r=0;r<40;r++)for(let dx=-r;dx<=r;dx++)for(let dy=-r;dy<=r;dy++){if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;const X=x+dx,Y=y+dy,k=X+','+Y;if(used.has(k)||used.has((X+1)+','+Y)||used.has((X-1)+','+Y)||used.has(X+','+(Y+1))||used.has(X+','+(Y-1)))continue;const q=zoneAt(X,Y);if(!q||q.id!==z)continue;used.add(k);return[X,Y]}return null};
+ CITIES.forEach(p=>{if(W.some(w=>w.z===p.id&&w.npc==='forge22'))return;const a=arrOf(p),q=freeNear(p.id,a[0]+40,a[1]+30);if(q)npc({z:p.id,n:'ช่างหลอมศาสตรา'+p.n+' (หลอมยกระดับ ย้ายความเข้ม ขายคืนของ)',x:q[0],y:q[1],npc:'forge22'})});
+ /* ชาวนคร: เดินไปมาตามหน้าที่ของตัวเอง เดินมาทักทายเมื่อเจ้าเข้าใกล้ แล้วกลับไปทำงานต่อ ตำแหน่งคิดจากเวลาและรหัสคน ทุกเครื่องเห็นตรงกัน */
+ const FOLK=[['นักเล่าตำนาน','lore'],['ยามประจำนคร','guard'],['ชาวประมงดาว','fish'],['พ่อค้าเร่','trader'],['ผู้ฝึกตนอิสระ','rogue'],['นักพรตชรา','elder'],['คนส่งสาร','courier'],['หมอเร่','doctor'],['ช่างซ่อมเรือเหาะ','shipw'],['นักสำรวจ','explorer'],['เด็กรับใช้โรงเตี๊ยม','inn'],['คนงานเหมืองวิญญาณ','miner'],['นักล่าสมบัติ','hunter'],['บัณฑิตหอคัมภีร์','scholar'],['แม่ค้าดอกไม้วิญญาณ','flower'],['ศิษย์สำนักพเนจร','disciple']];
+ const FN=['หลิว','จาง','หวัง','หลี่','เฉิน','จ้าว','โจว','อู๋','เจิ้ง','ซุน','หม่า','จู','หู','กัว','เหอ','หลิน','ลั่ว','ซ่ง','เถียน','ฟาง'];
+ const FTASK={lore:'เล่าตำนานให้ผู้คนฟังที่ลานกลางนคร',guard:'เดินตรวจถนน',fish:'ซ่อมแหริมท่า',trader:'จัดของบนแผงเร่',rogue:'นั่งปรับลมปราณใต้ต้นไม้',elder:'เดินช้าๆ ไปจุดธูปที่ศาลเจ้า',courier:'วิ่งส่งสารไปทั่วนคร',doctor:'เดินดูอาการผู้บาดเจ็บ',shipw:'ตรวจรอยร้าวท้องเรือที่ลานจอด',explorer:'กางแผนที่ทะเลดาว',inn:'ยกน้ำชาไปส่งแขก',miner:'แบกแร่วิญญาณไปหอการค้า',hunter:'ขัดพลั่วกับมีด',scholar:'อ่านคัมภีร์เดินไปมา',flower:'จัดช่อดอกไม้วิญญาณ',disciple:'ซ้อมกระบวนท่าเบาๆ'};
+ const hsh=(a,b)=>{let h=2166136261^a;h=Math.imul(h^b,16777619);h^=h>>>13;h=Math.imul(h,1274126177);return(h>>>0)/4294967296};
+ const FOLKS=[];
+ CITIES.forEach((p,ci)=>{const have=W.filter(w=>w.z===p.id&&w.npc).length;const a=arrOf(p);let need=Math.max(0,80-have),k=0;
+  while(need>0&&k<200){const r=hsh(ci,k*3),r2=hsh(ci,k*3+1),r3=hsh(ci,k*3+2);k++;const ang=r*Math.PI*2,rad=18+r2*110;const q=freeNear(p.id,Math.round(a[0]+Math.cos(ang)*rad),Math.round(a[1]+Math.sin(ang)*rad));if(!q)continue;
+   const f=FOLK[(ci*5+k)%FOLK.length];let nm='';for(let j=0;j<FN.length;j++){const c=FN[(Math.floor(r3*FN.length)+j)%FN.length];if(!W.some(w=>w.z===p.id&&w.n===f[0]+c+' '+p.n)){nm=c;break}}if(!nm)continue;const o=npc({z:p.id,n:f[0]+nm+' '+p.n,x:q[0],y:q[1],npc:'nlf'+FOLKS.filter(q=>q.z===p.id).length,role:f[1],hx:q[0],hy:q[1],fid:ci*1000+k});FOLKS.push(o);need--}});
+ NL.FOLKS=FOLKS;const FTY=[...new Set(FOLKS.map(o=>o.npc))];try{FTY.forEach(t=>{NPCDO[t]='ชาวนคร เดินไปมาทำงานของตัวเอง เดินมาทักทาย กด Enter คุย';VD['npc_'+t]=VD['npc_'+t]||.5})}catch(e){}
+ const SLOT=40000,WR=14;
+ const folkPos=(o,now)=>{const i=Math.floor(now/SLOT),ph=(now%SLOT)/SLOT,wp=j=>{const a=hsh(o.fid,j)*Math.PI*2,r=hsh(o.fid,j+7777)*WR;return[o.hx+Math.round(Math.cos(a)*r),o.hy+Math.round(Math.sin(a)*r)]};const A=wp(i),B=wp(i+1);const f=Math.min(1,ph*2);return[Math.round(A[0]+(B[0]-A[0])*f),Math.round(A[1]+(B[1]-A[1])*f)]};
+ let OCC=new Set();const okCell=(o,x,y)=>{const q=zoneAt(x,y);if(!q||q.id!==o.z)return false;if(x===S.x&&y===S.y)return false;if(OCC.has(x+','+y))return false;OCC.delete(o.x+','+o.y);OCC.add(x+','+y);return true};
+ let greet=null;const gT={};const fstep=o=>{try{if(!(window.__KNPOS&&window.__KNPOS(o.fid%2?'st_stone':'st_gravel',.35,o.x,o.y,12)))snd('st_stone',.12)}catch(e){}};
+ setInterval(()=>{try{if(mode!=='play'&&mode!=='menu')return;const z=zoneAt(S.x,S.y);if(!z||!/^nlc_/.test(z.id))return;const now=Date.now();OCC=new Set();W.forEach(w=>{if(w&&w.z===z.id)OCC.add(w.x+','+w.y)});
+   FOLKS.forEach(o=>{if(o.z!==z.id)return;const d=Math.hypot(o.x-S.x,o.y-S.y);
+    if(greet&&greet.o===o){if(now>greet.end){greet=null;return}const dx=Math.sign(S.x-o.x),dy=Math.sign(S.y-o.y);if(d>1.6){const nx=o.x+dx,ny=o.y+dy;if(okCell(o,nx,ny)){o.x=nx;o.y=ny;if(d<12)fstep(o)}}
+      else if(!greet.said){greet.said=1;say(o.n.split(' ')[0]+' เดินมาทักทายเจ้า '+folkGreet(o));greet.end=now+4000}return}
+    if(!greet&&d<7&&!(gT[o.fid]>now)&&hsh(o.fid,Math.floor(now/1000))<.02){greet={o,end:now+25000};gT[o.fid]=now+900000;return}
+    const t=folkPos(o,now);if(t[0]===o.x&&t[1]===o.y)return;const far=Math.max(Math.abs(t[0]-o.x),Math.abs(t[1]-o.y));let nx,ny;if(far<=1||far>20){nx=t[0];ny=t[1]}else{nx=o.x+Math.sign(t[0]-o.x);ny=o.y+Math.sign(t[1]-o.y)}if(okCell(o,nx,ny)){o.x=nx;o.y=ny;if(d<12)fstep(o)}})}catch(e){NL.err++}},700);
+ const near=(z,re)=>W.filter(w=>w.z===z&&w.npc&&re.test(w.npc)).map(w=>({w,d:Math.hypot(w.x-S.x,w.y-S.y)})).sort((a,b)=>a.d-b.d);
+ const dirW=w=>{const dx=w.x-S.x,dy=w.y-S.y;return(['เหนือ','ตะวันออกเฉียงเหนือ','ตะวันออก','ตะวันออกเฉียงใต้','ใต้','ตะวันตกเฉียงใต้','ตะวันตก','ตะวันตกเฉียงเหนือ'])[(Math.round(Math.atan2(dx,-dy)/(Math.PI/4))+8)%8]};
+ function folkGreet(o){const p=PM[o.z]||{};const L={lore:'สหายผู้มาจากทวีปรอบนอก อยากฟังตำนานวิหคชาดไหม กด Enter คุยกับข้า',guard:'ยินดีต้อนรับสู่'+p.n+' หลงทางถามข้าได้ ข้ารู้ว่าร้านไหนอยู่ทางไหน',fish:'ทะเลดาววันนี้คลื่นแรง ระวังอสูรทะเลด้วย พวกมันแกร่งกว่าที่บ้านเจ้าสามเท่า',trader:'นครนี้ขายศาสตราไม่เหมือนนครอื่น อยากรู้ว่าที่ไหนขายอะไร ถามข้าได้',rogue:'ดินแดนประจำธาตุชุบร่างได้ แต่เจ็บนะ เตรียมสมุนไพรไปด้วย',elder:'ปราณที่นี่หนา จงฝึกอย่างระวัง',courier:'ประตูดินแดนลับและสงครามสำนักอยู่ในนครนี้ ข้าบอกเวลาเปิดให้ได้',doctor:'เจ้าดูเหนื่อยนะ ระวังอสูรที่นี่ด้วย',shipw:'ฉีกมิติย่นทางได้ แต่เรือชั้นต่ำต้องฉีกหลายครั้ง',explorer:'เจ้าสำรวจดินแดนใจกลางไปกี่ที่แล้ว ข้าจดไว้ให้ได้',inn:'โรงเตี๊ยมอยู่ไม่ไกล เชิญพักได้',miner:'สายแร่วิญญาณขุดได้ทุก 20 นาที',hunter:'สมบัติซ่อนมีที่ละสองจุด ขุด ฟันเถาวัลย์ หรือเข้าถ้ำ',scholar:'อสูรที่นี่กินแก่นอสูรกันเองตั้งแต่เกิด จึงแกร่งกว่า',flower:'ดอกไม้วิญญาณไหมจ๊ะ หอมนัก',disciple:'สงครามสำนักเปิดเที่ยงตรง เข้าจากนครนี้ได้เลย'};return L[o.role]||'สวัสดีสหาย'}
+ const folkTalk=n=>{try{const o=n,p=PM[o.z]||{};const nm=o.n.split(' ')[0];if(greet&&greet.o===o)greet=null;snd('talk',.4);
+  const say2=t=>say(nm+' '+t);
+  if(o.role==='lore'){const L=NL.loreList||[];return menu(nm+' เล่าตำนาน',L.map(a=>({t:a[0],d:a[1]})).concat([{t:'ไว้วันหลัง',x:1}]),{ent:x=>{if(x.x){mode='play';mn=null;return say2('ไว้พบกันใหม่สหาย')}say(x.t+' '+x.d)}})}
+  if(o.role==='guard'){const L=W.filter(w=>w.z===o.z&&w.npc&&!/^nlf\d+$/.test(w.npc)).map(w=>({w,d:Math.hypot(w.x-S.x,w.y-S.y)})).sort((a,b)=>a.d-b.d).slice(0,40);
+   return menu(nm+' บอกทางในนคร '+p.n+' (ร้านและผู้คนสำคัญ '+L.length+' ที่)',L.map(e=>({t:e.w.n+' ทาง'+dirW(e.w)+' '+Math.round(e.d)+' ก้าว',w:e.w})),{ent:x=>{mode='play';mn=null;say(x.w.n+' อยู่ทาง'+dirW(x.w)+' '+Math.round(Math.hypot(x.w.x-S.x,x.w.y-S.y))+' ก้าว กด M เลือกชื่อแล้วกด Shift N เดินไปได้')}})}
+  if(o.role==='trader'){return menu(nm+' เล่าว่านครไหนขายอะไร',CITIES.map((c,ci)=>({t:c.n+': ศาสตรา '+[0,1,2,3].map(j=>NL.WKT[['sword','saber','spear','halb','staff','hammer','axe','fan','whip','claw','flute','bell','mirror'][(ci*4+j)%13]]).join(' ')+' เครื่องประดับ '+[0,1,2].map(j=>ACSL[ACSK[(ci*2+j)%6]]).join(' ')})),{ent:x=>say(x.t)})}
+  if(o.role==='explorer'){const st=S.nl77||{},seen=Object.keys(st.seen||{}).length;return say2('เจ้าเคยไป '+seen+' จาก 60 สถานที่ของดินแดนใจกลาง กด Shift V ดูบันทึกการสำรวจ ที่ที่ยังไม่เคยไปเลือกได้จากนายท่าเรือ')}
+  if(o.role==='courier'){return say2('ประตูดินแดนลับและประตูสงครามสำนักอยู่ในนครนี้ ดินแดนลับเปิดครึ่งชั่วโมงแรกของทุกชั่วโมง สงครามสำนักเปิดเที่ยงตรงหนึ่งชั่วโมง เข้าจากนครไหน ออกมาแล้วกลับนครนั้น')}
+  if(o.role==='rogue'){return NL.temper()}
+  if(o.role==='scholar'){const L=NL.loreList||[];const a=L.find(q=>/เก่งกว่า/.test(q[0]));return say2(a?a[1]:'ปราณที่นี่หนาแน่นกว่าทวีปรอบนอกราวสามเท่า')}
+  if(o.role==='shipw'){return say2('เรือยอดเยี่ยมข้ามทะเลสู่ทวีปรอบนอก 5 นาที เรือชั้นรองช้ากว่า ฉีกมิติก้อนละ 10 หินสุดยอด ยันต์ย่นทางซื้อหลอมได้ที่เมืองโหวเฟิน เรือแล่นอยู่ลงเรือไม่ได้ กด R บนเรือฟังพิกัดเรือ')}
+  if(o.role==='miner'){return say2('ทุกสถานที่ป่าเขามีสายแร่วิญญาณหกจุด กด Enter ขุด ขุดซ้ำได้ทุก 20 นาที ได้แก่นอสูรตามขั้นของที่นั้น โรงกลั่นที่เมืองวิญญาณหลอมรวมห้าก้อนเป็นขั้นถัดไป')}
+  if(o.role==='hunter'){return say2('สมบัติซ่อนมีที่ละสองจุด บางจุดต้องขุด บางจุดต้องฟันเถาวัลย์ บางจุดเป็นถ้ำพำนัก สมบัติประจำถิ่นของบอสซื้อไม่ได้ ต้องล่าเอง คนรับซื้อที่เมืองกบฏมารให้หินวิญญาณ')}
+  if(o.role==='doctor'){return say2('เลือดเจ้าตอนนี้ '+Math.floor(S.hp).toLocaleString('en-US')+' จาก '+Math.floor(mhp()).toLocaleString('en-US')+' โอสถโลหิตวิหคชาดขายที่ร้านโอสถของดินแดนนี้ ฟื้นมากกว่าโอสถทวีปรอบนอก')}
+  if(o.role==='inn'){const e=near(o.z,/^nlinn$/)[0];return say2(e?'โรงเตี๊ยมอยู่ทาง'+dirW(e.w)+' '+Math.round(e.d)+' ก้าว พักฟื้นเลือดและปราณได้':'นครนี้ไม่มีโรงเตี๊ยม ไปพักที่เมืองดาวสวรรค์ได้')}
+  if(o.role==='fish'){return say2('ระหว่างแล่นเรือมีคลื่น แผ่นดินไหว พายุ เรือชน โจรสลัด และซากเรือ อย่างหลังมีของให้เก็บ อย่ากลัวเลย ไม่ทำให้ตาย')}
+  if(o.role==='elder'){return say2('ผู้ที่มาจากทวีปรอบนอก จงชุบร่างกายในดินแดนประจำธาตุให้ครบเก้าธาตุ แล้วร่างกายจะแกร่งพอรับปราณที่นี่')}
+  if(o.role==='flower'){return say2('ดอกไม้วิญญาณไม่ได้ขายหรอก ข้าปลูกไว้ให้นครสวยงาม ขอให้เจ้าโชคดี')}
+  if(o.role==='disciple'){return say2('ข้าฝึกเพื่อสงครามสำนัก ฆ่าอสูรได้แต้ม ฆ่าคนไม่ได้แต้ม ทีมชั้นเดียวกันได้เต็มทุกคน')}
+  return say2(folkGreet(o))}catch(e){err('ชาวนคร',e);say('ชาวนครยิ้มให้เจ้า')}};
+ FTY.forEach(t=>{NPC7[t]=folkTalk});
+ /* คู่มือดินแดนใจกลาง (กด F1 หรือเมนูคู่มือ) */
+ try{GUIDE.nl80=()=>[
+  {t:'1 ไปอย่างไร: ขึ้นเรือเหาะของเจ้า นั่งหางเสือ เลือกเดินทางไกล เลือกดินแดนใจกลาง เรือยอดเยี่ยม 5 นาที รองลงมา 6 8 10 นาที ไปได้ด้วยเรือเท่านั้น วาร์ปไม่ได้'},
+  {t:'2 ระหว่างเดินทาง: เรือแล่นจริง กด R บนเรือฟังพิกัด ทิศ และเวลาที่เหลือ ลงเรือไม่ได้จนกว่าเรือจอด Shift V ฟังสถานะ ฉีกมิติย่นทาง (ก้อนละ 10 หินสุดยอด) หรือใช้ยันต์ย่นทาง'},
+  {t:'3 เหตุการณ์ระหว่างแล่น: คลื่น แผ่นดินไหว พายุ เรือชน โจรสลัด ซากเรือ ไม่ทำให้ตาย โจรสลัดและซากเรือมีของ'},
+  {t:'4 นคร 10 แห่ง: แต่ละนครมีร้านขายของต่างกัน ร้านศาสตรา 4 ชนิด ร้านเกราะกับเครื่องประดับ 3 ช่อง ร้านโอสถ ตลาดมืด ช่างหลอมศาสตรา ประตูดินแดนลับ ประตูสงครามสำนัก นายท่าเรือ และชาวนครนครละ 80 คน ถามยามเรื่องทางได้'},
+  {t:'5 สถานที่ป่าเขา 50 แห่ง ขั้นละหนึ่งที่: อสูรเก่งกว่าทวีปรอบนอก 3 เท่า แต้มฝึกฝน 3 เท่า มีบอสประจำถิ่น สมุนไพรประจำถิ่น สายแร่ 6 จุด สมบัติซ่อน 2 จุด จุดชมวิว และภารกิจ 4 อย่าง คุยกับนายท่าเรือของที่นั้น'},
+  {t:'6 ของหายาก: สมุนไพรประจำถิ่นขึ้นที่เดียว สมบัติบอสซื้อไม่ได้ เอาไปหลอมศาสตรา 13 ชนิด เกราะ และเครื่องประดับวิหคชาดที่โรงหลอม 5 นคร ปรุงยาที่โรงปรุง คนรับซื้อสมบัติที่เมืองกบฏมาร โรงกลั่นแก่นอสูรที่เมืองวิญญาณหลอม'},
+  {t:'7 ดินแดนประจำธาตุ 9 แห่ง: ยืนในนั้นร่างกายถูกชุบทุก 30 วินาที ขึ้นขั้นใช้สมุนไพรประจำถิ่น 1 ต้น ธาตุละ 100 ขั้น ค่าติดตัวถาวร ดูได้ที่นายท่าหรือ Shift V'},
+  {t:'8 ตาย: ฟื้นที่นครใกล้สุดบนแผ่นดินเดียวกัน ทะเลกับทวีปแยกกัน'},
+  {t:'9 กลับทวีปรอบนอก: ขึ้นเรือ เลือกเดินทางไกล เลือกกลับทวีปรอบนอก'},
+  {t:'10 ตำนาน: วิหคชาดจูเชว่ ทะเลดาวกระจาย ม่านฟ้ากั้น ขนเก้าธาตุ ฟังได้จากนายท่าเรือ นักเล่าตำนานในนคร หรือ Shift V'}]}catch(e){err('คู่มือ',e)}
+ (window.__R5DGH=window.__R5DGH||[]).push(is=>{try{CITIES.forEach(p=>{const n=W.filter(w=>w.z===p.id&&w.npc).length;if(n<80)is.push('ชาวนคร: '+p.n+' มีคน '+n+' ไม่ถึง 80');if(!W.some(w=>w.z===p.id&&w.npc==='forge22'))is.push('ช่างหลอม: ไม่มีที่ '+p.n)});
+   FOLKS.forEach(o=>{const q=zoneAt(o.x,o.y);if(!q||q.id!==o.z)is.push('ชาวนคร: '+o.n+' หลุดเขต')});if(typeof GUIDE.nl80!=='function')is.push('คู่มือดินแดนใจกลาง: หาย');
+   for(let t=0;t<5;t++)['saber','mirror'].forEach(k=>{if(!I['nlw'+t+'a'+WKC[k]])is.push('อาวุธหลากชนิด: ไม่มี '+k+t)})}catch(e){is.push('รอบ 80: ตัวตรวจพัง '+e.message)}});
+ try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-14',c:[C_ITEM],h:'เรือแล่นจริง อาวุธ 13 ชนิด ของแดนใหม่ทุกร้าน ชาวนครนครละ 80 คน คู่มือดินแดนใจกลาง',b:[
+  'เรือเดินทางแล่นจริง พิกัดเรือเปลี่ยนตลอดทาง กด R บนเรือฟังพิกัด ทิศ และเวลาที่เหลือ เรือแล่นอยู่ลงเรือไม่ได้ทุกทาง',
+  'อาวุธ 13 ชนิด กระบี่ ดาบ ทวน ง้าว กระบอง ค้อน ขวาน พัด แส้ กรงเล็บ ขลุ่ย ระฆัง กระจก แต่ละชนิดมีเสียงฟัน สวม ถอด เก็บ และเหยียบของตัวเอง คนรอบตัวได้ยินเสียงเดียวกัน',
+  'ร้านในดินแดนใจกลางขายของแดนใหม่ที่ทวีปรอบนอกไม่มี ศาสตรา เกราะ เครื่องประดับ 6 ช่อง โอสถ และแก่นอสูร แต่ละนครขายชนิดต่างกัน ยังมีของทวีปรอบนอกบางส่วน',
+  'เครื่องประดับวิหคชาดชั้นสูงหลอมที่โรงหลอม ซื้อไม่ได้ ช่างหลอมศาสตราอยู่ทุกนคร หลอม ย้ายความเข้ม ขายคืน ห้องหลอมในบ้านและในเรือย้ายความเข้มได้แล้ว',
+  'ชาวนครนครละ 80 คน เดินไปทำงานของตัวเอง เดินมาทักทาย คุยแล้วได้ความรู้ ยามบอกทาง พ่อค้าบอกว่านครไหนขายอะไร',
+  'คู่มือดินแดนใจกลาง กด F1 เลือก ดินแดนใจกลาง']})}catch(e){err('ข่าว 80',e)}
+ /* ---------- รอบที่ 81 (14 พ.ย.): ปิดงานค้างรอบ 80 ----------
+    1) ค่าชุบร่างกาย S.tp77 อยู่ในตัวเลือกเซฟข้ามเครื่อง (ค่าที่ไม่ลด) ตัวนับของมีค่าของสำรอง และการคืนเฉพาะค่าที่ลดลงใน F8 (แก้ในตัวเลือกเซฟเดิม) + ตัวเฝ้าห้ามลดระหว่างเล่น
+    2) แขกบนเรือรู้ว่าเรือแล่น (เจ้าของส่งเรือเป็นแบบกำลังบิน F: ทางช่อง sb) ลงเรือไม่ได้ กด R ฟังพิกัดเรือ ขึ้นเรือที่กำลังแล่นไม่ได้
+    3) ผู้เล่นอื่นในเขตที่เรือแล่นผ่านได้ยินเรือบินผ่าน (ระบบเรือบิน F: เดิม)
+    4) เดินทางไกลแบบเดิมในทวีปรอบนอก รีเฟรชกลางทางแล้วเดินทางต่อ (S.trv80)
+    5) ชาวนครเดินตามเวลาเดียวกันทุกเครื่อง เสียงเท้าบอกทิศ (window.__KNPOS)
+    6) ร้านศาสตราทวีปรอบนอกมีอาวุธหลายชนิด */
+ /* 2-3 ส่งเรือที่กำลังแล่น */
+ T(800,()=>{try{const SH=window.__SHIP;if(!SH||typeof SH.pub!=='function'||SH.pub._r81)return;const op=SH.pub;const f=function(){if(moving()&&S.shp&&!S.gst){const a=shipAt();if(a){const z=zoneAt(a.x,a.y),zi=z&&!z.inn&&!/^(bd_|ps_)/.test(z.id)?z.id:'sky';const t=SH.tOf?SH.tOf(S.shp.id):1;return[t||1,a.x,a.y,('F:'+zi).slice(0,20),3,999]}}return op.apply(this,arguments)};f._r81=1;SH.pub=f}catch(e){err('ส่งเรือแล่น',e)}});
+ /* 4 เดินทางไกลแบบเดิมต่อหลังรีเฟรช */
+ T(4500,()=>{try{const v=S.trv80;if(!v||S.voy77)return;if(!v.e||!I[v.id]||!S.shp||S.shp.id!==v.id||!Number.isFinite(v.end)){delete S.trv80;return}const now=Date.now(),left=Math.max(1500,v.end-now);
+   window.__SHMOV={fx:Number.isFinite(v.fx)?v.fx:S.shp.x,fy:Number.isFinite(v.fy)?v.fy:S.shp.y,tx:v.e.x,ty:v.e.y,t0:v.t0,end:now+left,n:v.e.t};
+   if(window.__SHRES&&window.__SHRES(v.id,v.e,left)){NL.res81=(NL.res81||0)+1;say('เรือเหาะเดินทางต่อไปยัง '+v.e.t+' อีก '+tvS(Math.ceil(left/1000))+' ถึง')}else delete S.trv80}catch(e){err('เดินทางต่อ',e)}});
+ /* 1 ตัวเฝ้าค่าชุบร่างกายห้ามลดระหว่างเล่น */
+ {const MX={};setInterval(()=>{try{const o=S.tp77;if(!o||typeof o!=='object')return;let fix=0;Object.keys(o).forEach(e=>{const q=o[e];if(!q||typeof q!=='object')return;const l=Math.floor(+q.l||0);if(MX[e]!=null&&l<MX[e]){q.l=MX[e];fix++}else MX[e]=Math.max(MX[e]||0,l)});
+   if(fix){try{bugLog('ชุบร่างกาย','ขั้นชุบร่างกายลดลงเอง คืนค่าแล้ว',JSON.stringify(MX))}catch(e){}sv()}}catch(e){NL.err++}},2000)}
+ /* 6 ร้านศาสตราทวีปรอบนอก: เพิ่มอาวุธชนิดอื่นที่ค่าเท่ากัน ร้านละ 3 ชนิด หมุนเวียนจนครบ */
+ try{const keys=Object.keys(SH9).filter(k=>/smith/.test(k)&&!/^nlx_/.test(k)&&SH9[k]&&Array.isArray(SH9[k].list));let si=0;
+  keys.forEach(k=>{const L=SH9[k].list,add=[];const kinds=[0,1,2].map(j=>WKN[2+((si*3+j)%11)]);si++;
+   L.forEach(id=>{const d=I[id];if(!d||d.u!=='eq'||/_k[a-z]{2}$/.test(id))return;const base=kindOf(id);kinds.forEach(a=>{if(a[0]===base)return;const nid=id+'_k'+a[2];if(!I[nid]){const nm=/^(กระบี่|ดาบ)/.test(d.n)?d.n.replace(/^(กระบี่|ดาบ)/,a[1]):a[1]+d.n;I[nid]=Object.assign({},d,{n:nm,wk:a[0]});if(LV[id]!=null)LV[nid]=LV[id];if(IDESC[id])IDESC[nid]=IDESC[id];if(SELLP[id])SELLP[nid]=SELLP[id];if(MUSE[id])MUSE[nid]=MUSE[id]}if(!L.includes(nid)&&!add.includes(nid))add.push(nid)})});
+   L.push(...add);try{if(typeof SHOP!=='undefined'&&Array.isArray(SHOP[k]))add.forEach(id=>{if(!SHOP[k].includes(id))SHOP[k].push(id)})}catch(e){}})}catch(e){err('อาวุธทวีปรอบนอก',e)}
+ (window.__R5DGH=window.__R5DGH||[]).push(is=>{try{if(!(window.__SHIP&&window.__SHIP.pub&&window.__SHIP.pub._r81))is.push('รอบ 81: ตัวส่งเรือแล่นไม่ทำงาน');if(typeof window.__SHRES!=='function')is.push('รอบ 81: ตัวเดินทางต่อหาย');if(typeof window.__GSTMOV!=='function')is.push('รอบ 81: แขกไม่รู้ว่าเรือแล่น');
+   if(!Object.keys(I).some(k=>/_ksp$/.test(k)))is.push('รอบ 81: ร้านทวีปรอบนอกไม่มีอาวุธหลายชนิด')}catch(e){is.push('รอบ 81: ตัวตรวจพัง')}});
+ try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-14',c:[C_ITEM],h:'แขกบนเรือ เรือแล่นผ่าน เดินทางต่อหลังรีเฟรช ร้านศาสตราทวีปรอบนอกมีหลายชนิด',b:[
+  'แขกบนเรือรู้ว่าเรือกำลังแล่น ลงเรือไม่ได้ กด R ฟังพิกัดเรือ เรือที่กำลังแล่นขึ้นไม่ได้',
+  'ผู้เล่นในเขตที่เรือแล่นผ่านได้ยินเรือบินผ่าน',
+  'เดินทางไกลด้วยเรือในทวีปรอบนอก รีเฟรชกลางทางแล้วเรือเดินทางต่อ',
+  'ร้านศาสตราทวีปรอบนอกมีทวน ง้าว กระบอง ค้อน ขวาน พัด แส้ กรงเล็บ ขลุ่ย ระฆัง กระจก ค่าเท่ากับกระบี่ขั้นเดียวกัน แต่ละร้านขายชนิดต่างกัน',
+  'ชาวนครเดินตรงกันทุกเครื่อง เสียงเท้าบอกทิศ','ขั้นชุบร่างกายธาตุกันหายเมื่อเปลี่ยนเครื่อง']})}catch(e){err('ข่าว 81',e)}
 
  /* ---------- ตัวตรวจ ---------- */
  CHK.push(()=>{const o=[];try{
@@ -12452,11 +12649,11 @@ async function cloudStart(email,name){
     และเก็บสำรองเซฟที่แพ้ไว้ในเครื่องถ้าค่าของ (หลอม จารึก หลอมกาย จิตสัมผัส) สูงกว่า ไม่ทิ้งไปเฉยๆ */
  const svOf=s=>{try{const n=Math.floor(Number((JSON.parse(s)||{}).sv));return Number.isFinite(n)&&n>0?n:0}catch(e){return 0}};
  const devOf=s=>{try{return String((JSON.parse(s)||{}).dev||'')}catch(e){return ''}};
- const itemSc=s=>{try{const o=JSON.parse(s)||{};let n=0;[o.enh,o.ins].forEach(m=>{if(m&&typeof m==='object')Object.keys(m).forEach(k=>{const v=Math.floor(+m[k]||0);if(v>0)n+=v})});const g=o.pg&&typeof o.pg==='object'?o.pg:{};n+=(Math.floor(+g.body||0)+Math.floor(+g.mind||0));const u=o.swu&&typeof o.swu==='object'?o.swu:{};['me','e','d'].forEach(a=>{const q=u[a];if(q&&typeof q==='object')['a','h','d'].forEach(b=>{n+=Math.floor(+q[b]||0)})});[o.pets,o.pen].forEach(L=>{if(Array.isArray(L))n+=L.length*5});return n}catch(e){return 0}};/* รอบที่ 72: นับสัตว์อสูรด้วย */
+ const itemSc=s=>{try{const o=JSON.parse(s)||{};let n=0;[o.enh,o.ins].forEach(m=>{if(m&&typeof m==='object')Object.keys(m).forEach(k=>{const v=Math.floor(+m[k]||0);if(v>0)n+=v})});const g=o.pg&&typeof o.pg==='object'?o.pg:{};n+=(Math.floor(+g.body||0)+Math.floor(+g.mind||0));{const t9=o.tp77;if(t9&&typeof t9==='object')Object.keys(t9).forEach(e9=>{const q9=t9[e9];if(q9&&typeof q9==='object')n+=Math.max(0,Math.min(100,Math.floor(+q9.l||0)))})}const u=o.swu&&typeof o.swu==='object'?o.swu:{};['me','e','d'].forEach(a=>{const q=u[a];if(q&&typeof q==='object')['a','h','d'].forEach(b=>{n+=Math.floor(+q[b]||0)})});[o.pets,o.pen].forEach(L=>{if(Array.isArray(L))n+=L.length*5});return n}catch(e){return 0}};/* รอบที่ 72: นับสัตว์อสูรด้วย */
  const pickSrv=()=>{if(!cs)return false;if(!ls)return true;if(DBGM)return stepOf(cs)===stepOf(ls)?tOf(cs)>=tOf(ls):stepOf(cs)>stepOf(ls);const sc=stepOf(cs),sl=stepOf(ls);if(sc!==sl)return sc>sl;
   const vc=svOf(cs),vl=svOf(ls);if(vc&&vl)return vc>=vl;const dc=devOf(cs);if(dc&&dc!==DEV)return true;return tOf(cs)>=tOf(ls)};
  /* ค่าที่ไม่มีทางลดลงตามปกติ: จำนวนวิชาที่เรียนแล้ว ชั้นหลอมกาย หลอมจิต ขั้นอัปสงครามสำนัก ถ้าเซฟที่ถูกเลือกมีค่าพวกนี้น้อยกว่าอีกชุด แปลว่าเซฟที่เลือกเก่ากว่า ให้ใช้อีกชุด (วิชาหายเมื่อเปลี่ยนเครื่อง) */
- const monoSc=s=>{try{const o=JSON.parse(s)||{};let n=Array.isArray(o.known)?new Set(o.known.filter(k=>typeof k==='string')).size*1000:0;const g=o.pg&&typeof o.pg==='object'?o.pg:{};n+=(Math.floor(+g.body||0)+Math.floor(+g.mind||0))*10;const u=o.swu&&typeof o.swu==='object'?o.swu:{};['me','e','d'].forEach(a=>{const q=u[a];if(q&&typeof q==='object')['a','h','d'].forEach(b=>{n+=Math.floor(+q[b]||0)})});return n}catch(e){return 0}};
+ const monoSc=s=>{try{const o=JSON.parse(s)||{};let n=Array.isArray(o.known)?new Set(o.known.filter(k=>typeof k==='string')).size*1000:0;const g=o.pg&&typeof o.pg==='object'?o.pg:{};n+=(Math.floor(+g.body||0)+Math.floor(+g.mind||0))*10;{const m9=n;{const t9=o.tp77;if(t9&&typeof t9==='object')Object.keys(t9).forEach(e9=>{const q9=t9[e9];if(q9&&typeof q9==='object')n+=10*Math.max(0,Math.min(100,Math.floor(+q9.l||0)))})}}const u=o.swu&&typeof o.swu==='object'?o.swu:{};['me','e','d'].forEach(a=>{const q=u[a];if(q&&typeof q==='object')['a','h','d'].forEach(b=>{n+=Math.floor(+q[b]||0)})});return n}catch(e){return 0}};
  const wOf=s=>{try{const o=JSON.parse(s)||{};const f=k=>{const v=+o[k];return Number.isFinite(v)&&v>0?v:0};return f('gold')/100+f('coin')/200+f('sm')*100+f('sh')*1e4+f('sx')*1e6}catch(e){return 0}};/* รอบที่ 69: มูลค่าเงินและหินวิญญาณทั้งหมด (หน่วยหินวิญญาณต่ำ) */
  let FF=null;try{FF=JSON.parse(localStorage.getItem('ipo_fixforce')||'null')}catch(e){FF=null}
  const fixOk=!!(FF&&FF.k===KEY&&FF.id&&ls&&(()=>{try{const o=JSON.parse(ls);return Array.isArray(o.fixd)&&o.fixd.includes(FF.id)}catch(e){return false}})());/* รอบที่ 69: เซฟในเครื่องคือเซฟที่ผู้ดูแลเพิ่งกู้คืนให้ และส่งขึ้นเซิร์ฟเวอร์ยังไม่สำเร็จ ต้องใช้เซฟนี้ ห้ามให้เซฟบนเซิร์ฟเวอร์ทับ */
