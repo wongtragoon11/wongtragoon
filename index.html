@@ -17005,10 +17005,19 @@ try{(()=>{
  const TT='สวมชุดร้านหยกแล้วพลังรวมไม่ลด และพลังรวมไม่พองเกินจริง';
  const put=()=>{try{const G=window.__GDX;if(!Array.isArray(G)||G.some(x=>x&&x[0]===TT))return 0;const L=GL().map(x=>x.t).filter(t=>!/^ของใหม่วันที่/.test(t));G.unshift([TT,L]);return 1}catch(e){try{bugLog('รอบ 167','ใส่คู่มือไม่สำเร็จ '+e)}catch(x){}return 0}};
  put();setTimeout(put,3500);
+ /* ตัวเฝ้าพลังรวมบนเครื่องผู้เล่นจริง (ผู้บงการแจ้ง: ย้ายความเข้มมาชุดตำนาน โจมตีและป้องกันขึ้น แต่พลังรวมลด ทดสอบในเครื่องทดสอบแล้วไม่เกิด จึงเฝ้าบนเครื่องจริง)
+    ทุก 2 วินาที ถ้าโจมตี ป้องกัน เลือด ลมปราณ ไม่ลดเลย แต่พลังรวมลด = บั๊ก จดค่าทุกตัวและอุปกรณ์ที่สวมลงบันทึกบั๊ก (F8) และขึ้นในตัวตรวจ CHK 10 นาที */
+ const PWM={n:0,bad:0,last:'',lastT:0,prev:null,f:()=>{const a=atk(),d=defn(),h=mhp(),q=mqi();return [a,d,h,q,POW123(a,d,h,q)]}};window.__PWM167=PWM;
+ const gearNow=()=>{try{return [S.wpn,S.arm].concat(ACSK.map(k=>accOf(k))).map(id=>id?id+'+'+enh(id):'-').join(',')}catch(e){return '?'}};
+ setInterval(()=>{try{const v=PWM.f();if(!v.every(Number.isFinite))return;const p=PWM.prev;PWM.n++;
+   if(p&&v[0]>=p[0]&&v[1]>=p[1]&&v[2]>=p[2]&&v[3]>=p[3]&&v[4]<p[4]-1){PWM.bad++;PWM.lastT=Date.now();PWM.last='โจมตี '+F(p[0])+' เป็น '+F(v[0])+' ป้องกัน '+F(p[1])+' เป็น '+F(v[1])+' เลือด '+F(p[2])+' เป็น '+F(v[2])+' แต่พลังรวม '+F(p[4])+' เป็น '+F(v[4])+' ขั้น '+S.step+' อุปกรณ์ '+gearNow();try{bugLog('พลังรวม','ค่าขึ้นแต่พลังรวมลด '+PWM.last,{p,v,st:S.step,g:gearNow()})}catch(e){}}
+   PWM.prev=v}catch(e){}},2000);
  const old=(a,d,h,q)=>Math.round(a+d*2+(h/10)*(1+d/(100+d))+q/20);
  const bad167=()=>{const o=[];try{
    if(typeof eqXf167!=='function'||typeof XF167!=='object')return['รอบ 167: ไม่พบตัวย้ายระดับหลอมตอนสวม'];
    if(XF167.err>0)o.push('รอบ 167: ย้ายระดับหลอมตอนสวมผิดพลาด '+XF167.err+' ครั้ง');
+   if(PWM.bad&&Date.now()-PWM.lastT<600000)o.push('พลังรวม: ค่าขึ้นแต่พลังรวมลด '+PWM.last);
+   if(PWM.n>3&&!PWM.prev)o.push('รอบ 167: ตัวเฝ้าพลังรวมไม่ทำงาน');
    const st=Math.max(0,Math.min(R.length-1,S.step|0)),r=pw162Ref(st),h=R[st][1],aa=R[st][0],q=R[st][2];
    if(r>0){let prev=-1;[0,r*.5,r,r*2,r*4,r*9,r*16,r*40].forEach(d=>{const v=POW123(aa,d,h,q,st);if(!Number.isFinite(v)){o.push('รอบ 167: พลังรวมไม่ใช่ตัวเลข');return}
      if(v<prev)o.push('รอบ 167: พลังรวมลดลงเมื่อป้องกันเพิ่ม');prev=v;if(v<old(aa,d,h,q)-1)o.push('รอบ 167: พลังรวมต่ำกว่าสูตรเดิม');
