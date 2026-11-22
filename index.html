@@ -168,12 +168,15 @@ function bakKeys(kind){try{const p=bakPre();return Object.keys(localStorage).fil
 function bakPrune(keep){try{const a=bakKeys('a');a.slice(0,Math.max(0,a.length-keep)).forEach(k=>{try{localStorage.removeItem(k)}catch(e){}})}catch(e){}}
 SAVEH.bakT=(()=>{const a=bakKeys('a');return a.length?(parseInt(a[a.length-1].slice(bakPre().length))||0):0})();/* เริ่มนับรอบสำรองจากชุดล่าสุดที่มีอยู่ ไม่สำรองซ้ำทุกครั้งที่เข้าเกม */
 const okSave=o=>!!o&&typeof o==='object'&&!Array.isArray(o)&&Number.isFinite(Number(o.step))&&Number.isFinite(Number(o.x))&&Number.isFinite(Number(o.y));
-{let l=null,bad=false;try{l=JSON.parse(localStorage.getItem(window.__KEY||'ipo1')||'null')}catch(e){bad=true}
- if(bad||(l!=null&&typeof l!=='object')||Array.isArray(l)){l=null;/* เซฟหลักอ่านไม่ได้: กู้จากเซฟสำรองอัตโนมัติที่ใหม่ที่สุดและอ่านได้ ไม่เริ่มตัวละครใหม่ทับ */
-  const ks=bakKeys().reverse();for(let i=0;i<ks.length;i++){try{const o=JSON.parse(localStorage.getItem(ks[i])||'null');if(okSave(o)){l=o;SAVEH.recov=Date.now();break}}catch(e){}}}
+{let l=null,bad=false,raw='';try{raw=localStorage.getItem(window.__KEY||'ipo1')||'';l=JSON.parse(raw||'null')}catch(e){bad=true}
+ /* รอบ 168: เซฟหลักหายหรือว่างแต่มีเซฟสำรองของบัญชีนี้ = กู้สำรอง (เดิมเริ่มตัวละครใหม่ ของหายหมด) / เซฟหลักลายเซ็นไม่ตรง: จดบันทึกบั๊กอย่างเดียว ไม่สลับไปเซฟสำรองที่เก่ากว่า (กันเสียความคืบหน้า) โหมดออนไลน์ตัวเลือกเซฟเลือกชุดที่ลายเซ็นตรงบนเซิร์ฟเวอร์ให้แล้ว */
+ const sgBad=!bad&&l&&typeof l==='object'&&!Array.isArray(l)&&(()=>{try{return sgSt99(raw)==='bad'}catch(e){return false}})();
+ if(sgBad)SAVEH.sigBad=Date.now();if(bad||(l!=null&&typeof l!=='object')||Array.isArray(l)||l==null){l=null;
+  const ks=bakKeys().reverse();for(let i=0;i<ks.length;i++){try{const t=localStorage.getItem(ks[i])||'';const o=JSON.parse(t||'null');if(okSave(o)){l=o;SAVEH.recov=Date.now();SAVEH.why=raw?'bad':'empty';break}}catch(e){}}}
  if(l&&typeof l==='object')S=Object.assign(S,l)}
 const stepFix=()=>{const n=Math.floor(Number(S.step));S.step=Number.isFinite(n)?Math.max(0,Math.min(R.length-1,n)):0};stepFix();/* รอบที่ 8: ขั้นพลังในเซฟเสีย (ติดลบ ข้อความ เกินตาราง) เคยทำให้เกมเริ่มไม่ขึ้น เพราะตารางขั้นอ่านก่อน watchdog ทำงาน ปรับเข้าช่วงที่ถูกต้องตั้งแต่โหลด */
-if(SAVEH.recov)setTimeout(()=>{try{bugLog('บันทึกเซฟ','เซฟหลักอ่านไม่ได้ กู้จากเซฟสำรองอัตโนมัติ');say('เซฟหลักอ่านไม่ได้ เกมกู้จากเซฟสำรองอัตโนมัติล่าสุดให้แล้ว',1)}catch(e){}},4000);
+if(SAVEH.sigBad)setTimeout(()=>{try{bugLog('บันทึกเซฟ','เซฟในเครื่องลายเซ็นไม่ตรง อาจถูกแก้นอกเกม')}catch(e){}},4000);
+if(SAVEH.recov)setTimeout(()=>{try{bugLog('บันทึกเซฟ',SAVEH.why==='empty'?'เซฟหลักหายหรือว่าง กู้จากเซฟสำรองอัตโนมัติ':'เซฟหลักอ่านไม่ได้ กู้จากเซฟสำรองอัตโนมัติ');say('เซฟหลักอ่านไม่ได้ เกมกู้จากเซฟสำรองอัตโนมัติล่าสุดให้แล้ว',1)}catch(e){}},4000);
 if(S.pvp!==0&&S.pvp!==1)S.pvp=1;/* รอบที่ 11: โหมดสู้ผู้เล่นนอกสนาม 1 = เปิด (เซฟเก่าไม่มีค่านี้ เริ่มต้นเปิด) */
 delete S.fp;/* รอบที่ 5: ยกเลิกพลังเหาะ ใช้ลมปราณหลอดเดียวทุกอย่าง ค่า fp ในเซฟเก่าลบทิ้ง */
 let mode='play',mn=null,cbk=null,prevMode='play',tts=false,spd=1,auto=false,lastSlot=-1,goal=null,target=null,buff=0,cd={},warned=0,rl=null,rlT=0,lastTurn=1,ci=0,mi={},MS=[],AC=null;
@@ -17075,6 +17078,7 @@ try{(()=>{
    const B=window.__BGT,W=window.__WDT;if(!B||!W)o.push('รอบ 168: ไม่พบจังหวะตัวตรวจหรือตัวซ่อม');
    else{if(!document.hidden&&Date.now()-W.last>15000)o.push('รอบ 168: ตัวซ่อมหยุดทำงาน');if(B.sweeps>2&&B.lastSweepMs>60000)o.push('รอบ 168: ตัวตรวจครบรอบช้าเกิน '+Math.round(B.lastSweepMs/1000)+' วินาที')}
    if(!/สองทุ่มตรง/.test(DAILY_ANN))o.push('ประกาศประจำวัน: ไม่มีเวลาสงครามสำนักใหม่')
+   try{const H=window.__SAVEH;if(H&&H.sigBad&&Date.now()-H.sigBad<600000)o.push('บันทึกเซฟ: เซฟในเครื่องลายเซ็นไม่ตรง อาจถูกแก้นอกเกม');if(H&&H.recov&&Date.now()-H.recov<600000)o.push('บันทึกเซฟ: เพิ่งกู้จากเซฟสำรอง ('+(H.why||'')+')')}catch(e){}
    {const C=window.__BC125;if(!C||typeof C.ref!=='function')o.push('รอบ 168 บอส: ไม่พบตัวตั้งค่าบอส');else{if(!(C.CAPN>0&&C.CAPN<=.5&&C.CAPS>=C.CAPN&&C.CAPS<=.7))o.push('รอบ 168 บอส: เพดานความแรงต่อครั้งผิด');if(!(C.T>=360&&C.FR>=.022))o.push('รอบ 168 บอส: เป้าความเหนียวหรือความแรงถูกลดลง');
      if(C.ready)Object.keys(C.L).forEach(k=>{const d=MD[k];if(!d)return;if(d.def0!=null&&d.def<d.def0)o.push('รอบ 168 บอส: ป้องกัน '+k+' ต่ำกว่าค่าเดิม');if(d.atk0!=null&&d.atk<d.atk0)o.push('รอบ 168 บอส: โจมตี '+k+' ต่ำกว่าค่าเดิม');if(!Number.isFinite(d.def)||!Number.isFinite(d.atk))o.push('รอบ 168 บอส: ค่า '+k+' ไม่ใช่ตัวเลข')});
      [0,20,40,59].forEach(st=>{const r=C.ref(Math.min(st,R.length-1));if(!r||!(r.atk>0&&r.def>0&&r.hp>0))o.push('รอบ 168 บอส: ผู้เล่นอ้างอิงขั้น '+st+' ผิด')})}}
