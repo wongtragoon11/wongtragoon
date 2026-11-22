@@ -704,6 +704,8 @@ const HVW={saber:{a:1.25,r:1.2,b:2.5,f:.2,p:.3,n:4},axe:{a:1.35,r:1.2,b:3,f:.22,
 let HVC={id:null,k:''};
 const hvKind=()=>{try{const id=S.wpn;if(!id||!I[id])return '';if(HVC.id!==id&&typeof window.__WKOF==='function')HVC={id,k:String(window.__WKOF(id)||'')};return HVC.id===id?HVC.k:''}catch(e){return ''}};
 const hvW=()=>HVW[hvKind()]||null;
+/* รอบ 168: ตัวคูณอาวุธหนักของอาวุธชิ้นใดก็ได้ (ไม่ต้องสวมอยู่) ใช้บอกโจมตีที่นับจริงในข้อความของ และตัวตรวจสวมอุปกรณ์ เดิมบอกแต่ค่าดิบ ของใหม่ฟังดูแรงกว่าแต่ใส่แล้วโจมตีรวมลด */
+const hvMulOf=id=>{try{const d=I[id];if(!d||d.u!=='eq'||typeof window.__WKOF!=='function')return 1;const h=HVW[String(window.__WKOF(id)||'')];return h&&h.a>0?h.a:1}catch(e){return 1}};
 const hvRad=h=>h?Math.round((h.b+h.f*reach()*h.r)*10)/10:0;
 const hvTxt=k=>{const h=HVW[k];if(!h)return '';return ' อาวุธหนัก: พลังโจมตีของตัวอาวุธ +'+Math.round((h.a-1)*100)+' เปอร์เซ็นต์ ตีพื้นฐานไกลขึ้น '+Math.round((h.r-1)*100)+' เปอร์เซ็นต์ ทุกครั้งที่ตีโดน แรงกระแทกโดนอสูรรอบตัวตัวละ '+Math.round(h.p*100)+' เปอร์เซ็นต์ สูงสุด '+h.n+' ตัว รัศมี '+h.b+' ก้าว บวก '+Math.round(h.f*100)+' ส่วนร้อยของระยะตี ขั้นยิ่งสูงยิ่งกว้าง'};
 function effRng(k){if(!k||k.heal||k.buff||k.passive)return 0;if(k.basic){const h=hvW();return h?Math.round(reach()*h.r*10)/10:reach()}return Math.min(Math.round((Number(k.rng)||1.5)*rngMul()*10)/10,reach())}
@@ -2008,7 +2010,7 @@ function accOf(sl){if(!S.acc||typeof S.acc!=='object'||Array.isArray(S.acc))S.ac
 /* รอบที่ 26: ค่าพลังหลังหลอม = ค่าเดิม + (10% ของค่าเดิม หรือค่าขั้นต่ำต่อชั้น ถ้า 10% น้อยกว่า) x จำนวนชั้น เดิมของเกรดต่ำหลอมแล้วเพิ่มแค่เศษ จนดูเหมือนไม่เพิ่ม */
 const EMIN={atk:[6,60,900,25000,300000],def:[3,10,18,30,45]};
 function eStat(id,k,L){const d=I[id];if(!d)return 0;const b=Number(d[k])||0;if(!b)return 0;const lv=L==null?enh(id):Math.max(0,Math.min(ecap(id),L));return Math.round(b+Math.max(b*.1,EMIN[k][etier(id)]||0)*lv)}
-function stTxt(id,L){const d=I[id];if(!d)return '';const o=[];if(d.atk)o.push('โจมตี '+eStat(id,'atk',L).toLocaleString('en-US'));if(d.def)o.push('ป้องกัน '+eStat(id,'def',L).toLocaleString('en-US'));return o.join(' ')}
+function stTxt(id,L){const d=I[id];if(!d)return '';const o=[];if(d.atk){const v=eStat(id,'atk',L),m=typeof hvMulOf==='function'?hvMulOf(id):1;o.push('โจมตี '+v.toLocaleString('en-US')+(m>1?' อาวุธหนักนับจริง '+Math.round(v*m).toLocaleString('en-US'):''))}if(d.def)o.push('ป้องกัน '+eStat(id,'def',L).toLocaleString('en-US'));return o.join(' ')}
 function gearAtk(){let a=S.wpn&&I[S.wpn]?Math.round(eStat(S.wpn,'atk')*((hvW()||{a:1}).a)):0;/* รอบ 158: อาวุธหนัก */ACSK.forEach(sl=>{const id=accOf(sl);if(id&&I[id].atk)a+=eStat(id,'atk')});return a+slSum('a')}/* รอบ 164: + โจมตีของวิญญาณที่ฝัง */
 function gearDef(){let a=S.arm&&I[S.arm]?eStat(S.arm,'def'):0;ACSK.forEach(sl=>{const id=accOf(sl);if(id&&I[id].def)a+=eStat(id,'def')});return a+slSum('d')}/* รอบ 164: + ป้องกันของวิญญาณที่ฝัง */
 /* ===== รอบ 164 (23 พ.ย. 2569 ผู้บงการสั่ง): วิญญาณอุปกรณ์ =====
@@ -2114,6 +2116,7 @@ const enTxt=id=>enh(id)?' +'+enh(id):'';
    ย้ายเฉพาะเมื่อชิ้นใหม่หลอมได้ถึงระดับของชิ้นเดิม (ไม่มีชั้นหาย) หลอมได้ไม่ถึงไม่ย้าย บอกให้ย้ายเองที่ช่างหลอมศาสตรา / ระดับจารึกอักขระย้ายไปด้วย / ตั้ง __XFERT ตัวเฝ้าระดับหลอมลดรู้ว่าเป็นการย้าย */
 var XF167={n:0,err:0,skip:0,msg:'',last:''};
 function eqXf167(nid,oid){XF167.msg='';try{if(!nid||!oid||nid===oid||!I[nid]||!I[oid])return;if(!(window.__PRMX&&window.__PRMX(nid)))return;if(slotOfId(nid)!==slotOfId(oid))return;
+ const tr=x=>{try{const P=window.__PRM126;return P&&typeof P.tierOf==='function'?(+P.tierOf(x)||0):0}catch(e){return 0}};if(tr(oid)>0&&!(tr(nid)>tr(oid)))return;/* รอบ 168: ย้ายเฉพาะตอนเปลี่ยนเป็นชิ้นที่ดีกว่า (ของทั่วไปเป็นร้านหยก หรือร้านหยกระดับสูงขึ้น) สลับลงไปชิ้นร้านหยกระดับเท่ากันหรือต่ำกว่า ระดับหลอมอยู่ที่ชิ้นเดิม */
  const la=enh(oid),ln=enh(nid);if(!(la>ln))return;const cap=ecap(nid);
  if(la>cap){XF167.skip++;XF167.msg=' ชิ้นเดิมหลอมไว้ +'+la+' ชิ้นนี้หลอมได้ถึง +'+cap+' จึงไม่ย้ายระดับหลอมให้เอง ย้ายเองได้ที่ช่างหลอมศาสตรา เมนูย้ายความเข้ม';return}
  if(!S.enh||typeof S.enh!=='object'||Array.isArray(S.enh))S.enh={};S.enh[nid]=la;delete S.enh[oid];window.__XFERT=Date.now();
@@ -7913,7 +7916,7 @@ try{
   /* 1) ไอเทม ระดับขั้น ราคารับซื้อ */
   Object.keys(SN12.I).forEach(id=>{const s=SN12.I[id];if(!s||typeof s!=='object')return;
    if(!I[id]||typeof I[id]!=='object'){I[id]=Object.assign({},s);fx.push(['r12i_'+id,'ไอเทม '+id+' หายจากตาราง คืนข้อมูลแล้ว']);return}
-   const bad=fixRec12(I[id],s,['u','n']);if(bad.length)fx.push(['r12i_'+id,'ไอเทม '+id+' ค่า '+bad.join(' ')+' เพี้ยน คืนค่าเดิมแล้ว'])});
+   const bad=fixRec12(I[id],s,['u']);if(bad.length)fx.push(['r12i_'+id,'ไอเทม '+id+' ค่า '+bad.join(' ')+' เพี้ยน คืนค่าเดิมแล้ว'])});/* รอบ 168: ชื่อไอเทม (n) ไม่ต้องตรงภาพถ่ายรอบ 12 ระบบหลังจากนั้นเติมป้ายระดับและค่าพลังลงในชื่อตามปกติ เดิมทุกครั้งที่เข้าเกมคืนชื่อเก่า 198 ชิ้นแล้วถูกเติมป้ายกลับ บันทึกบั๊กเต็มจนบั๊กจริงหาย ยังซ่อมชื่อที่หายหรือว่างเหมือนเดิม */
   Object.keys(SN12.LV).forEach(id=>{if(!Number.isInteger(LV[id])||LV[id]<0){LV[id]=SN12.LV[id];fx.push(['r12l_'+id,'ระดับขั้นที่ใช้ของ '+id+' เพี้ยน คืนค่าเดิมแล้ว'])}});
   Object.keys(SN12.SELLP).forEach(id=>{if(!pos12(SELLP[id])){SELLP[id]=SN12.SELLP[id];fx.push(['r12p_'+id,'ราคารับซื้อ '+id+' เพี้ยน คืนค่าเดิมแล้ว'])}});
   /* 2) วิชา ตารางเรียนวิชา (ต้องซ่อมก่อนครูกับร้าน) */
@@ -15829,7 +15832,7 @@ try{(()=>{const EQ121={n:0,bad:0,last:'',lastT:0};window.__EQ121=EQ121;let dep=0
  const cur=d=>d.u==='eq'?S.wpn:d.u==='arm'?S.arm:(S.acc&&typeof S.acc==='object'?S.acc[d.slot]:null);
  const F121=v=>Math.round(v).toLocaleString('en-US'),pw0=()=>({a:atk(),d:defn(),p:POW123(atk(),defn(),mhp(),mqi())});
  const dl=P0=>{const P1=pw0(),f=(n,a,b)=>n+' '+F121(a)+(b===a?' เท่าเดิม':' เป็น '+F121(b)+(b>a?' เพิ่ม ':' ลด ')+F121(Math.abs(b-a)));const rc=d=>Math.round(1000000/(100+Math.max(0,d)))/100;return [f('โจมตีรวม',P0.a,P1.a),f('ป้องกันรวม',P0.d,P1.d),f('พลังรวม',P0.p,P1.p)].join(' ')+(P1.d!==P0.d?' โดนโจมตีแล้วรับความเสียหาย '+rc(P0.d)+' เปอร์เซ็นต์ เป็น '+rc(P1.d)+' เปอร์เซ็นต์':'')};window.__EQP121=pw0;window.__EQD121=dl;
- const st=(id,k)=>{try{return id&&I[id]&&I[id][k]?eStat(id,k):0}catch(e){return 0}};
+ const st=(id,k)=>{try{return id&&I[id]&&I[id][k]?Math.round(eStat(id,k)*(k==='atk'?hvMulOf(id):1)):0}catch(e){return 0}};/* รอบ 168: นับตัวคูณอาวุธหนัก เดิมเทียบค่าดิบ เปลี่ยนจากอาวุธหนักเป็นอาวุธเบาที่ค่าดิบสูงกว่าเล็กน้อย จดบั๊กปลอม */
  const chk=(id,f,self,args)=>{const d=I[id];if(dep||!d||!['eq','arm','acc'].includes(d.u))return f.apply(self,args);dep++;let r;
   try{const P0=pw0(),old=cur(d),a0=atk(),d0=defn(),ga=st(id,'atk')-st(old,'atk'),gd=st(id,'def')-st(old,'def');r=f.apply(self,args);
    try{if(cur(d)===id&&old!==id){EQ121.n++;const a1=atk(),d1=defn();try{const P1=pw0(),xm=(typeof XF167==='object'&&XF167.msg)||'';const why=(P1.p<P0.p&&!xm&&old&&enh(old)>enh(id))?' พลังรวมลดเพราะชิ้นเดิมหลอมไว้ +'+enh(old)+' ชิ้นนี้ +'+enh(id)+' ย้ายความเข้มได้ที่ช่างหลอมศาสตรา':'';say('สวม'+d.n+(enh(id)?' +'+enh(id):'')+' แล้ว'+xm+' '+dl(P0)+why);if(typeof XF167==='object')XF167.msg=''}catch(e){}if((ga>0&&!(a1>a0))||(gd>0&&!(d1>d0))){EQ121.bad++;EQ121.last=d.n+' โจมตีรวม '+a0+' เป็น '+a1+' ป้องกันรวม '+d0+' เป็น '+d1;EQ121.lastT=Date.now();bugLog('สวมอุปกรณ์','ค่าพลังไม่ขึ้น '+EQ121.last)}}}catch(e){}}
