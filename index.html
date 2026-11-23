@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="th"><head><meta charset="utf-8">
-<meta name="ipo-build" content="1795404135945">
+<meta name="ipo-build" content="1795411425008">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>มรรคาเซียนออนไลน์</title>
 <style>
@@ -7472,7 +7472,7 @@ try{
   else if(r<(boss?.9:.8)){a.st='idle';a.t=now+ri(2000,5000)}
   else{a.st='turn';a.f=(a.f+(Math.random()<.5?-1:1)*ri(1,2)+8)%8;a.t=now+ri(2000,5000)}}
  function monAttack(m,now){const d0=MD[m.k],bz=!!(BOSSREQ[m.k]||BOSSES.includes(m.k)),asp=bz?(m.asj||3500):(d0.aspd||2000);if(now-(m.at||0)<asp)return;m.at=now;if(bz)m.asj=3000+Math.round(Math.random()*1000);/* รอบ 125: บอสตีเป็นจังหวะ 3 ถึง 4 วินาทีต่อครั้ง ตีแรงกว่าเดิม */MAI.atk++;
-  const dm=hard36(m,Math.max(1,Math.round(d0.atk*(.8+Math.random()*.4)*(buff>Date.now()?.5:1)*100/(100+defn()))),0);if(!godOn())S.hp-=dm;S.med=false;/* ถูกตีแล้วไม่ตัดเดินอัตโนมัติและไม่ตัดการรวมพลัง */sfx('hurt');
+  const dm=hard36(m,Math.max(1,Math.round(d0.atk*(.8+Math.random()*.4)*(buff>Date.now()?.5:1)*100/(100+defn()))),0);if(!godOn())S.hp-=dm;S.med=false;/* ถูกตีแล้วไม่ตัดเดินอัตโนมัติและไม่ตัดการรวมพลัง */try{const c='pa'+m.k,AU0=window.__AUDIO;if(HOOK.mpAct&&AU0&&Array.isArray(AU0.ACTREG)&&AU0.ACTREG.includes(c))HOOK.mpAct(c)}catch(e){}/* รอบ 173 (ผู้บงการ: คนยืนเฉยๆ เหมือนโดนอะไรกัด): อสูรอยู่เฉพาะในเครื่องของแต่ละคน คนรอบตัวได้ยินแค่เสียงเจ็บ ตอนนี้ส่งเสียงโจมตีของอสูรชนิดนั้นก่อน คนรอบตัวรู้ว่าโดนอสูรอะไรตี */sfx('hurt');
   const rg=monRng(m)>1.5,el=d0.el;/* รอบที่ 18: อสูรธาตุ เสียงพลังธาตุกระทบตัวเจ้า แบบเดียวกับตอนผู้เล่นใช้วิชาใส่กัน */
   if(el&&HOOK.monFx){try{HOOK.monFx(rg?'shot':'melee',m,{el,buff:buff>Date.now(),boss:isBoss(m.k)})}catch(e){}if(Math.random()<.5)posCue('mhit',m.x,m.y,{k:m.k,buff:buff>Date.now(),mon:m,noHit:1})}else posCue('mhit',m.x,m.y,{k:m.k,buff:buff>Date.now(),mon:m});
   if(S.hp<=0)die('เจ้าถูก'+d0.n+'สังหาร');else say(d0.n+(rg?' '+(MELTH[el]||'โจมตีระยะไกล')+' ':el?' '+(MELTM[el]||'โจมตี')+' ':' โจมตี ')+dm+' เหลือ '+Math.floor(S.hp))}
@@ -9188,18 +9188,19 @@ try{
  const FSF={msgs:[],lt:0,err:0};
  function foFight(){try{const p=S.ps,now=Date.now();if(!p||!FO.length||p.fb===0||p.fk===0||!(mode==='play'||mode==='menu'||mode==='input')||TB.on||!(S.hp>0)||airM())return;const z=zid(),zo=zoneAt(S.x,S.y);if(!zo||zo.safe)return;
   const dim=1/(1+.12*(FO.length-1)),A0=Math.max(1,atk());
-  const cand=MS.filter(m=>!m.dead&&m.z===z&&MD[m.k]&&Math.hypot(m.x-S.x,m.y-S.y)<=16);
+  const cand=MS.filter(m=>!m.dead&&m.z===z&&MD[m.k]&&Math.hypot(m.x-S.x,m.y-S.y)<=PVR172);/* รอบ 173 (ผู้บงการ): อสูรที่จ้องเล่นงานเจ้าเข้ามาในระยะ 39 ก้าว ศิษย์ตีทันที ไม่รอให้ถึงตัว */
+  const foeM=m=>!!(m.ag||(m.ai&&m.ai.st==='chase'));
   let pvL=[];try{pvL=HOOK.pvpUnits?HOOK.pvpUnits().filter(u=>u.z===z&&Math.hypot(u.x-S.x,u.y-S.y)<=PVR172):[]}catch(e){}/* รอบ 172: สู้ผู้เล่น ศิษย์ช่วยเจ้าในระยะ 39 ก้าว ตีไกลได้อย่างน้อย 30 ก้าว */
   FO.forEach(o=>{if(o.z!==z||(o.cmd&&o.cmd.m))return;const n=npcByName(o.fn);if(!n||n.m)return;o.cd=o.cd||{};if(now<(o.gc||0))return;
    const ids=skUse(n);if(!ids.length)return;const ns=npcStep(n);
    if(pvL.length&&foPv(o,n,ids,ns,pvL,now,dim,A0))return;
    let tg=o.ft&&!o.ft.dead&&o.ft.z===z&&now<o.fte?o.ft:null;
-   if(!tg){let bd=1e9;cand.forEach(m=>{const boss=typeof BOSSES!=='undefined'&&BOSSES.includes(m.k),dm=Math.hypot(m.x-S.x,m.y-S.y);if(boss&&!m.ag)return;if(!boss&&!m.ag&&dm>9)return;if(m.k==='rab'&&!m.ag)return;const d=Math.hypot(m.x-o.x,m.y-o.y);if(d<bd){bd=d;tg=m}})}
+   if(!tg){let bd=1e9;cand.forEach(m=>{const boss=typeof BOSSES!=='undefined'&&BOSSES.includes(m.k),dm=Math.hypot(m.x-S.x,m.y-S.y);const fo=foeM(m);if(boss&&!fo)return;if(!boss&&!fo&&dm>9)return;if(m.k==='rab'&&!fo)return;const d=Math.hypot(m.x-o.x,m.y-o.y);if(d<bd){bd=d;tg=m}})}
    if(!tg){o.ft=null;return}
    /* เลือกทักษะที่พร้อมและเหมาะกับระยะ */
    let pick=null;for(const id of ids){const k=SK[id];if(!k||k.heal||k.sp)continue;if((o.cd[id]||0)>now)continue;const rg=Math.max(1.5,Number(k.rng)||1.5);if(!pick||(Number(k.m)||1)>(Number(SK[pick].m)||1))pick=id}
    if(!pick){o.ft=tg;o.fte=now+4000;o.fr=1.5;return}
-   const k=SK[pick],rg=Math.max(1.5,Number(k.rng)||1.5),d=Math.hypot(tg.x-o.x,tg.y-o.y);o.ft=tg;o.fte=now+4000;o.fr=Math.max(1.5,Math.min(rg,8)-1);
+   const k=SK[pick],rg=Math.max(PVA172,Number(k.rng)||1.5),d=Math.hypot(tg.x-o.x,tg.y-o.y);o.ft=tg;o.fte=now+4000;o.fr=Math.max(1.5,Math.min(rg,8)-1);/* รอบ 173: ปล่อยพลังได้ไกล 30 ก้าว */
    if(d>rg+.5)return;
    o.cd[pick]=now+Math.max(2,k.cd*1.5)*1000;o.gc=now+1200+Math.random()*400;
    const mul=Math.min(.6,Math.max(.02,R[Math.min(ns,R.length-1)][0]*.6*dim/A0))*(window.__SWF?window.__SWF(n,'a'):1)*(window.__PFEQ?window.__PFEQ.mul(n,'a'):1);
@@ -11162,18 +11163,19 @@ try{(()=>{/* ===== รอบที่ 50: สัตว์อสูรเลี�
   else if(p.hp<pMhp(p)*.3&&Date.now()-(PT.lowT||0)>8000){PT.lowT=Date.now();say('เตือน '+p.n+' เลือดเหลือน้อย '+F(p.hp)+' จาก '+F(pMhp(p))+' กด Shift+B เก็บเข้าแหวนได้')}}
  window.__PETHEAL=(fr,r)=>{try{fr=Math.max(0,Math.min(.5,+fr||0));const p=outP(),o=PT.o;if(!(fr>0)||!p||!o||o.hid||p.dt>Date.now()||!(p.hp>0)||o.z!==zid()||Math.hypot(o.x-S.x,o.y-S.y)>(r||10))return '';const mx=pMhp(p);if(p.hp>=mx)return '';p.hp=Math.min(mx,p.hp+Math.max(1,Math.round(mx*fr)));return 'สัตว์อสูร '+p.n+' '+Math.round(100*p.hp/mx)+'%'}catch(e){PT.err++;return ''}};/* รอบ 172: วิชารักษาของเจ้าฟื้นเลือดสัตว์อสูรที่ปล่อยออกมาในระยะ 10 ก้าว */
  function foPetFight(p,o,now,z){/* ชื่อขึ้นต้น fo: ข้อความสังหารจากสัตว์อสูรนับเป็นหมวดผู้ติดตามในการตั้งค่า F6 */
-  if(S.petAgg===0||o.hid||PT.ride)return false;const zo=zoneAt(S.x,S.y);if(!zo||(window.__SAFE9&&window.__SAFE9.safeAt9(S.x,S.y)))return false;
+  if(S.petAgg===0||(o.hid&&!PT.ride))return false;const zo=zoneAt(S.x,S.y);/* รอบ 173: ขี่อยู่ก็สู้ ปล่อยพลังจากใต้ตัวเจ้า */if(!zo||(window.__SAFE9&&window.__SAFE9.safeAt9(S.x,S.y)))return false;
   try{const U=HOOK.pvpUnits?HOOK.pvpUnits():[];if(U.length){const pref=PT.pvp&&now<PT.pvp.until?PT.pvp.id:'';let T=null,bd=1e9;U.forEach(u=>{if(u.z!==o.z||Math.hypot(u.x-S.x,u.y-S.y)>39)return;const d=Math.hypot(u.x-o.x,u.y-o.y)-(u.uid===pref?3:0);if(d<bd){bd=d;T=u}});
-    if(T){const rg=30,d=Math.hypot(T.x-o.x,T.y-o.y);/* รอบ 172: สู้ผู้เล่น สัตว์อสูรช่วยในระยะ 39 ก้าว ปล่อยพลังใส่ได้ไกล 30 ก้าว */if(d>rg){stepTo(o,p,T.x,T.y);o.mt=now+Math.round(fol(p)*.9);return true}
+    if(T){const rg=30,ox=PT.ride?S.x:o.x,oy=PT.ride?S.y:o.y,d=Math.hypot(T.x-ox,T.y-oy);/* รอบ 172: สู้ผู้เล่น สัตว์อสูรช่วยในระยะ 39 ก้าว ปล่อยพลังใส่ได้ไกล 30 ก้าว */if(d>rg){if(PT.ride)return false;stepTo(o,p,T.x,T.y);o.mt=now+Math.round(fol(p)*.9);return true}
      if(now<o.at){o.mt=now+80;return true}o.at=now+Math.round(1400*(1-.01*p.st));o.mt=now+150;const dm=Math.max(1,Math.round(pAtk(p)*(.9+Math.random()*.2)));
-     if(HOOK.unitSend&&HOOK.unitSend(T,dm,'p',p.n)){PT.n.pv=(PT.n.pv|0)+1;pfx(p,'atk',o.x,o.y,.85);PT.msgs.push('สัตว์อสูร'+p.n+' โจมตี'+HOOK.unitLbl(T)+' '+F(dm))}return true}}}catch(e){PT.err++}
-  let tg=o.ft&&!o.ft.dead&&o.ft.hp>0&&o.ft.z===z&&dist(S,o.ft)<=16?o.ft:null;
-  if(!tg){const t0=typeof target!=='undefined'?target:null;if(t0&&!t0.dead&&t0.hp>0&&t0.z===z&&MD[t0.k]&&dist(S,t0)<=12)tg=t0}
-  if(!tg){let bd=1e9;MS.forEach(m=>{if(m.dead||!(m.hp>0)||m.z!==z||!MD[m.k])return;const ds=dist(S,m);if(!(m.ag&&ds<=9)&&!(m.ptT&&now-m.ptT<8000&&ds<=14))return;const d=Math.hypot(m.x-o.x,m.y-o.y);if(d<bd){bd=d;tg=m}})}
-  o.ft=tg;if(!tg)return false;const rg=canFly(p)?2.2:1.6,d=Math.hypot(tg.x-o.x,tg.y-o.y);
-  if(d>rg){stepTo(o,p,tg.x,tg.y);o.mt=now+Math.round(fol(p)*.9);return true}
+     if(HOOK.unitSend&&HOOK.unitSend(T,dm,'p',p.n)){PT.n.pv=(PT.n.pv|0)+1;pfx(p,'atk',ox,oy,.85);PT.msgs.push('สัตว์อสูร'+p.n+' โจมตี'+HOOK.unitLbl(T)+' '+F(dm))}return true}}}catch(e){PT.err++}
+  let tg=o.ft&&!o.ft.dead&&o.ft.hp>0&&o.ft.z===z&&dist(S,o.ft)<=39?o.ft:null;
+  if(!tg){const t0=typeof target!=='undefined'?target:null;if(t0&&!t0.dead&&t0.hp>0&&t0.z===z&&MD[t0.k]&&dist(S,t0)<=39)tg=t0}
+  /* รอบ 173 (ผู้บงการ): อสูรที่จ้องเล่นงานเจ้า (ยั่วแล้ว หรือไล่ตามเจ้า) ในระยะ 39 ก้าว สัตว์อสูรตีทันที ปล่อยพลังได้ไกล 30 ก้าว ขี่อยู่ก็ตี */
+  if(!tg){let bd=1e9;MS.forEach(m=>{if(m.dead||!(m.hp>0)||m.z!==z||!MD[m.k])return;const ds=dist(S,m);if(!((m.ag||(m.ai&&m.ai.st==='chase'))&&ds<=39)&&!(m.ptT&&now-m.ptT<8000&&ds<=14))return;const d=Math.hypot(m.x-S.x,m.y-S.y);if(d<bd){bd=d;tg=m}})}
+  o.ft=tg;if(!tg)return false;const rg=30,ox=PT.ride?S.x:o.x,oy=PT.ride?S.y:o.y,d=Math.hypot(tg.x-ox,tg.y-oy);
+  if(d>rg){if(PT.ride)return false;stepTo(o,p,tg.x,tg.y);o.mt=now+Math.round(fol(p)*.9);return true}
   if(now<o.at){o.mt=now+80;return true}o.at=now+Math.round(1400*(1-.01*p.st));o.mt=now+150;
-  const A0=Math.max(1,atk()),dm=hitMon(tg,{m:1,n:p.n},pAtk(p)/A0);tg.ptT=now;if(!(dm>0))return true;pfx(p,'atk',o.x,o.y,.8);PT.msgs.push('สัตว์อสูร'+p.n+' โจมตี'+nm0(tg.k)+' '+F(dm));
+  const A0=Math.max(1,atk()),dm=hitMon(tg,{m:1,n:p.n},pAtk(p)/A0);tg.ptT=now;if(!(dm>0))return true;pfx(p,'atk',ox,oy,.8);PT.msgs.push('สัตว์อสูร'+p.n+' โจมตี'+nm0(tg.k)+' '+F(dm));
   if(tg.hp<=0){PT.n.kill++;kill(tg);o.ft=null}return true}
  function monOnPet(p,o,now){if(o.hid||PT.ride)return;MS.forEach(m=>{if(m.dead||!(m.hp>0)||!m.ptT||now-m.ptT>8000||!MD[m.k])return;const d=Math.hypot(m.x-o.x,m.y-o.y);if(d>2.5||Math.hypot(m.x-S.x,m.y-S.y)<=1.6)return;const asp=MD[m.k].aspd||2000;if(now-(m.pat||0)<asp)return;m.pat=now;
    const dm=Math.max(1,Math.round(((BOSSES.includes(m.k)||BOSSREQ[m.k])?MD[m.k].atk:(MD[m.k].atk0||MD[m.k].atk))*(.8+Math.random()*.4)*100/(100+pDef(p))));/* รอบ 171: อสูรธรรมดาตีสัตว์อสูรด้วยค่าเดิม อสูรโหดขึ้นตีผู้ฝึกตน */try{const mv=AU.mvPlay;if(mv){const q=HOOK.spAt(m.x,m.y,40);if(q)mv(m,'atk',q)}}catch(e){}PT.msgs.push(nm0(m.k)+' โจมตีสัตว์อสูร'+p.n+' '+F(dm));petHurt(p,o,dm,nm0(m.k))})}
@@ -11184,7 +11186,7 @@ try{(()=>{/* ===== รอบที่ 50: สัตว์อสูรเลี�
   if(p.dt>now||!(p.hp>0)){PT.o=null;S.petOut=null;return}
   if(!(S.hp>0)){if(PT.ride)dismount(1);return}
   if(now-PT.hitT>6000&&p.hp<pMhp(p)&&now%1000<60)p.hp=Math.min(pMhp(p),p.hp+pMhp(p)*.015);
-  if(PT.ride){o.hid=1;o.x=S.x;o.y=S.y;o.z=zid();idleLife(p,o,now,S.x,S.y,1);return}
+  if(PT.ride){o.hid=1;o.x=S.x;o.y=S.y;o.z=zid();idleLife(p,o,now,S.x,S.y,1);if(now>=o.mt){try{foPetFight(p,o,now,o.z)}catch(e){PT.err++}}return}/* รอบ 173 (ผู้บงการ: นั่งบนสัตว์อสูรมันไม่ตี): ขี่อยู่ก็ปล่อยพลังใส่ศัตรูในระยะ 30 ก้าว */
   const z=zid();
   if(o.hid||o.z!==z||Math.hypot(o.x-S.x,o.y-S.y)>25){if(now<o.mt)return;if(!placeO(o,!o.hid||o.z!==z)){o.hid=1;o.mt=now+1500}else{o.mt=now+300}return}
   if(!o.hid)idleLife(p,o,now,o.x,o.y,0);monOnPet(p,o,now);if(!outP())return;
@@ -17271,7 +17273,10 @@ try{(()=>{
   {t:'ข้อมูลสัตว์อสูร บอกชนิด ขั้นพลัง ความแข็งแกร่ง พลังรวม เลือด โจมตี ป้องกัน ของจริงตอนนั้น'},
   {t:'ศิษย์และผู้อาวุโสของผู้อื่น กด F เช็กเลือดได้ กด Enter ดูขั้นพลัง พลังรวม เลือด โจมตี ป้องกัน ค่าจริงตอนนั้น ไม่บอกชุดที่สวม ศิษย์ของเจ้าเองบอกละเอียดกว่านั้น'},
   {t:'กด Tab แล้วรอบตัวไม่มีอะไรในหมวดนั้น เกมเงียบ ไม่พูดว่าไม่มี'},
-  {t:'ถ้าเกมของเจ้าของศิษย์ยังเป็นรุ่นเก่า บอกค่าพื้นฐานตามขั้นแทน เกมรีเซ็ตเองไปรุ่นใหม่ภายในไม่กี่นาที'}];
+  {t:'ถ้าเกมของเจ้าของศิษย์ยังเป็นรุ่นเก่า บอกค่าพื้นฐานตามขั้นแทน เกมรีเซ็ตเองไปรุ่นใหม่ภายในไม่กี่นาที'},
+  {t:'อสูรที่จ้องเล่นงานเจ้า (ยั่วแล้วหรือกำลังไล่ตามเจ้า) เข้ามาในระยะ 39 ก้าว ศิษย์และสัตว์อสูรตีทันที ปล่อยพลังได้ไกล 30 ก้าว ไม่รอให้มาถึงตัว ผู้เล่นศัตรูก็เหมือนกัน'},
+  {t:'ขี่สัตว์อสูรอยู่ มันก็ปล่อยพลังใส่ศัตรูและอสูรในระยะ 30 ก้าวจากใต้ตัวเจ้า'},
+  {t:'แก้บั๊ก คนยืนเฉยๆ แต่ได้ยินเหมือนโดนอะไรกัด เพราะอสูรอยู่ในเครื่องของแต่ละคน คนรอบตัวได้ยินแค่เสียงเจ็บ ตอนนี้ได้ยินเสียงโจมตีของอสูรชนิดนั้นก่อน รู้ว่าเขาโดนอสูรอะไรตี'}];
  try{GUIDE.r173=GL}catch(e){}
  try{(window.__GOPEN=window.__GOPEN||{}).r173=()=>{try{menu('คู่มือรอบ 173 ดูข้อมูลศิษย์และสัตว์อสูร',GL().concat([{t:'กลับคู่มือเกม',back:1}]),{ent:x=>{if(x.back)return A.guide();say(x.t,1)}})}catch(e){}}}catch(e){}
  try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-23',c:[C_SYS],gd:'r173',h:'กด Tab หาสัตว์อสูรและศิษย์ของทุกคน กด F เช็กเลือด กด Enter ดูพลังรวม เลือด โจมตี ป้องกัน รอบ 173',b:GL().map(x=>x.t)})}catch(e){}
@@ -17281,6 +17286,7 @@ try{(()=>{
    if(typeof window.__FOPUB!=='function'||typeof window.__PETLN173!=='function'||typeof window.__MYPETV!=='function')o.push('รอบ 173: ตัวข้อมูลศิษย์หรือสัตว์อสูรหาย');
    else{(window.__FOPUB()||[]).forEach(f=>{const a=String(f).split(':');if(a[0]!=='fo'||a.length!==8||a.slice(2).some(x=>!Number.isFinite(parseInt(x,36))))o.push('รอบ 173: ค่าศิษย์ที่ส่งผิดรูป '+String(f).slice(0,30))});
     const mp=window.__MYPETV();if(mp){const L=window.__PETLN173(mp);if(L.some(x=>/undefined|NaN|\[object/.test(x.t)))o.push('รอบ 173: ข้อมูลสัตว์อสูรของเจ้ามีข้อความเสีย')}}
+   try{const V=window.__PVR172;if(!V||!(V.r>=39&&V.a>=30))o.push('รอบ 173: ระยะศิษย์และสัตว์อสูรช่วยสู้ถูกลด')}catch(e){}
   }catch(e){o.push('รอบ 173 ตัวตรวจพัง '+e.message)}return o.slice(0,6)};
  CHK.push(()=>{try{return bad173()}catch(e){return['รอบ 173 ตัวตรวจพัง '+e.message]}});
  (window.__R5DGH=window.__R5DGH||[]).push(is=>{try{bad173().forEach(m=>is.push(m))}catch(e){is.push('รอบ 173 ตัวตรวจตอนเริ่มพัง '+e.message)}});
