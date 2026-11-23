@@ -6076,7 +6076,7 @@ say((GMV.online?'สถานะ ออนไลน์ เซฟขึ้น Fir
     if((PM.seen[id]||0)>=v.t)return;PM.seen[id]=v.t;
     try{const xf=window.__XF&&window.__XF.pm;if(xf&&xf(id,v))return}catch(e){bugLog('ส่งของ',(e&&e.message)||String(e))}/* ข้อความระบบส่งของ/ขอเก็บของ ไม่แสดงเป็นแชท (รอบที่ 18: เดิมเรียก XFpm ตรงๆ แต่ XFpm อยู่ในบล็อกแชทแมพ เรียกจากตรงนี้ไม่ถึง ผู้รับจึงไม่เคยได้ของ ตอนนี้เรียกผ่าน window.__XF) */
     if(v.m.charAt(0)==='⁣'&&v.m.charAt(1)==='X')return;/* ข้อความระบบที่ยังจัดการไม่ได้ ไม่อ่านออกเป็นแชท */
-    const jm=window.__VMIN?window.__VMIN('p',id,v.n,chatJoin('p',String(v.n||''),v.m)):chatJoin('p',String(v.n||''),v.m);if(jm==null)return;/* รอบ 174: ข้อความเสียง */const age=Math.max(0,srvNow()-v.t),pn=String(v.n||'ผู้ฝึกตน').slice(0,20),base='[ส่วนตัว] '+pn+': '+jm.slice(0,2000);
+    const jm=window.__VMIN?window.__VMIN('p',id,v.n,chatJoin('p',String(v.n||''),v.m),v.t):chatJoin('p',String(v.n||''),v.m);if(jm==null)return;/* รอบ 174: ข้อความเสียง */const age=Math.max(0,srvNow()-v.t),pn=String(v.n||'ผู้ฝึกตน').slice(0,20),base='[ส่วนตัว] '+pn+': '+jm.slice(0,2000);
     if(age>600000){pushPriv(base+' ('+agoTxt(age)+')');say('มีข้อความส่วนตัวเก่าจาก '+pn+' ส่งมาตอนเจ้าไม่อยู่ อ่านย้อนหลังได้ในหมวดส่วนตัว');return}/* เก่าเกิน 10 นาที: เก็บเข้าประวัติ ไม่อ่านเต็มข้อความ */
     const line=age>CHAT_FRESH?base+' ('+agoTxt(age)+')':base;/* ข้อความส่วนตัวที่ส่งมาตอนยังไม่ได้ฟัง อ่านพร้อมบอกว่าส่งเมื่อกี่นาทีที่แล้ว */
     pushPriv(line);alertIn('pm',line,age)};
@@ -6646,7 +6646,7 @@ try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-10-29',c:[C_SYS],h:'�
      if(v.t<srvNow()-60000)return;
      if((CM.seen[snap.key]||0)>=v.t)return;CM.seen[snap.key]=v.t;
      try{if(XFmap(snap.key,v,zid))return}catch(e){}/* ประกาศของที่ถูกทิ้ง ไม่แสดงเป็นแชทแมพ */
-     const jm=window.__VMIN?window.__VMIN('m',snap.key,v.n,chatJoin('m',snap.key,v.m)):chatJoin('m',snap.key,v.m);if(jm==null)return;/* รอบ 174: ข้อความเสียง */const line='[แผนที่] '+String(v.n||'ผู้ฝึกตน').slice(0,20)+(typeof v.tt==='string'&&v.tt&&!S.ttlOff?' ('+v.tt.slice(0,90)+')':'')+': '+jm.slice(0,2000);
+     const jm=window.__VMIN?window.__VMIN('m',snap.key,v.n,chatJoin('m',snap.key,v.m),v.t):chatJoin('m',snap.key,v.m);if(jm==null)return;/* รอบ 174: ข้อความเสียง */const line='[แผนที่] '+String(v.n||'ผู้ฝึกตน').slice(0,20)+(typeof v.tt==='string'&&v.tt&&!S.ttlOff?' ('+v.tt.slice(0,90)+')':'')+': '+jm.slice(0,2000);
      const age=Math.max(0,srvNow()-v.t);
      if(age>600000)return;
      if(age>CHAT_FRESH){const ol=line+' ('+agoTxt(age)+')';S.chat[2].push(ol);S.chat[0].push(ol);trimC();return}/* แชทเก่า ไม่พูด เก็บเข้าประวัติ */
@@ -6693,7 +6693,7 @@ try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-10-29',c:[C_SYS],h:'�
      if(v.t<srvNow()-60000)return;
      if((W.seen[snap.key]||0)>=v.t)return;W.seen[snap.key]=v.t;
      const ann=v.m.startsWith(ANNP)&&v.m.length>ANNP.length&&v.m.slice(ANNP.length).startsWith(String(v.n||'ผู้ฝึกตน').slice(0,20));
-     const jm=ann?v.m.slice(ANNP.length):(window.__VMIN?window.__VMIN('w',snap.key,v.n,chatJoin('w',snap.key,v.m)):chatJoin('w',snap.key,v.m));if(jm==null)return;/* รอบ 174: ข้อความเสียง */const line=ann?'[ประกาศโลก] '+jm.slice(0,200):'[โลก] '+String(v.n||'ผู้ฝึกตน').slice(0,20)+(typeof v.tt==='string'&&v.tt&&!S.ttlOff?' ('+v.tt.slice(0,90)+')':'')+': '+jm.slice(0,2000);
+     const jm=ann?v.m.slice(ANNP.length):(window.__VMIN?window.__VMIN('w',snap.key,v.n,chatJoin('w',snap.key,v.m),v.t):chatJoin('w',snap.key,v.m));if(jm==null)return;/* รอบ 174: ข้อความเสียง */const line=ann?'[ประกาศโลก] '+jm.slice(0,200):'[โลก] '+String(v.n||'ผู้ฝึกตน').slice(0,20)+(typeof v.tt==='string'&&v.tt&&!S.ttlOff?' ('+v.tt.slice(0,90)+')':'')+': '+jm.slice(0,2000);
      const age=Math.max(0,srvNow()-v.t);
      if(age>600000)return;
      if(age>CHAT_FRESH){const ol=line+' ('+agoTxt(age)+')';S.chat[1].push(ol);S.chat[0].push(ol);trimC();return}/* แชทเก่า ไม่พูด เก็บเข้าประวัติ */
@@ -17297,9 +17297,11 @@ try{(()=>{
    ที่เก็บเสียง vmsg/{uid}/v0..v4 วนทับ 5 ช่อง {n ชื่อ, d ความยาวมิลลิวินาที, mt ชนิดไฟล์, a เสียงฐาน 64, to ผู้รับ * หรือ uid, id รหัสข้อความ, t เวลาเซิร์ฟเวอร์}
    แจ้งในแชทเป็นข้อความธรรมดา "ส่งข้อความเสียง N วินาที" ต่อท้ายด้วยอักษรล่องหน ⁣V ช่อง.รหัส เกมรุ่นใหม่แปลงเป็น "กด Shift ` ฟัง" และเก็บเข้ารายการ
    คนรับโหลดเสียงเฉพาะตอนกดฟัง / ปิดรับเสียงรายคนได้ (Delete ที่รายการ) ปิดรับทั้งหมดได้ / ส่งได้ทุก 8 วินาที ยาวสุด 15 วินาที
-   ค่าในเซฟ S.vmSlot (ช่องถัดไป 0 ถึง 4) S.vmMute (uid ที่ปิดรับ) S.vmOff (1 = ปิดรับทั้งหมด) เซฟเก่าไม่มี ใช้ค่าเริ่มต้น */
+   ค่าในเซฟ S.vmSlot (ช่องถัดไป 0 ถึง 4) S.vmMute (uid ที่ปิดรับ) S.vmOff (1 = ปิดรับทั้งหมด) S.vmAuto (0 = ไม่เล่นเอง, ไม่มีค่าหรือ 1 = เล่นทันที) เซฟเก่าไม่มี ใช้ค่าเริ่มต้น
+   รอบ 175 (23 พ.ย. 2569 ผู้บงการสั่ง): ข้อความเสียงที่เพิ่งส่งมา ดังให้ฟังทันทีทุกช่อง (โลก แผนที่ ส่วนตัว) ไม่ต้องกดฟัง เล่นทีละข้อความต่อคิว ไม่ดังทับกัน
+   ปิดการเล่นทันทีได้ในเมนู Shift ` แล้วกดฟังเองจากรายการ / ระหว่างเสียงดังอยู่ กด Shift ` หยุดเสียงและข้ามคิว / ข้อความเก่า (ส่งมาตอนไม่อยู่) ไม่เล่นเอง / ระหว่างอัดเสียงรอจนอัดเสร็จ */
 try{(()=>{
- const VM={rec:null,stream:null,chunks:[],t0:0,tm:0,ch:'',to:'',toN:'',blob:null,mt:'',d:0,list:[],sent:0,got:0,played:0,err:0,last:'',busy:0,perm:0,lastSend:0,audio:null,noMic:0};window.__VM174=VM;
+ const VM={rec:null,stream:null,chunks:[],t0:0,tm:0,ch:'',to:'',toN:'',blob:null,mt:'',d:0,list:[],sent:0,got:0,played:0,err:0,last:'',busy:0,perm:0,lastSend:0,audio:null,noMic:0,q:[],qOn:0,qAt:0,qTm:0,auto:0,fetching:0,adone:null,permSaid:0};window.__VM174=VM;
  const MAXMS=15000,GAP=8000,MAXA=100000,SLOTS=5,MARK='⁣V',RX=/⁣V(v[0-4])\.([0-9a-z]{4,12})$/;
  const F=v=>Math.round(+v||0).toLocaleString('en-US');
  const er=(w,e)=>{VM.err++;VM.last=w+': '+String(e&&(e.code||e.message)||e).slice(0,80);try{bugLog('ข้อความเสียง',VM.last)}catch(x){}};
@@ -17309,18 +17311,24 @@ try{(()=>{
  const sup=()=>!!(window.MediaRecorder&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia);
  const pickMt=()=>{try{for(const m of ['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg;codecs=opus'])if(MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(m))return m}catch(e){}return ''};
  const chN=c=>c==='w'?'แชทโลก':c==='m'?'แชทแผนที่':'ข้อความส่วนตัว';
+ const autoOn=()=>S.vmAuto!==0;
+ const FRESH=typeof CHAT_FRESH==='number'?CHAT_FRESH:15000,QMAX=6;
+ const sNow=()=>{try{return HOOK.srvNow?HOOK.srvNow():Date.now()}catch(e){return Date.now()}};
+ const myUid=()=>{try{const A0=api();return A0?A0.M.auth.currentUser.uid:''}catch(e){return ''}};
  const secT=ms=>Math.max(1,Math.round((+ms||0)/1000))+' วินาที';
  /* ---------- รับ: แปลงข้อความแชทที่มีเครื่องหมายข้อความเสียง ---------- */
- window.__VMIN=(kind,uid,name,txt)=>{try{if(txt==null)return txt;const t=String(txt),m=RX.exec(t);if(!m)return t;const body=t.slice(0,m.index).trim()||'ส่งข้อความเสียง';
+ window.__VMIN=(kind,uid,name,txt,sentT)=>{try{if(txt==null)return txt;const t=String(txt),m=RX.exec(t);if(!m)return t;const body=t.slice(0,m.index).trim()||'ส่งข้อความเสียง';
    if(typeof uid!=='string'||!/^[A-Za-z0-9_-]{1,40}$/.test(uid))return body;const ch=kind==='w'?'w':kind==='m'?'m':'p';
    if(mute().includes(uid))return body+' (เจ้าปิดรับเสียงจากคนนี้ไว้)';
-   const key=uid+'|'+m[1]+'|'+m[2];if(!VM.list.some(x=>x.key===key)){const dm=/(\d+)\s*วินาที/.exec(body);VM.list.push({key,uid,slot:m[1],id:m[2],n:String(name||'ผู้ฝึกตน').slice(0,20),ch,d:dm?+dm[1]*1000:0,at:Date.now()});if(VM.list.length>50)VM.list.splice(0,VM.list.length-50);VM.got++}
-   return body+(S.vmOff===1?' (ปิดรับข้อความเสียงอยู่)':' กด Shift ` ฟัง')}catch(e){er('รับข้อความเสียง',e);return txt}};
+   const key=uid+'|'+m[1]+'|'+m[2];let q=0;if(!VM.list.some(x=>x.key===key)){const dm=/(\d+)\s*วินาที/.exec(body),it={key,uid,slot:m[1],id:m[2],n:String(name||'ผู้ฝึกตน').slice(0,20),ch,d:dm?+dm[1]*1000:0,at:Date.now()};VM.list.push(it);if(VM.list.length>50)VM.list.splice(0,VM.list.length-50);VM.got++;
+    if(autoOn()&&S.vmOff!==1&&Number.isFinite(sentT)&&sNow()-sentT<=FRESH&&uid!==myUid())q=enq(it)}
+   return body+(S.vmOff===1?' (ปิดรับข้อความเสียงอยู่)':q?' เล่นให้ฟังทันที':' กด Shift ` ฟัง')}catch(e){er('รับข้อความเสียง',e);return txt}};
  /* ---------- อัด ---------- */
  const stopTracks=()=>{try{if(VM.stream)VM.stream.getTracks().forEach(t=>t.stop())}catch(e){}VM.stream=null};
  const recStart=async(ch,to,toN)=>{try{if(VM.rec)return;if(!sup())return say('เบราว์เซอร์นี้อัดเสียงไม่ได้ ลองใช้ Chrome หรือ Safari รุ่นใหม่',1);
    const left=GAP-(Date.now()-VM.lastSend);if(left>0)return say('ส่งข้อความเสียงได้อีกครั้งในอีก '+Math.ceil(left/1000)+' วินาที',1);
    if(!api())return say('ข้อความเสียงใช้ได้เฉพาะตอนออนไลน์',1);
+   if(VM.audio)stopAudio();/* รอบ 175: หยุดเสียงที่ดังอยู่ก่อนอัด ไมค์จะได้ไม่อัดเสียงคนอื่นติดไป ข้อความที่รอเล่นต่อหลังอัดเสร็จ */
    let st;try{st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}})}catch(e){VM.noMic++;return say('เปิดไมโครโฟนไม่ได้ '+((e&&e.name==='NotAllowedError')?'เบราว์เซอร์ไม่อนุญาตให้ใช้ไมโครโฟน กดอนุญาตที่แถบที่อยู่เว็บ แล้วลองใหม่':'ไม่พบไมโครโฟน'),1)}
    const mt=pickMt();let r;try{r=new MediaRecorder(st,mt?{mimeType:mt,audioBitsPerSecond:24000}:{audioBitsPerSecond:24000})}catch(e){try{r=new MediaRecorder(st)}catch(e2){st.getTracks().forEach(t=>t.stop());er('สร้างตัวอัด',e2);return say('อัดเสียงไม่ได้ในเครื่องนี้',1)}}
    VM.stream=st;VM.rec=r;VM.chunks=[];VM.ch=ch;VM.to=to||'*';VM.toN=toN||'';VM.t0=Date.now();VM.blob=null;
@@ -17331,7 +17339,17 @@ try{(()=>{
    say('เริ่มอัด'+chN(ch)+(toN?' ถึง '+toN:'')+' พูดได้เลย ยาวสุด 15 วินาที กด Shift ` อีกครั้งเพื่อหยุด',1);
    VM.tm=setTimeout(()=>{try{if(VM.rec&&VM.rec.state==='recording'){say('ครบ 15 วินาที หยุดอัดแล้ว',1);VM.rec.stop()}}catch(e){}},MAXMS)}catch(e){VM.rec=null;stopTracks();er('เริ่มอัด',e);say('อัดเสียงไม่สำเร็จ ลองใหม่',1)}};
  const recStop=()=>{try{if(VM.rec&&VM.rec.state==='recording'){try{sfx('toggle')}catch(e){}VM.rec.stop()}}catch(e){VM.rec=null;stopTracks();er('หยุดอัด',e)}};
- const playBlob=(b,done)=>{try{const u=URL.createObjectURL(b),a=new Audio(u);VM.audio=a;a.onended=()=>{URL.revokeObjectURL(u);if(done)done()};a.onerror=()=>{URL.revokeObjectURL(u);say('เล่นเสียงนี้ไม่ได้ในเครื่องนี้',1)};const p=a.play();if(p&&p.catch)p.catch(()=>say('เล่นเสียงไม่ได้ กดอีกครั้ง',1))}catch(e){er('เล่นเสียง',e)}};
+ /* เล่นเสียงได้ทีละเสียงเท่านั้น เสียงใหม่หยุดเสียงเก่าก่อน และแจ้งคนรอว่าเสียงเก่าจบแล้ว (คิวเล่นทันทีจะได้ไม่ค้าง) */
+ const stopAudio=()=>{const a=VM.audio,f=VM.adone;VM.audio=null;VM.adone=null;try{if(a)a.pause()}catch(e){}if(f)try{f()}catch(e){}};
+ const playBlob=(b,done)=>{let st=0,end=0,u='';const fin=()=>{if(end)return;end=1;clearTimeout(st);try{if(u)URL.revokeObjectURL(u)}catch(e){}if(VM.adone===fin){VM.audio=null;VM.adone=null}if(done)try{done()}catch(e){}};
+  try{stopAudio();u=URL.createObjectURL(b);const a=new Audio(u);VM.audio=a;VM.adone=fin;st=setTimeout(()=>{try{a.pause()}catch(e){}fin()},MAXMS+8000);
+   a.onended=fin;a.onerror=()=>{say('เล่นเสียงนี้ไม่ได้ในเครื่องนี้',1);fin()};const p=a.play();if(p&&p.catch)p.catch(()=>{say('เล่นเสียงไม่ได้ กด Shift ` แล้วเลือกฟังจากรายการ',1);fin()})}catch(e){er('เล่นเสียง',e);fin()}};
+ /* ---------- เล่นทันทีเมื่อมีคนส่ง (รอบ 175) ---------- */
+ const enq=it=>{try{VM.q.push({x:it,at:Date.now()});if(VM.q.length>QMAX)VM.q.splice(0,VM.q.length-QMAX);clearTimeout(VM.qTm);VM.qTm=setTimeout(drain,VM.qOn?600:1500);return 1}catch(e){er('คิวเสียง',e);return 0}};/* รอ 1.5 วินาที ให้เสียงแจ้งแชทและเครื่องอ่านบอกชื่อคนส่งก่อน */
+ const drain=()=>{try{clearTimeout(VM.qTm);if(VM.qOn||!VM.q.length)return;if(!autoOn()||S.vmOff===1){VM.q.length=0;return}
+   if(VM.rec||VM.fetching||(VM.audio&&!VM.audio.paused)){VM.qTm=setTimeout(drain,1000);return}/* กำลังอัด กำลังโหลด หรือมีเสียงอื่นดังอยู่ รอก่อน ไม่ดังทับ */
+   const it=VM.q.shift();if(!it||!it.x||Date.now()-it.at>60000||mute().includes(it.x.uid)){VM.qTm=setTimeout(drain,50);return}
+   VM.qOn=1;VM.qAt=Date.now();VM.auto++;play(it.x,1).then(()=>{VM.qOn=0;clearTimeout(VM.qTm);VM.qTm=setTimeout(drain,500)})}catch(e){VM.qOn=0;er('เล่นทันที',e)}};
  const afterRec=()=>{menu('อัดเสร็จ '+secT(VM.d)+' ส่ง'+chN(VM.ch)+(VM.toN?' ถึง '+VM.toN:''),[{t:'ส่งเลย',a:'s'},{t:'ฟังก่อนส่ง',a:'p'},{t:'อัดใหม่',a:'r'},{t:'ยกเลิก ไม่ส่ง',a:'c'}],
    {ent:x=>{if(x.a==='p'){if(VM.blob)playBlob(VM.blob);return}mode='play';mn=null;if(x.a==='s')return sendNow();if(x.a==='r'){const c=VM.ch,t=VM.to,n=VM.toN;VM.blob=null;return recStart(c,t==='*'?'':t,n)}VM.blob=null;say('ยกเลิก ไม่ได้ส่ง',1)},back:()=>{mode='play';mn=null;VM.blob=null;say('ยกเลิก ไม่ได้ส่ง',1)}})};
  const b64=b=>new Promise((res,rej)=>{try{const r=new FileReader();r.onload=()=>{const s=String(r.result||''),i=s.indexOf(',');res(i>=0?s.slice(i+1):'')};r.onerror=()=>rej(r.error);r.readAsDataURL(b)}catch(e){rej(e)}});
@@ -17350,46 +17368,60 @@ try{(()=>{
   catch(e){if(isPerm(e)){VM.perm=Date.now();say(isGM()?'[ผู้พัฒนา] ฐานข้อมูลยังไม่รับข้อความเสียง ต้องวางกฎฐานข้อมูลรอบ 174 (ส่วน vmsg) ก่อน':'ระบบข้อความเสียงยังไม่เปิด รอผู้พัฒนาเปิดระบบ',1)}else{er('ส่งข้อความเสียง',e);say('ส่งข้อความเสียงไม่สำเร็จ ลองใหม่',1)}}
   finally{VM.busy=0}};
  /* ---------- ฟัง ---------- */
- const play=async x=>{try{if(S.vmOff===1)return say('ปิดรับข้อความเสียงอยู่ เปิดได้ในเมนูนี้',1);const A0=api();if(!A0)return say('ฟังข้อความเสียงได้เฉพาะตอนออนไลน์',1);if(mute().includes(x.uid))return say('เจ้าปิดรับเสียงจาก '+x.n+' ไว้ กด Delete ที่รายการเพื่อเปิด',1);
-   say('กำลังเปิดข้อความเสียงจาก '+x.n,1);const {M}=A0,v=(await M.rt.get(M.rt.ref(M.rdb,'vmsg/'+x.uid+'/'+x.slot))).val();
-   if(!v||v.id!==x.id||typeof v.a!=='string'||!v.a)return say('ข้อความเสียงนี้ถูกแทนที่ด้วยข้อความใหม่ของ '+x.n+' แล้ว',1);
+ /* play คืนค่าเมื่อเสียงจบหรือเล่นไม่ได้ auto=1 คือเล่นเองจากคิว (ไม่พูดซ้ำว่ากำลังเปิด เพราะแชทบอกชื่อคนส่งแล้ว) */
+ const play=(x,auto)=>new Promise(res=>{let ok=0;const done=()=>{if(!ok){ok=1;res()}};(async()=>{try{
+   if(S.vmOff===1){if(!auto)say('ปิดรับข้อความเสียงอยู่ เปิดได้ในเมนูนี้',1);return done()}const A0=api();if(!A0){if(!auto)say('ฟังข้อความเสียงได้เฉพาะตอนออนไลน์',1);return done()}
+   if(mute().includes(x.uid)){if(!auto)say('เจ้าปิดรับเสียงจาก '+x.n+' ไว้ กด Delete ที่รายการเพื่อเปิด',1);return done()}
+   if(!auto)say('กำลังเปิดข้อความเสียงจาก '+x.n,1);const {M}=A0;let v=null;VM.fetching=1;try{v=(await M.rt.get(M.rt.ref(M.rdb,'vmsg/'+x.uid+'/'+x.slot))).val()}finally{VM.fetching=0}
+   if(!v||v.id!==x.id||typeof v.a!=='string'||!v.a){if(!auto)say('ข้อความเสียงนี้ถูกแทนที่ด้วยข้อความใหม่ของ '+x.n+' แล้ว',1);return done()}
+   if(auto&&(!autoOn()||S.vmOff===1||mute().includes(x.uid)||VM.rec))return done();/* ระหว่างโหลด ผู้เล่นปิดการเล่นทันที ปิดรับ หรือเริ่มอัดเสียง */
    const bin=atob(v.a),buf=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)buf[i]=bin.charCodeAt(i);
-   VM.played++;try{if(VM.audio)VM.audio.pause()}catch(e){}playBlob(new Blob([buf],{type:String(v.mt||'audio/webm')}),()=>{})}
-  catch(e){if(isPerm(e))say(isGM()?'[ผู้พัฒนา] ฐานข้อมูลยังไม่ให้อ่านข้อความเสียง ต้องวางกฎรอบ 174':'ฟังข้อความเสียงไม่ได้ ข้อความนี้อาจไม่ได้ส่งถึงเจ้า',1);else{er('ฟังข้อความเสียง',e);say('เปิดข้อความเสียงไม่สำเร็จ ลองใหม่',1)}}};
+   VM.played++;playBlob(new Blob([buf],{type:String(v.mt||'audio/webm')}),done)}
+  catch(e){VM.fetching=0;if(isPerm(e)){if(!auto||Date.now()-VM.permSaid>60000){VM.permSaid=Date.now();say(isGM()?'[ผู้พัฒนา] ฐานข้อมูลยังไม่ให้อ่านข้อความเสียง ต้องวางกฎรอบ 174':'ฟังข้อความเสียงไม่ได้ ข้อความนี้อาจไม่ได้ส่งถึงเจ้า',1)}}else{er('ฟังข้อความเสียง',e);if(!auto)say('เปิดข้อความเสียงไม่สำเร็จ ลองใหม่',1)}done()}})()});
  /* ---------- เมนู ---------- */
  const nearPl=()=>{try{const A0=api();if(!A0)return[];const u=A0.M.auth.currentUser.uid;return (A0.vc.liveList()||[]).filter(v=>v&&v.id!==u&&typeof v.id==='string'&&/^[A-Za-z0-9_-]{1,40}$/.test(v.id)&&Number.isFinite(v.x)&&Math.hypot(v.x-S.x,v.y-S.y)<=60).slice(0,12).map(v=>({uid:v.id,n:String(v.n||'ผู้ฝึกตน').slice(0,20)}))}catch(e){return[]}};
  const pickTo=()=>{const seen={},L=[];VM.list.slice().reverse().forEach(x=>{if(!seen[x.uid]){seen[x.uid]=1;L.push({uid:x.uid,n:x.n,t:x.n+' (ส่งข้อความเสียงหาเจ้าล่าสุด)'})}});nearPl().forEach(p=>{if(!seen[p.uid]){seen[p.uid]=1;L.push({uid:p.uid,n:p.n,t:p.n+' (อยู่ใกล้เจ้า)'})}});
   if(!L.length)return say('ไม่มีผู้เล่นใกล้ตัวหรือคนที่เคยส่งข้อความเสียงหาเจ้า',1);menu('ส่งข้อความเสียงส่วนตัวถึงใคร',L.concat([{t:'กลับ',bk:1}]),{ent:x=>{if(x.bk)return A.vmsg();mode='play';mn=null;recStart('p',x.uid,x.n)},back:()=>A.vmsg()})};
  A.vmsg=function(){try{if(VM.rec&&VM.rec.state==='recording')return recStop();if(mode!=='play'&&mode!=='menu')return;
-   const it=[{t:'อัดส่งแชทโลก',a:'w'},{t:'อัดส่งแชทแผนที่',a:'m'},{t:'อัดส่งข้อความส่วนตัว',a:'p'},{t:'รับข้อความเสียง: '+(S.vmOff===1?'ปิด':'เปิด')+' (กดเพื่อสลับ)',a:'off'}];
+   if(mode==='play'&&(VM.qOn||(VM.audio&&!VM.audio.paused))){const n=VM.q.length;VM.q.length=0;stopAudio();return say('หยุดข้อความเสียงแล้ว'+(n?' ข้ามที่รออีก '+n+' ข้อความ':'')+' ฟังย้อนหลังได้ในเมนู Shift `',1)}/* รอบ 175: เสียงดังอยู่ กดครั้งเดียวหยุด */
+   const it=[{t:'เล่นทันทีเมื่อมีคนส่งข้อความเสียง: '+(autoOn()?'เปิด':'ปิด')+' (กดเพื่อสลับ)',a:'auto'},{t:'อัดส่งแชทโลก',a:'w'},{t:'อัดส่งแชทแผนที่',a:'m'},{t:'อัดส่งข้อความส่วนตัว',a:'p'},{t:'รับข้อความเสียง: '+(S.vmOff===1?'ปิด':'เปิด')+' (กดเพื่อสลับ)',a:'off'}];
    const L=VM.list.slice().reverse().slice(0,30).map(x=>({t:x.n+' '+chN(x.ch)+(x.d?' '+secT(x.d):'')+' เมื่อ '+agoTxt(Date.now()-x.at)+(mute().includes(x.uid)?' ปิดรับคนนี้อยู่':''),x}));
    menu('ข้อความเสียง '+(L.length?'มี '+L.length+' ข้อความ เลือกเพื่อฟัง กด Delete ปิดหรือเปิดรับเสียงจากคนนั้น':'ยังไม่มีข้อความเสียง'),it.concat(L,[{t:'ปิด',cl:1}]),
-    {ent:x=>{if(x.cl){mode='play';mn=null;return say('ปิดเมนู')}if(x.x)return play(x.x);if(x.a==='off'){S.vmOff=S.vmOff===1?0:1;try{save()}catch(e){}const i=mn?mn.i:0;A.vmsg();if(mn)mn.i=i;return say('รับข้อความเสียง '+(S.vmOff===1?'ปิด':'เปิด'),1)}
+    {ent:x=>{if(x.cl){mode='play';mn=null;return say('ปิดเมนู')}if(x.x)return play(x.x);if(x.a==='off'){S.vmOff=S.vmOff===1?0:1;if(S.vmOff===1){VM.q.length=0;stopAudio()}try{save()}catch(e){}const i=mn?mn.i:0;A.vmsg();if(mn)mn.i=i;return say('รับข้อความเสียง '+(S.vmOff===1?'ปิด':'เปิด'),1)}
+      if(x.a==='auto'){S.vmAuto=autoOn()?0:1;if(S.vmAuto===0){VM.q.length=0;if(VM.qOn)stopAudio()}try{save()}catch(e){}const i=mn?mn.i:0;A.vmsg();if(mn)mn.i=i;return say(S.vmAuto===0?'ปิดการเล่นทันทีแล้ว มีข้อความเสียงมา จะบอกในแชท กด Shift ` เลือกฟังจากรายการ':'เปิดการเล่นทันทีแล้ว ข้อความเสียงที่มีคนส่งมาจะดังให้ฟังเลย',1)}
       if(x.a==='p')return pickTo();mode='play';mn=null;return recStart(x.a)},
-     del:x=>{if(!x||!x.x)return;const M0=mute(),i=M0.indexOf(x.x.uid);if(i>=0){M0.splice(i,1);say('เปิดรับเสียงจาก '+x.x.n+' แล้ว',1)}else{M0.push(x.x.uid);if(M0.length>200)M0.shift();say('ปิดรับเสียงจาก '+x.x.n+' แล้ว',1)}try{save()}catch(e){}const k=mn?mn.i:0;A.vmsg();if(mn)mn.i=k}})}catch(e){er('เมนูข้อความเสียง',e)}};
+     del:x=>{if(!x||!x.x)return;const M0=mute(),i=M0.indexOf(x.x.uid);if(i>=0){M0.splice(i,1);say('เปิดรับเสียงจาก '+x.x.n+' แล้ว',1)}else{M0.push(x.x.uid);if(M0.length>200)M0.shift();VM.q=VM.q.filter(q=>q&&q.x&&q.x.uid!==x.x.uid);say('ปิดรับเสียงจาก '+x.x.n+' แล้ว',1)}try{save()}catch(e){}const k=mn?mn.i:0;A.vmsg();if(mn)mn.i=k}})}catch(e){er('เมนูข้อความเสียง',e)}};
  KEYS['S+Backquote']='vmsg';
  try{MAIN.push(['ข้อความเสียง อัดส่ง และฟัง (Shift `)','S+Backquote']);renderMob()}catch(e){}
  try{const b=document.createElement('button');b.tabIndex=-1;b.onmousedown=e=>e.preventDefault();b.textContent='เสียง';b.setAttribute('aria-label','ปุ่ม ข้อความเสียง อัดส่งและฟัง');b.onclick=()=>{if(mode==='input')return;handle({code:'Backquote',shiftKey:true});render()};$('pad').appendChild(b)}catch(e){}
  /* ---------- ตัวตรวจ ตัวซ่อม ---------- */
  const bad=()=>{const o=[];try{if(KEYS['S+Backquote']!=='vmsg'||typeof A.vmsg!=='function')o.push('ข้อความเสียง: ปุ่ม Shift ` ไม่ได้ผูก');if(typeof window.__VMIN!=='function')o.push('ข้อความเสียง: ตัวรับหาย');
    if(S.vmSlot!=null&&!(Number.isInteger(S.vmSlot)&&S.vmSlot>=0&&S.vmSlot<SLOTS))o.push('ข้อความเสียง: ช่องเก็บในเซฟผิด');if(S.vmMute!=null&&!Array.isArray(S.vmMute))o.push('ข้อความเสียง: รายชื่อปิดรับผิดรูป');
-   if(VM.rec&&Date.now()-VM.t0>MAXMS+5000)o.push('ข้อความเสียง: ตัวอัดค้าง');if(VM.busy&&Date.now()-(VM.busyT||0)>30000)o.push('ข้อความเสียง: ส่งค้าง');if(VM.list.length>50)o.push('ข้อความเสียง: รายการยาวเกิน');if(VM.err>10)o.push('ข้อความเสียง: ผิดพลาด '+VM.err+' ครั้ง ล่าสุด '+VM.last)}catch(e){o.push('ข้อความเสียง ตัวตรวจพัง '+e.message)}return o};
+   if(VM.rec&&Date.now()-VM.t0>MAXMS+5000)o.push('ข้อความเสียง: ตัวอัดค้าง');if(VM.busy&&Date.now()-(VM.busyT||0)>30000)o.push('ข้อความเสียง: ส่งค้าง');if(VM.list.length>50)o.push('ข้อความเสียง: รายการยาวเกิน');if(VM.err>10)o.push('ข้อความเสียง: ผิดพลาด '+VM.err+' ครั้ง ล่าสุด '+VM.last);
+   if(S.vmAuto!=null&&S.vmAuto!==0&&S.vmAuto!==1)o.push('ข้อความเสียง: ค่าเล่นทันทีในเซฟผิด');if(!Array.isArray(VM.q))o.push('ข้อความเสียง: คิวเล่นทันทีเสีย');else{if(VM.q.length>QMAX)o.push('ข้อความเสียง: คิวเล่นทันทียาวเกิน');if(VM.q.length&&!VM.qOn&&Date.now()-(VM.q[0]&&VM.q[0].at||0)>75000)o.push('ข้อความเสียง: คิวเล่นทันทีค้าง')}
+   if(VM.qOn&&Date.now()-VM.qAt>MAXMS+20000)o.push('ข้อความเสียง: เล่นทันทีค้าง');if(VM.fetching&&Date.now()-VM.qAt>40000&&VM.qOn)o.push('ข้อความเสียง: โหลดเสียงค้าง')}catch(e){o.push('ข้อความเสียง ตัวตรวจพัง '+e.message)}return o};
  CHK.push(()=>{try{return bad()}catch(e){return['ข้อความเสียง ตัวตรวจพัง '+e.message]}});
  (window.__R5DGH=window.__R5DGH||[]).push(is=>{try{bad().forEach(m=>is.push(m))}catch(e){}});
  (window.__R5FXH=window.__R5FXH||[]).push(fx=>{try{let n=0;if(S.vmSlot!=null&&!(Number.isInteger(S.vmSlot)&&S.vmSlot>=0&&S.vmSlot<SLOTS)){S.vmSlot=0;n++}if(S.vmMute!=null&&!Array.isArray(S.vmMute)){S.vmMute=[];n++}if(S.vmOff!=null&&S.vmOff!==0&&S.vmOff!==1){S.vmOff=0;n++}
    if(VM.rec&&Date.now()-VM.t0>MAXMS+5000){try{VM.rec.stop()}catch(e){}VM.rec=null;stopTracks();n++}if(VM.list.length>50){VM.list.splice(0,VM.list.length-50);n++}if(VM.busy&&Date.now()-(VM.busyT||0)>30000){VM.busy=0;n++}if(VM.err>10){VM.err=0;n++}if(KEYS['S+Backquote']!=='vmsg'){KEYS['S+Backquote']='vmsg';n++}
+   if(S.vmAuto!=null&&S.vmAuto!==0&&S.vmAuto!==1){S.vmAuto=1;n++}if(!Array.isArray(VM.q)){VM.q=[];n++}if(VM.q.length>QMAX){VM.q.splice(0,VM.q.length-QMAX);n++}
+   if(VM.qOn&&Date.now()-VM.qAt>MAXMS+20000){VM.qOn=0;VM.fetching=0;try{stopAudio()}catch(e){}n++}if(VM.q.length&&!VM.qOn&&Date.now()-(VM.q[0]&&VM.q[0].at||0)>75000){VM.q.length=0;n++}if(VM.q.length&&!VM.qOn)drain();
    if(n)fx.push(['vm174','ซ่อมข้อความเสียง '+n+' จุด'])}catch(e){}});
  /* ---------- ข่าว คู่มือ ---------- */
  const GL=()=>[{t:'ของใหม่วันที่ 23 พฤศจิกายน รอบ 174 ข้อความเสียง'},
   {t:'กด Shift กับปุ่ม ` (เหนือ Tab) เปิดเมนูข้อความเสียง เลือกอัดส่งแชทโลก แชทแผนที่ หรือข้อความส่วนตัว บนโทรศัพท์ใช้ปุ่มข้อความเสียงในเมนูหลัก'},
   {t:'เริ่มอัดแล้วพูดได้เลย ยาวสุด 15 วินาที กด Shift ` อีกครั้งเพื่อหยุด แล้วเลือกส่งเลย ฟังก่อนส่ง อัดใหม่ หรือยกเลิก ส่งได้ทุก 8 วินาที'},
-  {t:'คนรับได้ยินในแชทว่า ชื่อผู้ส่ง ส่งข้อความเสียงกี่วินาที กด Shift ` ฟัง ในเมนูมีรายการข้อความเสียงล่าสุด 30 ข้อความ บอกชื่อผู้ส่ง ช่อง และเวลา กด Enter ฟัง ฟังซ้ำได้'},
+  {t:'คนรับได้ยินในแชทว่า ชื่อผู้ส่ง ส่งข้อความเสียงกี่วินาที แล้วเสียงนั้นดังให้ฟังทันที ไม่ต้องกด ทั้งแชทโลก แชทแผนที่ และข้อความส่วนตัว มีหลายข้อความเล่นต่อกันทีละข้อความ ไม่ดังทับกัน'},
+  {t:'ระหว่างข้อความเสียงดังอยู่ กด Shift ` หนึ่งครั้ง หยุดเสียงและข้ามข้อความที่รออยู่ บนโทรศัพท์กดปุ่ม เสียง ในแผงปุ่ม'},
+  {t:'ไม่อยากให้ดังเอง เปิดเมนู Shift ` เลือก เล่นทันทีเมื่อมีคนส่งข้อความเสียง เพื่อปิด จากนั้นแชทจะบอกว่า กด Shift ` ฟัง แล้วเลือกฟังเองจากรายการ ข้อความเสียงที่ส่งมาตอนเจ้าไม่อยู่ไม่ดังเอง'},
+  {t:'ในเมนูมีรายการข้อความเสียงล่าสุด 30 ข้อความ บอกชื่อผู้ส่ง ช่อง และเวลา กด Enter ฟัง ฟังซ้ำได้'},
   {t:'กด Delete ที่รายการ ปิดหรือเปิดรับเสียงจากคนนั้น ปิดรับข้อความเสียงทั้งหมดได้ในเมนูเดียวกัน'},
   {t:'แต่ละคนเก็บข้อความเสียงล่าสุดไว้ 5 ข้อความ อันเก่ากว่านั้นถูกแทนที่ ข้อความส่วนตัวมีแค่คนรับที่ฟังได้'},
   {t:'เบราว์เซอร์ต้องได้รับอนุญาตใช้ไมโครโฟน iPhone รุ่นเก่าบางเครื่องอาจเล่นเสียงที่อัดจากเครื่องอื่นไม่ได้ เกมจะบอก'}];
  try{GUIDE.r174=GL}catch(e){}
  try{(window.__GOPEN=window.__GOPEN||{}).r174=()=>{try{menu('คู่มือรอบ 174 ข้อความเสียง',GL().concat([{t:'กลับคู่มือเกม',back:1}]),{ent:x=>{if(x.back)return A.guide();say(x.t,1)}})}catch(e){}}}catch(e){}
  try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-23',c:[C_SYS],gd:'r174',h:'ข้อความเสียง อัดเสียงส่งในแชทโลก แชทแผนที่ และข้อความส่วนตัว กด Shift ` รอบ 174',b:GL().map(x=>x.t)})}catch(e){}
+ try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-23',c:[C_SYS],gd:'r174',h:'ข้อความเสียงดังให้ฟังทันทีเมื่อมีคนส่ง ไม่ต้องกดฟัง ปิดได้ รอบ 175',b:['ข้อความเสียงที่มีคนส่งมาในแชทโลก แชทแผนที่ และข้อความส่วนตัว ดังให้ฟังทันที ไม่ต้องกด','หลายข้อความเล่นต่อกันทีละข้อความ ไม่ดังทับกัน ระหว่างเจ้ากำลังอัดเสียงจะรอให้อัดเสร็จก่อน','ระหว่างเสียงดัง กด Shift ` หนึ่งครั้งเพื่อหยุด บนโทรศัพท์กดปุ่ม เสียง','ปิดการเล่นทันทีได้ในเมนู Shift ` แล้วกดฟังเองจากรายการเหมือนเดิม']})}catch(e){}
  const TT='ข้อความเสียง รอบ 174';const put=()=>{try{const G=window.__GDX;if(!Array.isArray(G)||G.some(x=>x&&x[0]===TT))return 0;G.unshift([TT,GL().map(x=>x.t).filter(t=>!/^ของใหม่วันที่/.test(t))]);return 1}catch(e){return 0}};put();setTimeout(put,4000);
  (window.__R5FXH=window.__R5FXH||[]).push(fx=>{try{if(put())fx.push(['gd174','ใส่เรื่องรอบ 174 ในคู่มือละเอียดคืน'])}catch(e){}});
 })()}catch(e){console.error('R174',e);try{bugLog('รอบ 174','ไม่สำเร็จ: '+e)}catch(x){}}
