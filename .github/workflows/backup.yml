@@ -1,9 +1,13 @@
 # สำรองฐานข้อมูลเกมทุกวัน ตี 4 เวลาไทย (เข้ารหัส เก็บ 30 วัน) กดสำรองเองได้ที่แท็บ Actions > สำรองข้อมูลทุกวัน > Run workflow
+# หรือแก้ไฟล์ .github/backup-now แล้วบันทึก ระบบจะสำรองทันที (ใช้แทนการกดปุ่มที่ใช้กับตัวอ่านหน้าจอยาก)
 name: สำรองข้อมูลทุกวัน
 on:
   schedule:
     - cron: '7 21 * * *'
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/backup-now']
 permissions:
   contents: read
 concurrency:
