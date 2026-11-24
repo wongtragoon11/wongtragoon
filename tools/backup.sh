@@ -15,14 +15,26 @@ if ! get "" "$WORK/keys.json" "shallow=true"; then echo "::error::อ่าน�
 KEYS="$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(" ".join(sorted(d.keys())) if isinstance(d,dict) else "")' "$WORK/keys.json")"
 if [ -z "$KEYS" ]; then echo "::error::ฐานข้อมูลว่างหรืออ่านไม่ได้"; exit 1; fi
 ok=0; fail=0; skipped=""; failed=""
+# ส่วนที่ใหญ่เกินกว่า Firebase จะส่งในครั้งเดียว (เช่น svbak เซฟสำรองรายชั่วโมงของทุกคน) ดึงทีละลูกแทน เก็บในโฟลเดอร์ชื่อส่วนนั้น
+split() { local k="$1" sub; mkdir -p "$DIR/$k"
+  if ! get "$k" "$WORK/sub.json" "shallow=true"; then return 1; fi
+  sub="$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(" ".join(sorted(d.keys())) if isinstance(d,dict) else "")' "$WORK/sub.json")"
+  local bad=0; for c in $sub; do if ! get "$k/$c" "$DIR/$k/$c.json" "format=export"; then bad=$((bad+1)); rm -f "$DIR/$k/$c.json"; echo "::warning::ดึง $k/$c ไม่ได้"; fi; done
+  [ "$bad" -eq 0 ]; }
 for k in $KEYS; do
   case "$SKIP" in *" $k "*) skipped="$skipped $k"; continue;; esac
-  if get "$k" "$DIR/$k.json" "format=export"; then ok=$((ok+1)); else fail=$((fail+1)); failed="$failed $k"; rm -f "$DIR/$k.json"; fi
+  if get "$k" "$DIR/$k.json" "format=export" 2>/dev/null; then ok=$((ok+1)); continue; fi
+  rm -f "$DIR/$k.json"; echo "ส่วน $k ใหญ่เกินหรือดึงครั้งเดียวไม่ได้ ดึงทีละลูกแทน"
+  if split "$k"; then ok=$((ok+1)); else fail=$((fail+1)); failed="$failed $k"; fi
 done
 python3 - "$DIR" "$STAMP" "$ok" "$fail" "$failed" "$skipped" <<'PY'
 import json,os,sys
 d,stamp,ok,fail,failed,skipped=sys.argv[1:7]
-files={f[:-5]:os.path.getsize(os.path.join(d,f)) for f in sorted(os.listdir(d)) if f.endswith('.json')}
+files={}
+for f in sorted(os.listdir(d)):
+    q=os.path.join(d,f)
+    if f.endswith('.json'): files[f[:-5]]=os.path.getsize(q)
+    elif os.path.isdir(q): files[f+'/']=sum(os.path.getsize(os.path.join(q,x)) for x in os.listdir(q))
 saves=0
 try:
     s=json.load(open(os.path.join(d,'saves.json')));saves=len(s) if isinstance(s,dict) else 0
