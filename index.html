@@ -309,10 +309,25 @@ function saveWrite(K,js){try{localStorage.setItem(K,js);return true}catch(e){SAV
 /* รอบ 99: ลายเซ็นเซฟ ck คิดจากเนื้อเซฟทั้งก้อน เซฟที่ถูกแก้นอกเกม (แก้ในเครื่องหรือเขียนตรงขึ้นเซิร์ฟเวอร์) ลายเซ็นจะไม่ตรง ตัวเลือกเซฟตอนเข้าเกมจะใช้ชุดที่ตรงแทน เป็นด่านกั้น ไม่ใช่การป้องกันเต็มรูปแบบ (ดูรายงานรอบ 99) */
 function sg99(t){t='มรรคา|'+t+'|เซียน99';let a=0x2f6b1d37^t.length,b=0x6d2b79f5;for(let i=0;i<t.length;i++){const c=t.charCodeAt(i);a=Math.imul(a^c,2654435761);b=Math.imul(b^c,1597334677)}a=Math.imul(a^(a>>>16),2246822507)^Math.imul(b^(b>>>13),3266489909);b=Math.imul(b^(b>>>16),2246822507)^Math.imul(a^(a>>>13),3266489909);return(b>>>0).toString(36)+'.'+(a>>>0).toString(36)}
 function sgSt99(t){try{const o=JSON.parse(t);if(!o||typeof o!=='object'||Array.isArray(o))return 'bad';if(typeof o.ck!=='string')return 'none';const c=o.ck;delete o.ck;delete o.dev;return sg99(JSON.stringify(o))===c?'ok':'bad'}catch(e){return 'bad'}}
-function save(){if(window.__DUP||window.__SAVE_LOCK)return;S.t=Date.now();if(typeof window.__SESS==='string'&&window.__SESS)S.ows=window.__SESS;/* รอบ 112: รอบเล่นที่สร้างเซฟนี้ ใช้ตัดสินว่ามีเครื่องอื่นเล่นต่อหลังจากนี้หรือไม่ */S.sv=Math.max(Math.floor(+S.sv)||0,Math.floor(+window.__SVFLOOR)||0)+1;/* รอบ 112: เดินต่อจากเลขสูงสุดที่เคยมีบนเซิร์ฟเวอร์และในเครื่อง *//* รอบที่ 68: เลขลำดับเซฟ เพิ่มทุกครั้งที่เซฟ ใช้เลือกเซฟข้ามเครื่องแทนเวลา (นาฬิกาเครื่องเพี้ยนไม่มีผล) */const K=window.__KEY||'ipo1';let js;try{const BP=window.__BOOTP,o9=BP?Object.assign({},S,{x:BP.x,y:BP.y,alt:BP.alt}):Object.assign({},S);delete o9.ck;delete o9.dev;const b9=JSON.stringify(o9);js=b9.length>2&&b9.charAt(b9.length-1)==='}'?b9.slice(0,-1)+',"ck":"'+sg99(b9)+'"}':b9}catch(e){SAVEH.fail++;SAVEH.err='stringify';saveWarn();return}
+function save(){if(window.__DUP||window.__SAVE_LOCK){if(window.__SAVE_LOCK&&!window.__DUP)ulk181(0);return}/* รอบ 181: ล็อกเซฟอยู่ ห้ามเขียนเซฟหลัก แต่เก็บความคืบหน้าแยกไว้ในเครื่อง (ulk181) ให้มีที่กู้ */S.t=Date.now();if(typeof window.__SESS==='string'&&window.__SESS)S.ows=window.__SESS;/* รอบ 112: รอบเล่นที่สร้างเซฟนี้ ใช้ตัดสินว่ามีเครื่องอื่นเล่นต่อหลังจากนี้หรือไม่ */S.sv=Math.max(Math.floor(+S.sv)||0,Math.floor(+window.__SVFLOOR)||0)+1;/* รอบ 112: เดินต่อจากเลขสูงสุดที่เคยมีบนเซิร์ฟเวอร์และในเครื่อง *//* รอบที่ 68: เลขลำดับเซฟ เพิ่มทุกครั้งที่เซฟ ใช้เลือกเซฟข้ามเครื่องแทนเวลา (นาฬิกาเครื่องเพี้ยนไม่มีผล) */const K=window.__KEY||'ipo1';let js;try{const BP=window.__BOOTP,o9=BP?Object.assign({},S,{x:BP.x,y:BP.y,alt:BP.alt}):Object.assign({},S);delete o9.ck;delete o9.dev;const b9=JSON.stringify(o9);js=b9.length>2&&b9.charAt(b9.length-1)==='}'?b9.slice(0,-1)+',"ck":"'+sg99(b9)+'"}':b9}catch(e){SAVEH.fail++;SAVEH.err='stringify';saveWarn();return}
  if(!saveWrite(K,js)){SAVEH.fail++;saveWarn();return}
- SAVEH.fail=0;SAVEH.okT=S.t;
+ SAVEH.fail=0;SAVEH.okT=S.t;if(ULK181.mine)ulkClr181();/* รอบ 181: ล็อกหายแล้ว เซฟหลักมีความคืบหน้าช่วงล็อกครบ ไม่ต้องเก็บแยกอีก */
  if(S.t-SAVEH.bakT>=BAK_GAP&&js.length<1500000){SAVEH.bakT=S.t;try{localStorage.setItem(bakPre()+S.t+'|a',js);bakPrune(BAK_MAX)}catch(e){}}}
+/* ===== รอบ 181 (24 พ.ย. 2569 ผู้บงการสั่ง): ความคืบหน้าที่ยังไม่ได้ขึ้นเซิร์ฟเวอร์ต้องมีที่กู้เสมอ =====
+   ปัญหา: ระหว่างล็อกเซฟ save() ไม่เขียนอะไรเลย ความคืบหน้าอยู่แค่ในหน่วยความจำ รีเฟรชแล้วหายหมด และเซฟสำรองบนเซิร์ฟเวอร์ (svbak) ก็ทำจากเซฟเดิม ผู้พัฒนาจึงกู้ได้แค่จุดเก่า
+   แก้: ระหว่างล็อกเก็บความคืบหน้าลงคีย์แยก <KEY>_ulk ทุก 10 วินาที ตอนหยุดเกม และตอนปิดหน้า (ไม่แตะเซฟหลัก เพราะอีกเครื่องอาจเป็นเจ้าของเซฟอยู่)
+     เข้าเกมครั้งถัดไป ระบบสำรอง (รอบที่ 69) ส่งขึ้น svbak ช่อง x เป็นชุด "ความคืบหน้าระหว่างล็อกเซฟ" แล้วลบคีย์ทิ้ง / ระหว่างล็อกที่ยังต่อเน็ตได้ ส่งขึ้นทันทีด้วย (lockTick)
+     ล็อกหายแล้วเซฟหลักบันทึกได้ = ความคืบหน้าอยู่ในเซฟหลักแล้ว ลบคีย์ที่หน้านี้เขียนเอง (mine) ส่วนคีย์ค้างจากหน้าก่อน (has) ต้องรอส่งขึ้นก่อนค่อยลบ */
+const ULK181={n:0,fail:0,err:'',t:0,has:0,mine:0,clr:0};window.__ULK181=ULK181;
+const ulkKey181=()=>(window.__KEY||'ipo1')+'_ulk';
+try{ULK181.has=localStorage.getItem(ulkKey181())?1:0}catch(e){}
+function ulk181(force){try{if(window.__DUP||window.__FIXING||!window.__SAVE_LOCK)return;const n=Date.now();if(!force&&n-ULK181.t<10000)return;ULK181.t=n;
+ const BP=window.__BOOTP,o=BP?Object.assign({},S,{x:BP.x,y:BP.y,alt:BP.alt}):Object.assign({},S);delete o.ck;delete o.dev;o.t=n;const js=JSON.stringify(o);if(!(js.length>2&&js.length<1900000)){ULK181.fail++;ULK181.err='size';return}
+ const K=ulkKey181();let ok=false;try{localStorage.setItem(K,js);ok=true}catch(e){ULK181.err=String(e&&e.name||e).slice(0,30)}
+ if(!ok){try{bakPrune(2);localStorage.setItem(K,js);ok=true}catch(e){ULK181.err=String(e&&e.name||e).slice(0,30)}}/* ที่เก็บเต็ม: ความคืบหน้าล่าสุดสำคัญกว่าเซฟสำรองในเครื่องชุดเก่า ลบเหลือ 2 ชุดแล้วลองใหม่ */
+ if(ok){ULK181.n++;ULK181.fail=0;ULK181.mine=1;ULK181.has=0}else ULK181.fail++}catch(e){ULK181.fail++;ULK181.err=String(e&&e.message||e).slice(0,30)}}
+function ulkClr181(){try{localStorage.removeItem(ulkKey181())}catch(e){}ULK181.mine=0;ULK181.clr++}
+addEventListener('pagehide',()=>{try{ulk181(1)}catch(e){}});
 CHK.push(()=>{const o=[];
  if(SAVEH.fail>=3)o.push('บันทึกเซฟ: เขียนเซฟในเครื่องล้มเหลวติดกัน '+SAVEH.fail+' ครั้ง ('+SAVEH.err+')');
  if(!window.__SAVE_LOCK&&!window.__DUP&&SAVEH.okT&&!document.hidden&&Date.now()-SAVEH.okT>180000)o.push('บันทึกเซฟ: ไม่มีการบันทึกสำเร็จเกิน 3 นาที');
@@ -342,7 +357,7 @@ const haltShow=()=>{const H=window.__HALTED;if(!H)return;let d=document.getEleme
  const NT=H.why==='net'||H.why==='nosave';document.getElementById('halt_t').textContent=NT?'ตัดออกจากเกมชั่วคราว':H.why==='stuck'?'เกมหยุดไว้ชั่วคราว':'เกมหยุดที่'+(H.why==='tab'?'แท็บ':'เครื่อง')+'นี้';document.getElementById('halt_d').textContent=H.msg;document.getElementById('halt_b').textContent=NT?'เข้าเกมใหม่':H.why==='stuck'?'โหลดเซฟล่าสุดอีกครั้ง':H.why==='tab'?'เล่นที่แท็บนี้':'เล่นที่เครื่องนี้';
  d.hidden=false;const ap=document.getElementById('app');if(ap)ap.hidden=true;try{const lo=document.getElementById('logall');if(lo)lo.hidden=true}catch(e){}setTimeout(()=>{try{document.getElementById('halt_b').focus()}catch(e){}},60)};
 const haltGo=()=>{try{if(!window.__HALTED||window.__HALTED.go)return;window.__HALTED.go=Date.now();try{sessionStorage.setItem('ipo_healmsg','1')}catch(e){}const b=document.getElementById('halt_b');if(b){b.textContent='กำลังโหลดเซฟล่าสุด';b.disabled=true}location.reload()}catch(e){}};
-window.__HALT=why=>{try{if(window.__HALTED)return;why=HALTM[why]?why:'stuck';window.__HALTED={why,t:Date.now(),msg:HALTM[why],go:0};if(why!=='stuck')window.__DUP=window.__DUP||1;
+window.__HALT=why=>{try{if(window.__HALTED)return;why=HALTM[why]?why:'stuck';try{ulk181(1)}catch(e){}/* รอบ 181: ล็อกเซฟอยู่ก่อนหยุดเกม เก็บความคืบหน้าแยกไว้ในเครื่องก่อนหยุดบันทึก */window.__HALTED={why,t:Date.now(),msg:HALTM[why],go:0};if(why!=='stuck')window.__DUP=window.__DUP||1;
  try{auto=false;walk=false}catch(e){}try{if(mode==='input'&&typeof endAsk==='function')endAsk()}catch(e){}try{mode='play';mn=null}catch(e){}
  haltShow();say(HALTM[why],1);try{bugLog('หยุดเกม',why+' '+JSON.stringify(window.__LOCKWHY||{}).slice(0,100))}catch(e){}}catch(e){try{console.error('halt',e)}catch(x){}}};
 addEventListener('keydown',e=>{try{if(!window.__HALTED)return;const b=document.getElementById('halt_b');if(e.key==='Tab'||e.key==='F5'||e.ctrlKey||e.metaKey||e.altKey){e.stopImmediatePropagation();return}/* ปุ่มของเบราว์เซอร์และตัวอ่านหน้าจอยังใช้ได้ (ไม่กั้นค่าเริ่มต้น) แต่ไม่ส่งต่อให้ปุ่มลัดในเกม เดิม Tab และ F5 ทะลุไปเปิดเมนูในเกม */if(e.target===b&&(e.key===' '||e.key==='Spacebar'))return;e.preventDefault();e.stopImmediatePropagation();if(e.repeat)return;
@@ -13137,9 +13152,11 @@ try{(()=>{/* ===== รอบที่ 69 (13 พ.ย. 2569): ระบบสำ�
  const permE=e=>/permission|PERMISSION/.test(String(e&&(e.code||e.message)||e));
  const eTxt=e=>String((e&&(e.code||e.message))||e).slice(0,80);
  const meta=(o,src)=>({n:String(o.pname||S.pname||'ไม่มีชื่อ').slice(0,24),st:Math.floor(num(o.step)),sv:Math.floor(num(o.sv)),w:Math.floor(wOf(o)),iv:ivOf(o),k:kOf(o),pt:petsOf(o).length,src});
- async function up(slot,js,src){const M=MPx();if(!M)throw new Error('ยังไม่ได้เชื่อมต่อเซิร์ฟเวอร์');if(typeof js!=='string'||js.length>1900000)throw new Error('เซฟใหญ่เกิน');let o;try{o=JSON.parse(js)}catch(e){throw new Error('อ่านเซฟไม่ได้')}if(!okSave(o))throw new Error('เซฟเสีย');
+ /* รอบ 181: ct = เวลาของข้อมูลในเซฟ (เวลาที่เซฟนั้นถูกบันทึก) ไม่ใช่เวลาส่งขึ้น t = เวลาส่งขึ้นเซิร์ฟเวอร์ เดิม F8 บอกเวลาส่งขึ้น เซฟเก่าที่เพิ่งส่งขึ้นจึงดูเหมือนเซฟใหม่ กู้แล้วย้อนไปไกลกว่าที่เห็น */
+ const ctOf=(o,ct)=>{let v=num(ct);if(!v)v=num(o&&o.t);const n=Date.now();return v>1.5e12&&v<n+DAY?Math.floor(v):n};
+ async function up(slot,js,src,ct){const M=MPx();if(!M)throw new Error('ยังไม่ได้เชื่อมต่อเซิร์ฟเวอร์');if(typeof js!=='string'||js.length>1900000)throw new Error('เซฟใหญ่เกิน');let o;try{o=JSON.parse(js)}catch(e){throw new Error('อ่านเซฟไม่ได้')}if(!okSave(o))throw new Error('เซฟเสีย');
   const u=M.auth.currentUser.uid,rd=M.rt,m=meta(o,src);
-  await rd.set(rd.ref(M.rdb,'svbak/'+u+'/'+slot),Object.assign({},m,{t:rd.serverTimestamp(),ct:Date.now(),js}));SB.up++;   try{await rd.set(rd.ref(M.rdb,'svmeta/'+u+'/'+slot),Object.assign(meta120(o,m),{t:rd.serverTimestamp()}))}catch(e){SB.mErr=(SB.mErr|0)+1;SB.mLast=eTxt(e)}/* รอบ 121: ข้อมูลย่อให้ผู้พัฒนาตรวจผู้เล่นผิดปกติ */
+  await rd.set(rd.ref(M.rdb,'svbak/'+u+'/'+slot),Object.assign({},m,{t:rd.serverTimestamp(),ct:ctOf(o,ct),js}));SB.up++;   try{await rd.set(rd.ref(M.rdb,'svmeta/'+u+'/'+slot),Object.assign(meta120(o,m),{t:rd.serverTimestamp()}))}catch(e){SB.mErr=(SB.mErr|0)+1;SB.mLast=eTxt(e)}/* รอบ 121: ข้อมูลย่อให้ผู้พัฒนาตรวจผู้เล่นผิดปกติ */
   try{await rd.set(rd.ref(M.rdb,'svidx/'+u),{n:m.n,st:m.st,t:rd.serverTimestamp()})}catch(e){}}
  const LK=()=>'ipo_sb69|'+(window.__KEY||'ipo1');
  const ld=()=>{try{const o=JSON.parse(localStorage.getItem(LK())||'{}');return o&&typeof o==='object'?o:{}}catch(e){return{}}};
@@ -13155,15 +13172,53 @@ try{(()=>{/* ===== รอบที่ 69 (13 พ.ย. 2569): ระบบสำ�
    const w=wOf(o),v=vOf(o);
    if(w>num(L.hw)+.5&&Date.now()-num(L.hwT)>30*MIN){await up('hw',js,'hw');L.hw=w;L.hwT=Date.now();st(L)}
    if(v>num(L.hv)&&Date.now()-num(L.hvT)>30*MIN){await up('hv',js,'hv');L.hv=v;L.hvT=Date.now();st(L)}
-   if(!SB.scan){SB.scan=1;/* เซฟที่แพ้ตอนเลือกเซฟข้ามเครื่อง และเซฟสำรองในเครื่อง ที่ค่าของหรือเงินสูงกว่าเซฟที่ใช้อยู่ ส่งขึ้นให้ผู้พัฒนากู้คืนได้ (ส่งครั้งเดียวต่อเซฟ) */
-    const K=window.__KEY||'ipo1',cand=[];try{const b=localStorage.getItem(K+'_bak');if(b)cand.push(b)}catch(e){}try{bakKeys().forEach(k=>{try{const x=localStorage.getItem(k);if(x)cand.push(x)}catch(e){}})}catch(e){}
-    L.xs=Array.isArray(L.xs)?L.xs:[];let n=0;
-    for(const c of cand){if(n>=3)break;let co;try{co=JSON.parse(c)}catch(e){continue}if(!okSave(co))continue;if(!(wOf(co)>w+.5||vOf(co)>v))continue;const h=hsh(c);if(L.xs.includes(h))continue;
-     await up('x'+(num(L.xi)%5),c,'lost');L.xi=num(L.xi)+1;L.xs.push(h);L.xs=L.xs.slice(-30);st(L);n++}
-    if(n)try{bugLog('สำรองเซฟ','ส่งเซฟที่ค่าของหรือเงินสูงกว่าเซฟที่ใช้อยู่ขึ้นเซิร์ฟเวอร์ '+n+' ชุด ผู้ดูแลกู้คืนได้')}catch(e){}}
+   if(!SB.scan){SB.scan=1;SB.scanT=Date.now();try{/* เซฟที่แพ้ตอนเลือกเซฟข้ามเครื่อง และเซฟสำรองในเครื่อง ที่ค่าของหรือเงินสูงกว่าเซฟที่ใช้อยู่ ส่งขึ้นให้ผู้พัฒนากู้คืนได้ (ส่งครั้งเดียวต่อเซฟ)
+      รอบ 181: ส่งขึ้นเสมอไม่ต้องดูค่าของหรือเงิน ถ้าเป็นความคืบหน้าที่ยังไม่เคยขึ้นเซิร์ฟเวอร์ ได้แก่ คีย์ _ulk (ความคืบหน้าระหว่างล็อกเซฟ ชุด lock) และเซฟที่แพ้ซึ่งใหม่กว่าเซฟที่ชนะ (ตัวโหลดติดป้าย new ใน _bakm ชุด unsent)
+      ถ้าส่งไม่สำเร็จ (เน็ตหลุด) รอบหน้าสแกนใหม่ (เดิมสแกนครั้งเดียวต่อการเข้าเกม ล้มแล้วไม่ลองอีก) ส่งแล้วลบคีย์ _ulk และ _bak2 ทิ้ง คืนที่เก็บในเครื่อง */
+    const K=window.__KEY||'ipo1',cand=[],mk=mk181();const add=(k,s0)=>{try{const x=localStorage.getItem(k);if(x)cand.push({c:x,k,s0})}catch(e){}};
+    add(K+'_ulk','lock');add(K+'_bak','');add(K+'_bak2','');try{bakKeys().forEach(k=>add(k,''))}catch(e){}
+    L.xs=Array.isArray(L.xs)?L.xs:[];let n=0,nl=0;const oC=coreH181(o);
+    for(const C of cand){if(n>=4)break;const c=C.c,drop=C.k===K+'_ulk'||C.k===K+'_bak2';let co;try{co=JSON.parse(c)}catch(e){if(drop)rmK181(C.k);continue}if(!okSave(co)){if(drop)rmK181(C.k);continue}const h=hsh(c);
+     if(L.xs.includes(h)){if(drop)rmK181(C.k);continue}
+     let src=C.s0||(mk[h]==='new'?'unsent':'');
+     if(src){const cH=coreH181(co);if(cH===oC||(src==='lock'&&cH===L.lkh)){L.xs.push(h);L.xs=L.xs.slice(-30);st(L);if(drop)rmK181(C.k);continue}}/* เหมือนเซฟที่ใช้อยู่ หรือเหมือนชุดที่ส่งขึ้นตอนล็อกแล้ว ไม่ต้องส่งซ้ำ */
+     else{if(!(wOf(co)>w+.5||vOf(co)>v))continue;if(nl>=3)continue;src='lost';nl++}
+     await up(await pickX181(L),c,src);L.xs.push(h);L.xs=L.xs.slice(-30);st(L);n++;SB.x181=(SB.x181|0)+(src==='lost'?0:1);
+     if(drop)rmK181(C.k)}
+    if(n)try{bugLog('สำรองเซฟ','ส่งเซฟที่ยังไม่ได้ขึ้นเซิร์ฟเวอร์หรือค่าสูงกว่าเซฟที่ใช้อยู่ขึ้นเซิร์ฟเวอร์ '+n+' ชุด ผู้ดูแลกู้คืนได้')}catch(e){}
+   }catch(e){SB.scan=0;throw e}}
    SB.okT=Date.now()}catch(e){SB.err++;SB.last=eTxt(e);if(permE(e))SB.perm=1}finally{SB.busy=false}}
  setTimeout(()=>{tick();setInterval(tick,MIN)},20000);
  SB.tick=tick;/* ใช้ทดสอบ */
+ /* ---------- รอบ 181: ความคืบหน้าที่ยังไม่ได้ขึ้นเซิร์ฟเวอร์ ---------- */
+ const VOL181=['t','x','y','f','hp','qi','med','fear','poison','sv','ck','dev','ows','alt'];
+ const coreH181=o=>{try{const c=Object.assign({},o);VOL181.forEach(k=>{delete c[k]});return hsh(JSON.stringify(c))}catch(e){return ''}};/* เทียบเฉพาะค่าที่เป็นความคืบหน้า ไม่นับตำแหน่ง เลือด เวลา เลขลำดับ */
+ const mk181=()=>{try{const o=JSON.parse(localStorage.getItem((window.__KEY||'ipo1')+'_bakm')||'{}');return o&&typeof o==='object'&&!Array.isArray(o)?o:{}}catch(e){return{}}};
+ const rmK181=k=>{try{localStorage.removeItem(k)}catch(e){}try{if(k===(window.__KEY||'ipo1')+'_ulk'&&window.__ULK181){window.__ULK181.has=0;window.__ULK181.mine=0}}catch(e){}};
+ const pend181=()=>{try{const K=window.__KEY||'ipo1',L=ld(),xs=Array.isArray(L.xs)?L.xs:[];const U=window.__ULK181;if(!(U&&U.mine)){const u=localStorage.getItem(K+'_ulk');if(u&&!xs.includes(hsh(u)))return 'ulk'}
+   const mk=mk181(),b=localStorage.getItem(K+'_bak');if(b&&mk[hsh(b)]==='new'&&!xs.includes(hsh(b)))return 'bak';return ''}catch(e){return ''}};
+ /* ระหว่างล็อกเซฟ (อีกเครื่องหรือแท็บเป็นเจ้าของ หรือตรวจกับเซิร์ฟเวอร์ไม่ได้) ที่ยังต่อฐานข้อมูลได้ ส่งความคืบหน้าขึ้น svbak ทันที ชุดเดียวต่อการล็อกหนึ่งครั้ง เขียนทับชุดเดิมทุก 1 นาทีถ้ามีความคืบหน้าใหม่
+    ไม่เขียนเซฟหลัก (saves) จึงไม่ทับเซฟของเครื่องที่เป็นเจ้าของ */
+ /* ช่อง x ใช้ร่วมกันทุกเครื่องของบัญชีเดียวกัน เดิมนับลำดับแยกในแต่ละเครื่อง สองเครื่องจึงเขียนทับชุดของกันและกันได้ (เจอจากการทดสอบรอบนี้)
+    ตอนนี้อ่านเวลา (ct) ของช่อง x0 ถึง x4 บนเซิร์ฟเวอร์ (อ่านเฉพาะตัวเลขเวลา ไม่โหลดเซฟ) แล้วใช้ช่องที่เก่าที่สุดหรือว่าง อ่านไม่ได้ใช้ลำดับในเครื่องแบบเดิม */
+ async function pickX181(L){try{const M=MPx();if(!M)throw 0;const u=M.auth.currentUser.uid;let best='',bt=Infinity;for(let i=0;i<5;i++){const v=num((await M.rt.get(M.rt.ref(M.rdb,'svbak/'+u+'/x'+i+'/ct'))).val());if(v<bt){bt=v;best='x'+i}}if(best){SB.px181=(SB.px181|0)+1;return best}}catch(e){SB.pxErr=(SB.pxErr|0)+1}const s='x'+(num(L.xi)%5);L.xi=num(L.xi)+1;return s}
+ const LKS={t:0,ep:0,slot:'',h:'',n:0,err:0,busy:0,last:''};SB.lk=LKS;
+ async function lockTick(){if(LKS.busy||SB.perm||SB.fixing||window.__FIXING||window.__DUP||!window.__SAVE_LOCK)return;const M=MPx();if(!M)return;const n=Date.now(),lk=+window.__SAVE_LOCK||0;if(!(lk>0)||n-lk<5000)return;if(LKS.ep===lk&&n-LKS.t<60000)return;
+  LKS.busy=1;try{const js=curJs(),o=JSON.parse(js);if(!okSave(o))return;const cH=coreH181(o);if(LKS.ep===lk&&cH===LKS.h){LKS.t=n;return}
+   const L=ld();if(LKS.ep!==lk){LKS.slot=await pickX181(L);LKS.ep=lk}
+   await up(LKS.slot,js,'lock',n);LKS.t=n;LKS.h=cH;LKS.n++;L.lkh=cH;st(L)}catch(e){LKS.err++;LKS.last=eTxt(e);if(permE(e))SB.perm=1}finally{LKS.busy=0}}
+ setInterval(()=>{lockTick().catch(()=>{LKS.busy=0})},5000);
+ SB.lockTick=lockTick;/* ใช้ทดสอบ */
+ CHK.push(()=>{const o=[];try{const n=Date.now(),M=MPx(),U=window.__ULK181||{};
+   if(U.fail>=3)o.push('เซฟค้าง (รอบ 181): เก็บความคืบหน้าระหว่างล็อกเซฟลงเครื่องไม่ได้ '+U.fail+' ครั้ง ('+U.err+')');
+   if(M&&!SB.perm&&!SB.busy&&!SB.fixing&&!window.__SAVE_LOCK&&!window.__DUP&&SB.scan&&n-num(SB.scanT)>180000&&pend181())o.push('เซฟค้าง (รอบ 181): มีความคืบหน้าในเครื่องที่ยังไม่ได้ส่งขึ้นเซิร์ฟเวอร์ ('+pend181()+')');
+   const lk=+window.__SAVE_LOCK||0;if(M&&lk>0&&!window.__DUP&&!window.__FIXING&&!SB.fixing&&!SB.perm&&n-lk>120000&&n-num(LKS.t)>120000)o.push('เซฟค้าง (รอบ 181): ล็อกเซฟเกิน 2 นาทีแต่ยังไม่ได้ส่งความคืบหน้าขึ้นสำรอง');
+   if(LKS.err>20)o.push('เซฟค้าง (รอบ 181): ส่งความคืบหน้าระหว่างล็อกล้มเหลว '+LKS.err+' ครั้ง ('+LKS.last+')')}catch(e){o.push('เซฟค้าง (รอบ 181) ตัวตรวจพัง '+e.message)}return o});
+ (window.__R5FXH=window.__R5FXH||[]).push(fx=>{try{const n=Date.now(),U=window.__ULK181||{};
+   if(U.fail>=3){try{bakPrune(2)}catch(e){}U.fail=0;U.t=0;fx.push(['ulk181a','คืนที่เก็บในเครื่องให้ความคืบหน้าระหว่างล็อก'])}
+   if(!SB.busy&&!SB.perm&&SB.scan&&n-num(SB.scanT)>180000&&pend181()){SB.scan=0;fx.push(['ulk181b','สแกนส่งความคืบหน้าค้างในเครื่องขึ้นเซิร์ฟเวอร์ใหม่'])}
+   const lk=+window.__SAVE_LOCK||0;if(lk>0&&n-lk>120000&&n-num(LKS.t)>120000&&!window.__DUP){LKS.busy=0;LKS.t=0;lockTick().catch(()=>{});fx.push(['ulk181c','ส่งความคืบหน้าระหว่างล็อกขึ้นสำรองใหม่'])}
+   if(LKS.err>20){LKS.err=0;LKS.busy=0;fx.push(['ulk181d','ล้างตัวนับส่งความคืบหน้าระหว่างล็อก'])}}catch(e){}});
  SB.merge=o=>mergeMax(o);
  SB.snap=async kind=>{if(SB.perm||window.__DUP)return;const L=ld();const i=num(L[kind+'i']);try{await up(kind+(i%3),curJs(),kind);L[kind+'i']=i+1;st(L)}catch(e){SB.err++;SB.last=eTxt(e);if(permE(e))SB.perm=1}};/* rs = ก่อนรีเซ็ตเกม */
  /* ---------- รับคำสั่งกู้คืน ---------- */
@@ -13213,7 +13268,10 @@ try{(()=>{/* ===== รอบที่ 69 (13 พ.ย. 2569): ระบบสำ�
  /* ---------- เมนูผู้พัฒนา (F8): กู้เซฟผู้เล่น ---------- */
  const gm=()=>{try{return typeof isGM==='function'&&isGM()}catch(e){return false}};
  const TZc=ms=>{const d=new Date(ms+TZ);const p=n=>String(n).padStart(2,'0');return d.getUTCDate()+'/'+(d.getUTCMonth()+1)+'/'+(d.getUTCFullYear()+543)+' เวลา '+p(d.getUTCHours())+':'+p(d.getUTCMinutes())+' น.'};
- const SLN={m:'สำรองทุก 10 นาที',in:'ตอนเข้าเกม',rs:'ก่อนรีเซ็ตเกม',h:'สำรองรายชั่วโมง',d:'สำรองรายวัน',hw:'ตอนเงินและหินวิญญาณมากที่สุด',hv:'ตอนระดับหลอม จารึก และวิชามากที่สุด',lost:'เซฟที่ค่าสูงกว่าซึ่งแพ้ตอนเปลี่ยนเครื่อง หรือสำรองในเครื่อง',pre:'ก่อนถูกกู้คืนครั้งล่าสุด ใช้ย้อนการกู้คืน',manual:'สำรองด้วยมือ'};
+ const SLN={m:'สำรองทุก 10 นาที',in:'ตอนเข้าเกม',rs:'ก่อนรีเซ็ตเกม',h:'สำรองรายชั่วโมง',d:'สำรองรายวัน',hw:'ตอนเงินและหินวิญญาณมากที่สุด',hv:'ตอนระดับหลอม จารึก และวิชามากที่สุด',lost:'เซฟที่ค่าสูงกว่าซึ่งแพ้ตอนเปลี่ยนเครื่อง หรือสำรองในเครื่อง',pre:'ก่อนถูกกู้คืนครั้งล่าสุด ใช้ย้อนการกู้คืน',manual:'สำรองด้วยมือ',unsent:'ความคืบหน้าล่าสุดที่ยังไม่ได้ขึ้นเซิร์ฟเวอร์ (เซฟค้างในเครื่อง)',lock:'ความคืบหน้าระหว่างเซฟล็อก ยังไม่ได้ขึ้นเซิร์ฟเวอร์'};/* รอบ 181: unsent lock */
+ /* รอบ 181: เวลาของข้อมูลในเซฟ (ct) กับเวลาที่ส่งขึ้นเซิร์ฟเวอร์ (t) ห่างเกิน 5 นาที บอกทั้งสองเวลา ผู้พัฒนาจะได้รู้ว่าเซฟนี้เป็นของเวลาไหนจริง */
+ const dT181=x=>num(x&&x.ct)||num(x&&x.t);
+ const whenTxt=x=>{const d=dT181(x),u=num(x&&x.t);if(!d)return 'ไม่ทราบเวลา';return 'ข้อมูลเมื่อ '+TZc(d)+(u&&u-d>300000?' (ส่งขึ้นเซิร์ฟเวอร์เมื่อ '+TZc(u)+')':'')};
  const sumTxt=m=>rName(m.st)+' หินวิญญาณรวม '+fmt(m.w)+' ก้อน (คิดเป็นหินต่ำ) ระดับหลอมจารึกรวม '+fmt(m.iv)+' วิชา '+m.k+(m.pt!=null?' สัตว์อสูร '+m.pt+' ตัว':'');
  const gmErr=e=>permE(e)?'ฐานข้อมูลยังไม่อนุญาต ต้องวางกฎ svbak svidx svfix ในหน้า Realtime Database ส่วน Rules ก่อน':'ผิดพลาด '+eTxt(e);
  const detail=o=>['ขั้นพลัง '+rName(Math.floor(num(o.step))),'เหรียญทอง '+fmt(num(o.coin)),'หินวิญญาณต่ำ '+fmt(num(o.gold)/100),'หินวิญญาณระดับกลาง '+fmt(num(o.sm)),'หินวิญญาณระดับสูง '+fmt(num(o.sh)),'หินวิญญาณระดับสุดยอด '+fmt(num(o.sx)),
@@ -13226,17 +13284,17 @@ try{(()=>{/* ===== รอบที่ 69 (13 พ.ย. 2569): ระบบสำ�
  async function gmSlots(P){if(!gm())return;const M=MPx();if(!M)return say('[ผู้พัฒนา] ยังเชื่อมต่อเซิร์ฟเวอร์ไม่เสร็จ');
   let v,pend=null;try{v=(await M.rt.get(M.rt.ref(M.rdb,'svbak/'+P.u))).val()||{}}catch(e){return say('[ผู้พัฒนา] โหลดเซฟสำรองไม่ได้ '+gmErr(e))}
   try{pend=(await M.rt.get(M.rt.ref(M.rdb,'svfix/'+P.u))).val()}catch(e){}
-  const L=Object.keys(v).map(k=>Object.assign({slot:k},v[k])).filter(x=>x&&typeof x.js==='string').sort((a,b)=>num(b.t||b.ct)-num(a.t||a.ct));
+  const L=Object.keys(v).map(k=>Object.assign({slot:k},v[k])).filter(x=>x&&typeof x.js==='string').sort((a,b)=>dT181(b)-dT181(a));/* รอบ 181: เรียงตามเวลาของข้อมูล */
   if(!L.length)return say('[ผู้พัฒนา] '+P.n+' ยังไม่มีเซฟสำรอง');
-  const items=L.map(x=>({t:(SLN[x.src]||x.slot)+' '+TZc(num(x.t||x.ct))+' / '+sumTxt(x),x}));
+  const items=L.map(x=>({t:(SLN[x.src]||x.slot)+' '+whenTxt(x)+' / '+sumTxt(x),x}));
   if(pend&&pend.id)items.unshift({t:'มีคำสั่งกู้คืนค้างอยู่ (ผู้เล่นยังไม่ได้เข้าเกม) เลือกเพื่อยกเลิกคำสั่งนี้',cancel:1});
   menu('เซฟสำรองของ '+P.n+' '+L.length+' ชุด ใหม่สุดก่อน เลือกชุดที่จะกู้',items,{ent:it=>{mode='play';mn=null;
    if(it.cancel)return menu('ยกเลิกคำสั่งกู้คืนที่ค้างของ '+P.n+' ไหม',[{t:'ยกเลิกคำสั่ง',ok:1},{t:'ไม่ยกเลิก',ok:0}],{ent:async y=>{mode='play';mn=null;if(!y.ok)return say('ไม่ยกเลิก');try{await M.rt.remove(M.rt.ref(M.rdb,'svfix/'+P.u));say('[ผู้พัฒนา] ยกเลิกคำสั่งกู้คืนแล้ว')}catch(e){say('[ผู้พัฒนา] ยกเลิกไม่สำเร็จ '+gmErr(e))}}});
    gmPick(P,it.x)}})}
  function gmPick(P,x){if(!gm())return;let o;try{o=JSON.parse(x.js)}catch(e){return say('[ผู้พัฒนา] เซฟชุดนี้อ่านไม่ได้')}if(!okSave(o))return say('[ผู้พัฒนา] เซฟชุดนี้เสีย ใช้กู้ไม่ได้');
-  const head=(SLN[x.src]||x.slot)+' '+TZc(num(x.t||x.ct))+': '+detail(o);
+  const head=(SLN[x.src]||x.slot)+' '+whenTxt(x)+': '+detail(o);
   menu('เซฟของ '+P.n+' '+head,[{t:'คืนเฉพาะค่าที่ลดลง เงิน หินวิญญาณทุกระดับ ระดับหลอม จารึก หลอมกาย หลอมจิต ขั้นอัป วิชา สัตว์อสูร และของในกระเป๋าที่หาย เอาค่าที่สูงกว่า ความคืบหน้าอื่นไม่หาย (แนะนำ)',m:'max'},{t:'กู้ทั้งเซฟ ตัวละครกลับไปเหมือนตอนนั้นทุกอย่าง รวมของในกระเป๋าและตำแหน่ง ความคืบหน้าหลังจากนั้นหาย',m:'all'},{t:'ยกเลิก ไม่กู้',m:''}],{ent:it=>{mode='play';mn=null;if(!it.m)return say('ยกเลิก ไม่ได้กู้');
-   menu('ยืนยัน'+(it.m==='all'?'กู้ทั้งเซฟ':'คืนเฉพาะค่าที่ลดลง')+' ให้ '+P.n+' จากเซฟ '+(SLN[x.src]||x.slot)+' '+TZc(num(x.t||x.ct))+' ผู้เล่นออนไลน์จะได้รับทันที ถ้าออฟไลน์ได้รับตอนเข้าเกมครั้งถัดไป',[{t:'ยืนยัน ส่งคำสั่งกู้คืน',ok:1},{t:'ยกเลิก',ok:0}],{ent:async y=>{mode='play';mn=null;if(!y.ok)return say('ยกเลิก ไม่ได้กู้');
+   menu('ยืนยัน'+(it.m==='all'?'กู้ทั้งเซฟ':'คืนเฉพาะค่าที่ลดลง')+' ให้ '+P.n+' จากเซฟ '+(SLN[x.src]||x.slot)+' '+whenTxt(x)+' ผู้เล่นออนไลน์จะได้รับทันที ถ้าออฟไลน์ได้รับตอนเข้าเกมครั้งถัดไป',[{t:'ยืนยัน ส่งคำสั่งกู้คืน',ok:1},{t:'ยกเลิก',ok:0}],{ent:async y=>{mode='play';mn=null;if(!y.ok)return say('ยกเลิก ไม่ได้กู้');
     const M=MPx();if(!M)return say('[ผู้พัฒนา] ยังเชื่อมต่อเซิร์ฟเวอร์ไม่เสร็จ');const id='f'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
     try{await M.rt.set(M.rt.ref(M.rdb,'svfix/'+P.u),{id,mode:it.m,js:x.js,src:String(x.slot).slice(0,8),by:M.auth.currentUser.uid,t:M.rt.serverTimestamp()});try{snd18('gong',.6)}catch(e){}say('[ผู้พัฒนา] ส่งคำสั่งกู้คืนให้ '+P.n+' แล้ว ผู้เล่นออนไลน์จะได้รับทันที ถ้าออฟไลน์ได้รับตอนเข้าเกมครั้งถัดไป เปิดเมนูนี้ดูได้ว่าคำสั่งยังค้างอยู่ไหม')}
     catch(e){say('[ผู้พัฒนา] ส่งคำสั่งกู้คืนไม่สำเร็จ '+gmErr(e))}}})}})}
@@ -17497,6 +17555,7 @@ try{(()=>{
  try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-23',c:[C_SYS],gd:'r174',h:'ข้อความเสียง อัดเสียงส่งในแชทโลก แชทแผนที่ และข้อความส่วนตัว กด ; รอบ 174',b:GL().map(x=>x.t)})}catch(e){}
  try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-23',c:[C_SYS],gd:'r174',h:'ข้อความเสียงดังให้ฟังทันทีเมื่อมีคนส่ง ไม่ต้องกดฟัง ปิดได้ รอบ 175',b:['ข้อความเสียงที่มีคนส่งมาในแชทโลก แชทแผนที่ และข้อความส่วนตัว ดังให้ฟังทันที ไม่ต้องกด','หลายข้อความเล่นต่อกันทีละข้อความ ไม่ดังทับกัน ระหว่างเจ้ากำลังอัดเสียงจะรอให้อัดเสร็จก่อน','ระหว่างเสียงดัง กด ; หนึ่งครั้งเพื่อหยุด บนโทรศัพท์กดปุ่ม เสียง','ปิดการเล่นทันทีได้ในเมนู ; แล้วกดฟังเองจากรายการเหมือนเดิม']})}catch(e){}
  try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-23',c:[C_SYS],gd:'r174',h:'ข้อความเสียงย้ายมาปุ่ม ; เสียงคุยสดย้ายไป Shift ; รอบ 176',b:['กด ; เปิดเมนูข้อความเสียง อัดส่งแชทโลก แชทแผนที่ ข้อความส่วนตัว และฟังย้อนหลัง (เดิม Shift `)','ระหว่างอัด กด ; อีกครั้งเพื่อหยุดอัด ระหว่างข้อความเสียงดัง กด ; หนึ่งครั้งเพื่อหยุดเสียง','เสียงคุยสดกับคนใกล้ตัว 39 ก้าว ย้ายไปกด Shift ; (กดอีกครั้งหยุดพูด หรือกดค้างแล้วปล่อยเพื่อพูดเฉพาะตอนกดค้าง)','ปิดเสียงคุยสดทั้งหมด (เดิม Shift ;) อยู่ในเมนู ; รายการ เสียงคุยสดกับคนใกล้ตัว กดอีกครั้งเพื่อเปิด','โทรศัพท์: ปุ่ม เสียง = ข้อความเสียง ปุ่ม พูด = เสียงคุยสด เหมือนเดิม']})}catch(e){}
+ try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-24',c:[C_FIX],h:'ความคืบหน้าที่ยังไม่ได้ขึ้นเซิร์ฟเวอร์ ไม่หายทิ้งอีก รอบ 181',b:['ช่วงที่เซฟล็อกหรือเน็ตไม่ดี ความคืบหน้าของเจ้าถูกเก็บแยกไว้ในเครื่อง และส่งขึ้นเป็นเซฟสำรองบนเซิร์ฟเวอร์ทันทีที่ทำได้','ถ้าเข้าเกมใหม่แล้วเกมต้องใช้เซฟบนเซิร์ฟเวอร์ ความคืบหน้าล่าสุดในเครื่องจะไม่ถูกโยนทิ้ง แต่ถูกส่งขึ้นเป็นเซฟสำรองให้ผู้ดูแลกู้คืนให้ได้','ถ้าของหรือความคืบหน้าหาย แจ้งผู้ดูแล ผู้ดูแลกู้คืนถึงจุดล่าสุดจริงได้ ไม่ต้องย้อนไปไกล']})}catch(e){}
  try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-24',c:[C_SYS],h:'เน็ตหลุดนาน เกมตัดออกไว้ก่อน ไม่ให้เล่นแบบไม่ถูกบันทึก รอบ 180',b:['ถ้าอินเทอร์เน็ตหลุดหรือเชื่อมเซิร์ฟเวอร์ไม่ได้นานเกิน 20 วินาที เกมจะตัดเจ้าออกไว้ก่อน ขึ้นหน้าบอกเหตุผล ตัวอ่านหน้าจออ่านให้ทันที','ความคืบหน้าก่อนหลุดไม่หาย ต่อเน็ตแล้วกด Enter หรือแตะปุ่ม เข้าเกมใหม่ เกมส่งความคืบหน้าขึ้นเซิร์ฟเวอร์ให้','เน็ตหลุดแป๊บเดียวไม่โดนตัด พักจอโทรศัพท์แล้วกลับมาไม่โดนตัด','ถ้าเชื่อมต่ออยู่แต่ส่งเซฟไม่สำเร็จนานเกิน 5 นาที ก็ตัดออกเช่นกัน','แก้เกมบอกผิดๆ ว่าเล่นอยู่ 2 เครื่อง ทั้งที่เล่นเครื่องเดียว เบราว์เซอร์เดียว: รีเฟรช เข้าเกมใหม่ หรือที่เก็บในเครื่องเต็ม ไม่ถูกนับเป็นเครื่องอื่นแล้ว','ตำแหน่งเก่าที่ค้างจากหน้าก่อนไม่ทำให้ขึ้นเตือนว่าเปิดอยู่ที่เครื่องหรือแท็บอื่นแล้ว เกมจะเตือนเฉพาะเมื่ออีกเครื่องเล่นอยู่จริง','ถ้าเปิดเกมแท็บใหม่ในเบราว์เซอร์เดียวกัน แท็บเก่าบอกว่าเปิดแท็บอื่น ไม่บอกว่าเครื่องอื่น']})}catch(e){}
  try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-24',c:[C_FIX],h:'แก้ชื่อตัวละครหายหลังเปลี่ยนชื่อ รอบ 179',b:['เดิมถ้าเซิร์ฟเวอร์อ่านชื่อจากบัญชีไม่ได้ตอนเข้าเกม ชื่อกลายเป็น ผู้ฝึกตน หรือกลับเป็นชื่อเก่า แล้วถูกบันทึกทับ ขออภัยผู้เล่นที่โดน','ตอนนี้เกมใช้ชื่อที่อยู่ในเซฟของเจ้าเมื่ออ่านชื่อจากบัญชีไม่ได้ ชื่อไม่หายอีก','ใครที่ชื่อหายไปแล้ว เข้าเกมใหม่ตอนเซิร์ฟเวอร์ปกติ ชื่อที่เปลี่ยนไว้จะกลับมาเอง ถ้าไม่กลับ แจ้งผู้ดูแล']})}catch(e){}
  try{NEWS.push({id:Math.max(...NEWS.map(n=>n.id))+1,d:'2026-11-24',c:[C_FIX],h:'ไม่มีการเล่นแบบไม่ถูกบันทึกอีก เครื่องหรือแท็บเก่าหยุดเกมเอง รอบ 178',b:['ถ้าบัญชีนี้ถูกเปิดเล่นที่เครื่องหรือแท็บอื่น เครื่องเก่าจะหยุดเกมเองภายในราว 15 วินาที ขึ้นหน้าบอกเหตุผล ตัวอ่านหน้าจออ่านให้ทันที','ถ้าจะเล่นที่เครื่องนั้นต่อ กด Enter หรือแตะปุ่ม เล่นที่เครื่องนี้ เกมโหลดเซฟล่าสุดให้ อีกเครื่องจะหยุดแทน','เล่นเครื่องเดียว รีเฟรชหน้า หรือเน็ตหลุดแล้วต่อกลับ ไม่ถูกหยุดเกม เกมตรวจกับเซิร์ฟเวอร์ 3 ครั้งก่อนตัดสินเสมอ','ถ้าเซฟใหม่กว่าบนเซิร์ฟเวอร์เป็นของเก่าที่ค้างอยู่ เกมโหลดเซฟล่าสุดให้เองทันที แม้กำลังออโต้หรือนั่งสมาธิอยู่']})}catch(e){}
@@ -17666,7 +17725,16 @@ async function cloudStart(email,name){
  try{if(!fixOk&&!srvFix&&!DBGM){if(cs&&ls&&!srvWins&&sgC==='ok'&&sgL!=='ok'){srvWins=true;tmp9={w:'local'}}else if(cs&&ls&&srvWins&&sgC==='bad'&&sgL==='ok'){srvWins=false;tmp9={w:'server'}}else if((ls&&!cs&&sgL==='bad')||(cs&&!ls&&sgC==='bad')||(cs&&ls&&sgC==='bad'&&sgL==='bad'))tmp9={w:'only'}}}catch(e){tmp9=null}
  if(tmp9){try{tmp9.t=Date.now();tmp9.sL=sgL;tmp9.sC=sgC;tmp9.stL=stepOf(ls);tmp9.stC=stepOf(cs);tmp9.wL=Math.floor(wOf(ls));tmp9.wC=Math.floor(wOf(cs));if(tmp9.w==='local')localStorage.setItem(KEY+'_tmp',ls)}catch(e){}window.__TAMPER=tmp9}
  try{if(!tmp9&&!fixOk&&!srvFix&&!DBGM&&cs&&ls&&stepOf(cs)===stepOf(ls)&&!(svOf(cs)&&svOf(ls))){/* รอบ 112: ใช้เฉพาะเซฟเก่าที่ไม่มีเลขลำดับ เดิมใช้เสมอ เซฟเก่าในเครื่องที่ค่าบางอย่างสูงกว่าจึงชนะเซฟใหม่บนเซิร์ฟเวอร์ แล้วถูกส่งขึ้นไปทับ ของและระดับหลอมจึงย้อน */const mc=monoSc(cs),ml=monoSc(ls);if(srvWins&&ml>mc)srvWins=false;else if(!srvWins&&mc>ml)srvWins=true;window.__SAVEMONO={c:mc,l:ml}}}catch(e){}
- try{const lo=srvWins?ls:cs,wi=srvWins?cs:ls;if(lo&&!fixOk&&!(tmp9&&tmp9.w!=='only')){const a=itemSc(wi),b=itemSc(lo),wa=wOf(wi),wb=wOf(lo),invN=x=>{try{const o=JSON.parse(x)||{};return(Array.isArray(o.inv)?o.inv:[]).reduce((n,it)=>n+(it&&+it.q>0?Math.floor(+it.q):0),0)}catch(e){return 0}};if(b>a||wb>wa+.5||invN(lo)>invN(wi)){/* รอบที่ 72: ของในกระเป๋าของเซฟที่แพ้มากกว่า ก็เก็บสำรองด้วย */localStorage.setItem(KEY+'_bak',lo);window.__SAVEBAK={t:Date.now(),win:a,lose:b,wWin:Math.floor(wa),wLose:Math.floor(wb),srv:srvWins}}}}catch(e){}/* รอบที่ 69: เงินหรือหินวิญญาณของเซฟที่แพ้มากกว่า ก็เก็บสำรองด้วย (ระบบสำรองบนเซิร์ฟเวอร์ส่งขึ้นให้ผู้ดูแลกู้คืนได้) */
+ try{const lo=srvWins?ls:cs,wi=srvWins?cs:ls;if(lo&&!fixOk&&!(tmp9&&tmp9.w!=='only')){const a=itemSc(wi),b=itemSc(lo),wa=wOf(wi),wb=wOf(lo),invN=x=>{try{const o=JSON.parse(x)||{};return(Array.isArray(o.inv)?o.inv:[]).reduce((n,it)=>n+(it&&+it.q>0?Math.floor(+it.q):0),0)}catch(e){return 0}};/* รอบ 181: เซฟในเครื่องที่แพ้แต่ใหม่กว่าเซฟที่ชนะเกิน 1 นาที และความคืบหน้าไม่เหมือนกัน = ความคืบหน้าที่ยังไม่เคยขึ้นเซิร์ฟเวอร์ เก็บเสมอแม้ค่าของหรือเงินไม่สูงกว่า (ค่าประสบการณ์ ภารกิจ ของที่ใช้ไป) ติดป้าย new ให้ระบบสำรองส่งขึ้นเป็นชุด unsent
+ เดิมเก็บเฉพาะชุดที่ค่าของหรือเงินสูงกว่า ความคืบหน้าแบบอื่นจึงหายทิ้งทั้งหมด / ถ้าชุดเดิมใน _bak ยังไม่เคยส่งขึ้นและไม่เหมือนชุดใหม่ ย้ายไป _bak2 ก่อน ไม่ทับทิ้ง */
+const h181=x=>{let h=5381;for(let i=0;i<x.length;i++)h=((h<<5)+h+x.charCodeAt(i))|0;return (h>>>0).toString(36)+'_'+x.length};/* สูตรเดียวกับ hsh ในระบบสำรอง (รอบที่ 69) */
+const cr181=x=>{try{const o=JSON.parse(x)||{};['t','x','y','f','hp','qi','med','fear','poison','sv','ck','dev','ows','alt'].forEach(k=>{delete o[k]});return JSON.stringify(o)}catch(e){return x}};
+const nw181=!!(srvWins&&tOf(lo)>tOf(wi)+60000&&cr181(lo)!==cr181(wi));
+if(b>a||wb>wa+.5||invN(lo)>invN(wi)||nw181){/* รอบที่ 72: ของในกระเป๋าของเซฟที่แพ้มากกว่า ก็เก็บสำรองด้วย */
+ try{const ob=localStorage.getItem(KEY+'_bak');if(ob&&ob!==lo){let xs=[];try{const q=JSON.parse(localStorage.getItem('ipo_sb69|'+KEY)||'{}');xs=q&&Array.isArray(q.xs)?q.xs:[]}catch(e){}if(!xs.includes(h181(ob)))localStorage.setItem(KEY+'_bak2',ob)}}catch(e){}
+ localStorage.setItem(KEY+'_bak',lo);
+ if(nw181){try{let m={};try{m=JSON.parse(localStorage.getItem(KEY+'_bakm')||'{}')||{}}catch(e){m={}}if(typeof m!=='object'||Array.isArray(m))m={};m[h181(lo)]='new';const ks=Object.keys(m);ks.slice(0,Math.max(0,ks.length-6)).forEach(k=>{delete m[k]});localStorage.setItem(KEY+'_bakm',JSON.stringify(m))}catch(e){}}
+ window.__SAVEBAK={t:Date.now(),win:a,lose:b,wWin:Math.floor(wa),wLose:Math.floor(wb),srv:srvWins,nw:nw181?1:0}}}}catch(e){}/* รอบที่ 69: เงินหรือหินวิญญาณของเซฟที่แพ้มากกว่า ก็เก็บสำรองด้วย (ระบบสำรองบนเซิร์ฟเวอร์ส่งขึ้นให้ผู้ดูแลกู้คืนได้) */
  window.__SAVEPICK={fix:fixOk?1:srvFix?2:0,srv:srvWins,svC:svOf(cs),svL:svOf(ls),stC:stepOf(cs),stL:stepOf(ls),devC:devOf(cs)===DEV?'same':devOf(cs)?'other':'none'};
  window.__SVFLOOR=Math.max(sv9(fss||''),sv9(rsv||''),svOf(ls||''),svOf(cs||''));/* รอบ 112: เลขลำดับเซฟเดินต่อจากเลขสูงสุดที่เคยมีทุกที่ เซฟใหม่จึงใหม่กว่าเซฟเก่าทุกชุดเสมอ */
  if(srvWins){ls=noDev(cs);try{localStorage.setItem(KEY,ls)}catch(e){}
