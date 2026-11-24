@@ -1,0 +1,33 @@
+# สำรองฐานข้อมูลเกมทุกวัน ตี 4 เวลาไทย (เข้ารหัส เก็บ 30 วัน) กดสำรองเองได้ที่แท็บ Actions > สำรองข้อมูลทุกวัน > Run workflow
+name: สำรองข้อมูลทุกวัน
+on:
+  schedule:
+    - cron: '7 21 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: backup
+  cancel-in-progress: false
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: tools
+      - id: b
+        name: สำรองและเข้ารหัส
+        env:
+          FIREBASE_DB_SECRET: ${{ secrets.FIREBASE_DB_SECRET }}
+          BACKUP_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
+        run: bash tools/backup.sh
+      - name: เก็บไฟล์สำรอง 30 วัน
+        if: ${{ always() && steps.b.outputs.name != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.b.outputs.name }}
+          path: out/*.enc
+          retention-days: 30
+          if-no-files-found: error
